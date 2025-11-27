@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aifedorov/gophkeeper/internal/config"
-	"github.com/aifedorov/gophkeeper/internal/domain/user"
-	repository "github.com/aifedorov/gophkeeper/internal/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/config"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/user"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
 	"github.com/aifedorov/gophkeeper/pkg/posgres"
 	"go.uber.org/zap"
 )

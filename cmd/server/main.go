@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aifedorov/gophkeeper/internal/application"
-	"github.com/aifedorov/gophkeeper/internal/config"
+	"github.com/aifedorov/gophkeeper/internal/server/application"
+	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/pkg/logger"
 )
 
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to initialize config: %v\n", err)
 		os.Exit(1)
 	}
 

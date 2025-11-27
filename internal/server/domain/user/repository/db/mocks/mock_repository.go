@@ -12,7 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	repository "github.com/aifedorov/gophkeeper/internal/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
 	gomock "go.uber.org/mock/gomock"
 )
 

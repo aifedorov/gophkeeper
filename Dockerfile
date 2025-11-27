@@ -1,14 +1,16 @@
-FROM golang:1.25.1
+FROM golang:1.23-alpine
 
 WORKDIR /app
+
+RUN apk add --no-cache git curl
+
+RUN go install github.com/air-verse/air@latest
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-RUN (cd cmd/server && go build -buildvcs=false -o gophkeeper)
+EXPOSE 50051
 
-EXPOSE 8080
-
-CMD ["./cmd/gophkeeper/gophkeeper"]
+CMD ["air", "-c", ".air.toml"]

@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Build artifacts
+dist/
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gophkeeper-*
+
+# Test files
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Documentation
+docs/
+*.md
+README.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies (будут скачаны в контейнере)
+vendor/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Temporary files
+build-errors.log
+air_tmp

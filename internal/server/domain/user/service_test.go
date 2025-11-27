@@ -4,14 +4,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aifedorov/gophkeeper/internal/domain/user/repository/db/mocks"
+	repository2 "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
-
-	repository "github.com/aifedorov/gophkeeper/internal/domain/user/repository/db"
 )
 
 const (
@@ -38,7 +37,7 @@ func TestRegister(t *testing.T) {
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
-				expectedUser := &repository.User{
+				expectedUser := &repository2.User{
 					ID:           expectedID,
 					Login:        testLogin,
 					PasswordHash: testPass,
@@ -62,7 +61,7 @@ func TestRegister(t *testing.T) {
 				m.EXPECT().
 					CreateUser(existingLogin, testPass).
 					Times(1).
-					Return(nil, repository.ErrLoginExists)
+					Return(nil, repository2.ErrLoginExists)
 			},
 			wantErrIs: ErrLoginExists,
 		},
@@ -151,7 +150,7 @@ func TestLogin(t *testing.T) {
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
-				expectedUser := &repository.User{
+				expectedUser := &repository2.User{
 					ID:           expectedID,
 					Login:        testLogin,
 					PasswordHash: testPass,
@@ -175,7 +174,7 @@ func TestLogin(t *testing.T) {
 				m.EXPECT().
 					GetUser(nonexistentLogin, testPass).
 					Times(1).
-					Return(nil, repository.ErrUserNotFound)
+					Return(nil, repository2.ErrUserNotFound)
 			},
 			wantErrIs: ErrUserNotFound,
 		},
@@ -199,7 +198,7 @@ func TestLogin(t *testing.T) {
 				m.EXPECT().
 					GetUser("", testPass).
 					Times(1).
-					Return(nil, repository.ErrUserNotFound)
+					Return(nil, repository2.ErrUserNotFound)
 			},
 			wantErrIs: ErrUserNotFound,
 		},
@@ -211,7 +210,7 @@ func TestLogin(t *testing.T) {
 				m.EXPECT().
 					GetUser(testLogin, "").
 					Times(1).
-					Return(nil, repository.ErrUserNotFound)
+					Return(nil, repository2.ErrUserNotFound)
 			},
 			wantErrIs: ErrUserNotFound,
 		},

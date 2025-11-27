@@ -17,13 +17,11 @@ type Config struct {
 }
 
 func LoadConfig() (Config, error) {
-	err := godotenv.Load(dotEnvFile)
-	if err != nil {
-		return Config{}, err
-	}
+	// Load .env file if exists (optional)
+	_ = godotenv.Load(dotEnvFile)
 
 	var cfg Config
-	err = env.Parse(&cfg)
+	err := env.Parse(&cfg)
 	if err != nil {
 		return Config{}, err
 	}

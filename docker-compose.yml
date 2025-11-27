@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17
+    container_name: gophkeeper-postgres
     environment:
       POSTGRES_DB: gophkeeper
       POSTGRES_USER: gophkeeper
@@ -8,28 +9,60 @@ services:
       PGPORT: 5432
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U gophkeeper -d gophkeeper" ]
       interval: 5s
+      timeout: 5s
       retries: 5
+    networks:
+      - gophkeeper-network
 
   migrate:
     image: migrate/migrate
+    container_name: gophkeeper-migrate
     volumes:
       - ./migrations:/migrations
     command: [ "-path", "/migrations", "-database", "postgres://gophkeeper:password@postgres:5432/gophkeeper?sslmode=disable", "up" ]
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - gophkeeper-network
+    restart: on-failure
 
-  app:
-    build: .
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gophkeeper-server
     environment:
       DATABASE_URI: "postgres://gophkeeper:password@postgres:5432/gophkeeper?sslmode=disable"
-      RUN_ADDRESS: "0.0.0.0:8080"
+      GRPC_ADDRESS: "0.0.0.0:50051"
+      LOG_LEVEL: "debug"
+      JWT_SECRET: "dev-secret-key"
     ports:
-      - "8080:8080"
+      - "50051:50051"
     volumes:
       - .:/app
+      - go_modules:/go/pkg/mod
+      - air_tmp:/app/tmp
     depends_on:
-      - migrate
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - gophkeeper-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  go_modules:
+    driver: local
+  air_tmp:
+    driver: local
+
+networks:
+  gophkeeper-network:
+    driver: bridge
