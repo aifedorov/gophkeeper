@@ -1,4 +1,4 @@
-.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-cover lint fmt all env
+.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-cover test-cover-filtered test-cover-html lint fmt all env
 
 # Development
 server:
@@ -53,6 +53,14 @@ test:
 test-cover:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
+
+test-cover-filtered:
+	@echo "Running tests with filtered coverage (excluding mocks, generated files, views, main)..."
+	@./scripts/coverage.sh
+
+test-cover-html:
+	@echo "Running tests with filtered coverage and generating HTML report..."
+	@./scripts/coverage.sh --html
 
 lint:
 	golangci-lint run ./...

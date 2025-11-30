@@ -8,7 +8,7 @@ type NavigateToMenuMsg struct{}
 
 type errMsg error
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds := make([]tea.Cmd, len(m.inputs)+1) // spinner
 
 	switch msg := msg.(type) {
@@ -24,18 +24,16 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.focused = nextInput(m)
 		case tea.KeyCtrlC:
 			return m, tea.Quit
-		case tea.KeyTab, tea.KeyCtrlN:
+		case tea.KeyTab, tea.KeyCtrlN, tea.KeyDown:
 			m.validateField(m.focused)
 			m.focused = nextInput(m)
-		case tea.KeyShiftTab, tea.KeyCtrlP:
+		case tea.KeyShiftTab, tea.KeyCtrlP, tea.KeyUp:
 			m.validateField(m.focused)
 			m.focused = prevInput(m)
 		case tea.KeyCtrlB:
 			return m, func() tea.Msg {
 				return NavigateToMenuMsg{}
 			}
-		default:
-			m.err = nil
 		}
 		for i := range m.inputs {
 			m.inputs[i].Blur()

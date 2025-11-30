@@ -75,6 +75,10 @@ func (m Model) allFieldsValid() bool {
 	return true
 }
 
+func (m Model) Focused() int {
+	return m.focused
+}
+
 func loginValidator(s string) error {
 	if len(s) == 0 {
 		return fmt.Errorf("login can't be empty")

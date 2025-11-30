@@ -33,7 +33,8 @@ func (m Model) updateMenu(msg tea.Msg) (Model, tea.Cmd) {
 	log.Printf("menu screen, message type: %T", msg)
 
 	var cmd tea.Cmd
-	m.menuModel, cmd = m.menuModel.Update(msg)
+	updated, cmd := m.menuModel.Update(msg)
+	m.menuModel = updated.(menu.Model)
 
 	switch msg.(type) {
 	case menu.NavigateToRegisterMsg:
@@ -49,7 +50,8 @@ func (m Model) updateRegister(msg tea.Msg) (Model, tea.Cmd) {
 	log.Printf("register screen, message type: %T", msg)
 
 	var cmd tea.Cmd
-	m.registerModel, cmd = m.registerModel.Update(msg)
+	updated, cmd := m.registerModel.Update(msg)
+	m.registerModel = updated.(register.Model)
 
 	switch msg.(type) {
 	case register.NavigateToMenuMsg:
