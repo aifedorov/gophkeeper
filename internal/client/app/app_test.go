@@ -3,8 +3,8 @@ package app
 import (
 	"testing"
 
+	"github.com/aifedorov/gophkeeper/internal/client/auth"
 	"github.com/aifedorov/gophkeeper/internal/client/menu"
-	"github.com/aifedorov/gophkeeper/internal/client/register"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -27,7 +27,6 @@ func TestAppInit(t *testing.T) {
 
 func TestAppQuitFromAnyScreen(t *testing.T) {
 	m := InitialModel()
-
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	if cmd == nil {
@@ -53,16 +52,16 @@ func TestAppMenuScreenDelegation(t *testing.T) {
 
 func TestAppRegisterScreenDelegation(t *testing.T) {
 	m := InitialModel().(Model)
-	m.currentScreen = screenRegister
-	m.registerModel = register.InitialModel()
+	m.currentScreen = screenAuth
+	m.authModel = auth.InitialModel()
 
-	initialFocus := m.registerModel.Focused()
+	initialFocus := m.authModel.Focused()
 
 	updatedModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = updatedModel.(Model)
 
-	if m.registerModel.Focused() == initialFocus {
-		t.Error("register model should handle tab key and change focus")
+	if m.authModel.Focused() == initialFocus {
+		t.Error("auth model should handle tab key and change focus")
 	}
 }
 
@@ -74,15 +73,15 @@ func TestAppScreenTransitions(t *testing.T) {
 		wantScreen  screen
 	}{
 		{
-			name:        "menu to register",
+			name:        "menu to auth",
 			startScreen: screenMenu,
 			msg:         menu.NavigateToRegisterMsg{},
-			wantScreen:  screenRegister,
+			wantScreen:  screenAuth,
 		},
 		{
-			name:        "register to menu",
-			startScreen: screenRegister,
-			msg:         register.NavigateToMenuMsg{},
+			name:        "auth to menu",
+			startScreen: screenAuth,
+			msg:         auth.NavigateToMenuMsg{},
 			wantScreen:  screenMenu,
 		},
 	}
@@ -92,8 +91,8 @@ func TestAppScreenTransitions(t *testing.T) {
 			m := InitialModel().(Model)
 			m.currentScreen = tt.startScreen
 
-			if tt.startScreen == screenRegister {
-				m.registerModel = register.InitialModel()
+			if tt.startScreen == screenAuth {
+				m.authModel = auth.InitialModel()
 			}
 
 			updatedModel, _ := m.Update(tt.msg)

@@ -1,4 +1,4 @@
-package register
+package auth
 
 import (
 	"fmt"
@@ -20,6 +20,7 @@ const (
 )
 
 type Model struct {
+	NewUser   bool
 	inputs    []textinput.Model
 	spinner   spinner.Model
 	focused   int
@@ -65,6 +66,10 @@ func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+func (m Model) Focused() int {
+	return m.focused
+}
+
 func (m Model) allFieldsValid() bool {
 	for _, input := range m.inputs {
 		err := input.Validate(input.Value())
@@ -73,10 +78,6 @@ func (m Model) allFieldsValid() bool {
 		}
 	}
 	return true
-}
-
-func (m Model) Focused() int {
-	return m.focused
 }
 
 func loginValidator(s string) error {

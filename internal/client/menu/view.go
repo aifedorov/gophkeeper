@@ -25,7 +25,7 @@ func (m Model) View() string {
 	}
 
 	// The footer
-	s += "\nctrl+c to quit.\n"
+	s += "\n(ctrl+c to quit)\n"
 
 	return s
 }

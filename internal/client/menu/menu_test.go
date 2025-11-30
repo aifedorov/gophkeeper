@@ -51,9 +51,7 @@ func TestMenuBoundaryUp(t *testing.T) {
 
 func TestMenuSelectLogin(t *testing.T) {
 	m := InitialModel()
-
-	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updatedModel.(Model)
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	if cmd == nil {
 		t.Fatal("expected command to be returned")
@@ -116,9 +114,7 @@ func TestMenuNavigationDown(t *testing.T) {
 }
 
 func TestMenuQuitWithCtrlC(t *testing.T) {
-	m := InitialModel()
-	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	m = updatedModel.(Model)
+	_, cmd := InitialModel().Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	if cmd == nil {
 		t.Fatal("expected quit command")

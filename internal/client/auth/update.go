@@ -1,4 +1,4 @@
-package register
+package auth
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -18,7 +18,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.validateField(m.focused)
 			if m.focused == len(m.inputs)-1 && m.allFieldsValid() {
 				m.loading = true
-				// TODO: Add submission logic here
+				// Send register or login request
 				return m, m.spinner.Tick
 			}
 			m.focused = nextInput(m)

@@ -1,4 +1,4 @@
-package register
+package auth
 
 import (
 	"strings"
@@ -45,13 +45,13 @@ func TestRegisterInitWithLoading(t *testing.T) {
 func TestRegisterFocused(t *testing.T) {
 	m := InitialModel()
 
-	if m.Focused() != login {
-		t.Errorf("expected Focused() to return %d, got %d", login, m.Focused())
+	if m.focused != login {
+		t.Errorf("expected focused() to return %d, got %d", login, m.focused)
 	}
 
 	m.focused = password
-	if m.Focused() != password {
-		t.Errorf("expected Focused() to return %d, got %d", password, m.Focused())
+	if m.focused != password {
+		t.Errorf("expected focused() to return %d, got %d", password, m.focused)
 	}
 }
 
@@ -129,8 +129,7 @@ func TestRegisterNavigationKeyDown(t *testing.T) {
 
 func TestRegisterQuitWithCtrlC(t *testing.T) {
 	m := InitialModel()
-	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	m = updatedModel.(Model)
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	if cmd == nil {
 		t.Fatal("expected quit command")
@@ -231,8 +230,7 @@ func TestRegisterAllFieldsInvalid(t *testing.T) {
 
 func TestRegisterBackNavigation(t *testing.T) {
 	m := InitialModel()
-	updatedModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
-	m = updatedModel.(Model)
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
 
 	if cmd == nil {
 		t.Fatal("expected command to be returned")
