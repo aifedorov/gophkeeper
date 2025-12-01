@@ -26,8 +26,8 @@ go.work
 go.work.sum
 
 # env file
-.env
-.env.local
+.env.client
+.env.server
 
 # Editor/IDE
 .idea/
