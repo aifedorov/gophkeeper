@@ -1,4 +1,4 @@
-package app
+package root
 
 func (m Model) View() string {
 	switch m.currentScreen {

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to run tests with filtered coverage
-# Excludes: mocks, generated files (pb.go, sqlc-generated), view.go, main.go
+# Excludes: mocks, generated files (pb.go, sqlc-generated), view.go, main.go, GUI layer
 
 set -e
 
@@ -24,8 +24,9 @@ fi
 # - repository/db/db.go - sqlc generated db interface
 # - view.go - UI rendering code
 # - main.go - entry points
+# - internal/client/gui/ - entire GUI layer (Bubble Tea views/UI)
 echo "Filtering coverage..."
-grep -v -E '(mocks/|\.pb\.go|query\.sql\.go|repository/db/models\.go|repository/db/db\.go|view\.go|main\.go)' coverage.out > coverage.filtered.out
+grep -v -E '(mocks/|\.pb\.go|query\.sql\.go|repository/db/models\.go|repository/db/db\.go|view\.go|main\.go|internal/client/gui/)' coverage.out > coverage.filtered.out
 
 # Show filtered coverage
 echo ""

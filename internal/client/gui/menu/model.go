@@ -17,7 +17,7 @@ type Model struct {
 	Selected Item
 }
 
-func InitialModel() Model {
+func NewModel() Model {
 	return Model{
 		Menu: []Item{Login, Register},
 	}

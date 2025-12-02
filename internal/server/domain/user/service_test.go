@@ -66,7 +66,7 @@ func TestRegister(t *testing.T) {
 			wantErrIs: ErrLoginExists,
 		},
 		{
-			name:     "repository error",
+			name:     "inMemory error",
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
@@ -167,7 +167,7 @@ func TestLogin(t *testing.T) {
 			},
 		},
 		{
-			name:     "user not found",
+			name:     "auth.proto not found",
 			login:    nonexistentLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
@@ -179,7 +179,7 @@ func TestLogin(t *testing.T) {
 			wantErrIs: ErrUserNotFound,
 		},
 		{
-			name:     "repository error",
+			name:     "inMemory error",
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {

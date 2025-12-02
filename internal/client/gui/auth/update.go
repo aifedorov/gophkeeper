@@ -1,25 +1,43 @@
 package auth
 
 import (
+	"context"
+	"time"
+
+	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type NavigateToMenuMsg struct{}
 
-type errMsg error
+type authSuccessMsg struct {
+	session *auth.Session
+}
+
+type authErrorMsg struct {
+	err error
+}
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	cmds := make([]tea.Cmd, len(m.inputs)+1) // spinner
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.loading && msg.Type != tea.KeyCtrlC {
+			break
+		}
+
 		switch msg.Type {
 		case tea.KeyEnter:
 			m.validateField(m.focused)
 			if m.focused == len(m.inputs)-1 && m.allFieldsValid() {
 				m.loading = true
-				// Send register or login request
-				return m, m.spinner.Tick
+				m.err = nil
+				return m, tea.Batch(
+					m.spinner.Tick,
+					m.performAuth(),
+				)
 			}
 			m.focused = nextInput(m)
 		case tea.KeyCtrlC:
@@ -34,23 +52,43 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg {
 				return NavigateToMenuMsg{}
 			}
+		default:
+			m.err = nil
 		}
+
 		for i := range m.inputs {
 			m.inputs[i].Blur()
 		}
 		m.inputs[m.focused].Focus()
 
-	case errMsg:
-		m.err = msg
+	case authSuccessMsg:
+		m.loading = false
+		m.loggedIn = true
+		m.err = nil
+		// TODO: navigate to user data screen
 		return m, nil
+
+	case authErrorMsg:
+		m.loading = false
+		m.err = msg.err
+		return m, nil
+
+	case spinner.TickMsg:
+		if m.loading {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
 	}
 
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	if !m.loading {
+		for i := range m.inputs {
+			var cmd tea.Cmd
+			m.inputs[i], cmd = m.inputs[i].Update(msg)
+			cmds = append(cmds, cmd)
+		}
 	}
-	if m.loading {
-		m.spinner, cmds[len(cmds)-1] = m.spinner.Update(msg)
-	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -85,4 +123,35 @@ func prevInput(m Model) int {
 		return len(m.inputs) - 1
 	}
 	return prev
+}
+
+func (m Model) performAuth() tea.Cmd {
+	login := m.inputs[login].Value()
+	password := m.inputs[password].Value()
+	isNewUser := m.NewUser
+	authService := m.authService
+
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		creds := auth.Credentials{
+			Login:    login,
+			Password: password,
+		}
+
+		var session *auth.Session
+		var err error
+
+		if isNewUser {
+			err = authService.Register(ctx, creds)
+		} else {
+			err = authService.Login(ctx, creds)
+		}
+
+		if err != nil {
+			return authErrorMsg{err: err}
+		}
+		return authSuccessMsg{session: session}
+	}
 }

@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,6 +21,8 @@ const (
 )
 
 type Model struct {
+	authService auth.Service
+
 	NewUser   bool
 	inputs    []textinput.Model
 	spinner   spinner.Model
@@ -27,9 +30,10 @@ type Model struct {
 	err       error
 	validated []bool
 	loading   bool
+	loggedIn  bool
 }
 
-func InitialModel() Model {
+func NewModel(authService auth.Service) Model {
 	inputs := make([]textinput.Model, 2)
 
 	li := textinput.New()
@@ -50,12 +54,11 @@ func InitialModel() Model {
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return Model{
-		inputs:    inputs,
-		spinner:   s,
-		focused:   login,
-		err:       nil,
-		validated: make([]bool, 2),
-		loading:   false,
+		authService: authService,
+		inputs:      inputs,
+		spinner:     s,
+		focused:     login,
+		validated:   make([]bool, 2),
 	}
 }
 

@@ -1,4 +1,10 @@
-.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-cover test-cover-filtered test-cover-html lint fmt all env
+.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-cover test-cover-filtered test-cover-html lint  fmt all proto-gen
+
+# Build variables
+VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "dev")
+BUILD_DATE = $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS = -X github.com/aifedorov/gophkeeper/internal/client/version.Version=$(VERSION) \
+          -X github.com/aifedorov/gophkeeper/internal/client/version.BuildDate=$(BUILD_DATE)
 
 # Development
 server:
@@ -38,13 +44,13 @@ build-server:
 
 build-client:
 	@mkdir -p dist
-	cd cmd/client && go build -buildvcs=false -o ../../dist/gophkeeper-client main.go
+	cd cmd/client && go build -buildvcs=false -ldflags="$(LDFLAGS)" -o ../../dist/gophkeeper-client main.go
 
 build-client-all:
 	@mkdir -p dist
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -buildvcs=false -ldflags="-s -w" -o dist/gophkeeper-client-linux-arm64 ./cmd/client/main.go
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o dist/gophkeeper-client-darwin-amd64 ./cmd/client/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o dist/gophkeeper-client-windows-amd64.exe ./cmd/client/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -buildvcs=false -ldflags="-s -w $(LDFLAGS)" -o dist/gophkeeper-client-linux-arm64 ./cmd/client/main.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w $(LDFLAGS)" -o dist/gophkeeper-client-darwin-amd64 ./cmd/client/main.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w $(LDFLAGS)" -o dist/gophkeeper-client-windows-amd64.exe ./cmd/client/main.go
 
 # Testing
 test:
@@ -70,3 +76,7 @@ fmt:
 
 # Run all checks
 all: fmt lint test
+
+# Generate
+proto-gen:
+	cd internal/server/api/grpc && buf generate

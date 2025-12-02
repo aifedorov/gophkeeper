@@ -37,10 +37,11 @@ type Claims struct {
 	UserID string
 }
 
-func New(secretKey string, tokenExp time.Duration) Service {
+func NewService(secretKey string, tokenExp time.Duration, logger *zap.Logger) Service {
 	return &service{
 		secretKey: secretKey,
 		tokenExp:  tokenExp,
+		logger:    logger,
 	}
 }
 

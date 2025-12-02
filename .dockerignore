@@ -49,8 +49,8 @@ vendor/
 logs/
 
 # Environment
-.env
-.env.dist
+.env.client
+.env.server
 !.env.example
 
 # Temporary files

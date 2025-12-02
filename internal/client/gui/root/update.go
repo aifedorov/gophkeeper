@@ -1,10 +1,10 @@
-package app
+package root
 
 import (
 	"log"
 
-	"github.com/aifedorov/gophkeeper/internal/client/auth"
-	"github.com/aifedorov/gophkeeper/internal/client/menu"
+	auth2 "github.com/aifedorov/gophkeeper/internal/client/gui/auth"
+	menu2 "github.com/aifedorov/gophkeeper/internal/client/gui/menu"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -34,17 +34,17 @@ func (m Model) updateMenu(msg tea.Msg) (Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	updated, cmd := m.menuModel.Update(msg)
-	m.menuModel = updated.(menu.Model)
+	m.menuModel = updated.(menu2.Model)
 
 	switch msg.(type) {
-	case menu.NavigateToRegisterMsg:
+	case menu2.NavigateToRegisterMsg:
 		m.currentScreen = screenAuth
-		m.authModel = auth.InitialModel()
+		m.authModel = auth2.NewModel(m.services.AuthSrv)
 		m.authModel.NewUser = true
 		return m, cmd
-	case menu.NavigateToLoginMsg:
+	case menu2.NavigateToLoginMsg:
 		m.currentScreen = screenAuth
-		m.authModel = auth.InitialModel()
+		m.authModel = auth2.NewModel(m.services.AuthSrv)
 		m.authModel.NewUser = false
 		return m, cmd
 	}
@@ -57,10 +57,10 @@ func (m Model) updateAuth(msg tea.Msg) (Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	updated, cmd := m.authModel.Update(msg)
-	m.authModel = updated.(auth.Model)
+	m.authModel = updated.(auth2.Model)
 
 	switch msg.(type) {
-	case auth.NavigateToMenuMsg:
+	case auth2.NavigateToMenuMsg:
 		m.currentScreen = screenMenu
 		return m, cmd
 	}

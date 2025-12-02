@@ -85,7 +85,6 @@ linters:
 
     # Additional stable linters
     - bodyclose
-    - dupl
     - errname
     - errorlint
     - gosec

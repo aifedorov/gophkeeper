@@ -1,25 +1,17 @@
 package config
 
 import (
-	"time"
-
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )
 
-const dotEnvFile = ".env.server"
+const dotEnvFile = ".env.client"
 
 type Config struct {
 	// Log level: debug, info, warn, error, fatal.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 	// gRPC server address.
-	GRPCAddr string `env:"GRPC_ADDRESS" envDefault:"localhost:50051"`
-	// Database connection string.
-	StorageDSN string `env:"DATABASE_URI,required,notEmpty"`
-	// JWT secret key.
-	JWTSecretKey string `env:"JWT_SECRET_KEY,required,notEmpty"`
-	// JWT token TTL in seconds.
-	JWTExpiration time.Duration `env:"JWT_EXPIRATION" envDefault:"24h"`
+	ServerAddr string `env:"SERVER_ADDRESS"`
 }
 
 func LoadConfig() (*Config, error) {

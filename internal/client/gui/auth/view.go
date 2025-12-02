@@ -23,6 +23,7 @@ func (m Model) View() string {
 		m.validationError(password) +
 		m.errorState() +
 		m.loadingState() +
+		m.successState() +
 		"\n(ctrl+b to return back)\n",
 	)
 }
@@ -59,4 +60,11 @@ func (m Model) loadingState() string {
 		return fmt.Sprintf("\n%s %s...\n", m.spinner.View(), action)
 	}
 	return ""
+}
+
+func (m Model) successState() string {
+	if !m.loggedIn {
+		return ""
+	}
+	return "\nSuccessfully logged in!\n"
 }
