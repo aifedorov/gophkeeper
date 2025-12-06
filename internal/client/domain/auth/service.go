@@ -49,7 +49,7 @@ func (s *service) Login(ctx context.Context, creds Credentials) error {
 func (s *service) Register(ctx context.Context, creds Credentials) error {
 	userID, token, err := s.client.Register(ctx, creds.Login, creds.Password)
 	if err != nil {
-		return fmt.Errorf("failed to login: %w", err)
+		return fmt.Errorf("failed to register: %w", err)
 	}
 
 	err = s.repo.Save(Session{

@@ -43,5 +43,4 @@ func (c *authClient) Login(ctx context.Context, login, pass string) (userID, tok
 		return "", "", fmt.Errorf("failed to login: %w", err)
 	}
 	return resp.GetUserId(), resp.GetAccessToken(), nil
-
 }

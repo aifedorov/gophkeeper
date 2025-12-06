@@ -27,20 +27,15 @@ type RegisterCommand struct {
 }
 
 func NewCommand(authSrv auth.Service) *RegisterCommand {
+	c := &RegisterCommand{
+		authSrv: authSrv,
+	}
+
 	cmd := &cobra.Command{
 		Use:   "register -l <login> -p <password>",
 		Short: "Register a new user",
 		Long:  `Register a new user with the given login and password.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := loginValidator(creds.login); err != nil {
-				return fmt.Errorf("invalid login: %w", err)
-			}
-			if err := passwordValidator(creds.password); err != nil {
-				return fmt.Errorf("invalid password: %w", err)
-			}
-			fmt.Printf("registering user with login: %s and password: %s\n", creds.login, creds.password)
-			return nil
-		},
+		RunE:  c.run,
 	}
 
 	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "Login")
@@ -49,14 +44,32 @@ func NewCommand(authSrv auth.Service) *RegisterCommand {
 	cmd.MarkFlagRequired("login")
 	cmd.MarkFlagRequired("password")
 
-	return &RegisterCommand{
-		cmd:     cmd,
-		authSrv: authSrv,
-	}
+	c.cmd = cmd
+
+	return c
 }
 
 func (c *RegisterCommand) GetCommand() *cobra.Command {
 	return c.cmd
+}
+
+func (c *RegisterCommand) run(cmd *cobra.Command, args []string) error {
+	if err := loginValidator(creds.login); err != nil {
+		return fmt.Errorf("invalid login: %w", err)
+	}
+	if err := passwordValidator(creds.password); err != nil {
+		return fmt.Errorf("invalid password: %w", err)
+	}
+
+	if err := c.authSrv.Register(cmd.Context(), auth.Credentials{
+		Login:    creds.login,
+		Password: creds.password,
+	}); err != nil {
+		return fmt.Errorf("failed to register: %w", err)
+	}
+
+	fmt.Println("You have been successfully logged in")
+	return nil
 }
 
 func loginValidator(s string) error {

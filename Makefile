@@ -1,4 +1,4 @@
-.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-cover test-cover-filtered test-cover-html lint  fmt all proto-gen
+.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-coverage lint  fmt all proto-gen
 
 # Build variables
 VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "dev")
@@ -56,17 +56,11 @@ build-client-all:
 test:
 	go test -v ./...
 
-test-cover:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-
-test-cover-filtered:
-	@echo "Running tests with filtered coverage (excluding mocks, generated files, views, main)..."
-	@./scripts/coverage.sh
-
-test-cover-html:
-	@echo "Running tests with filtered coverage and generating HTML report..."
-	@./scripts/coverage.sh --html
+test-coverage:
+	@echo "Running tests with coverage (excluding generated files and GUI)..."
+	@go test -coverprofile=coverage.out ./... > /dev/null 2>&1
+	@grep -v -E '(mocks/|\.pb\.go|query\.sql\.go|repository/db/models\.go|repository/db/db\.go|view\.go|main\.go|internal/client/gui/)' coverage.out > coverage.filtered.out || true
+	@go tool cover -func=coverage.filtered.out | grep total | awk '{print "Coverage: " $$3}'
 
 lint:
 	golangci-lint run ./...
