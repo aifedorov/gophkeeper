@@ -3,8 +3,10 @@ package root
 import (
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/commands"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/login"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/register"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/version"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +23,9 @@ func NewCommand(authSrv auth.Service) (*RootCommand, error) {
 		Long:  `GophKeeper is a secure password manager that allows you to store and retrieve your passwords securely.`,
 	}
 
+	versionCmd := version.NewCommand()
+	cmd.AddCommand(versionCmd)
+
 	loginCmd, err := login.NewCommand(authSrv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create login command: %w", err)
@@ -32,6 +37,9 @@ func NewCommand(authSrv auth.Service) (*RootCommand, error) {
 		return nil, fmt.Errorf("failed to create register command: %w", err)
 	}
 	cmd.AddCommand(registerCmd.GetCommand())
+
+	listCmd := commands.NewListCommand()
+	cmd.AddCommand(listCmd)
 
 	return &RootCommand{
 		cmd:     cmd,

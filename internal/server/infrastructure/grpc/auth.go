@@ -27,6 +27,8 @@ type AuthServer struct {
 	jwtSrv  jwt.Service
 }
 
+// NewAuthServer creates a new instance of AuthServer with the provided dependencies.
+// It initializes the gRPC authentication server that handles user registration and login.
 func NewAuthServer(cfg *config.Config, logger *zap.Logger, userSrv userdomain.Service, jwtSrv jwt.Service) *AuthServer {
 	return &AuthServer{
 		cfg:     cfg,
@@ -36,6 +38,10 @@ func NewAuthServer(cfg *config.Config, logger *zap.Logger, userSrv userdomain.Se
 	}
 }
 
+// Register handles user registration requests.
+// It validates credentials, creates a new user account, and returns a JWT access token.
+// Returns an error with gRPC status code AlreadyExists if the login already exists,
+// InvalidArgument if credentials are invalid, or Internal if an unexpected error occurs.
 func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	if err := a.validateCredentials(in.GetLogin(), in.GetPassword()); err != nil {
 		return nil, err
@@ -67,6 +73,10 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 	}, nil
 }
 
+// Login handles user authentication requests.
+// It validates credentials, authenticates the user, and returns a JWT access token.
+// Returns an error with gRPC status code Unauthenticated if credentials are invalid,
+// InvalidArgument if credentials are empty, or Internal if an unexpected error occurs.
 func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginResponse, error) {
 	if err := a.validateCredentials(in.GetLogin(), in.GetPassword()); err != nil {
 		return nil, err

@@ -7,93 +7,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCredentials_Validate(t *testing.T) {
+func TestValidateLogin(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		credentials Credentials
-		wantErr     error
+		name    string
+		login   string
+		wantErr bool
 	}{
 		{
-			name: "valid credentials",
-			credentials: Credentials{
-				Login:    "testuser",
-				Password: "testpass",
-			},
-			wantErr: nil,
+			name:    "valid login",
+			login:   "testuser",
+			wantErr: false,
 		},
 		{
-			name: "valid minimum length",
-			credentials: Credentials{
-				Login:    "abc",
-				Password: "123",
-			},
-			wantErr: nil,
+			name:    "valid minimum length",
+			login:   "abc",
+			wantErr: false,
 		},
 		{
-			name: "valid maximum length",
-			credentials: Credentials{
-				Login:    "abcdefghij1234567890abcde", // 25 chars
-				Password: "1234567890123456",          // 16 chars
-			},
-			wantErr: nil,
+			name:    "valid maximum length",
+			login:   "abcdefghij1234567890abcde", // 25 chars
+			wantErr: false,
 		},
 		{
-			name: "login too short",
-			credentials: Credentials{
-				Login:    "ab",
-				Password: "testpass",
-			},
-			wantErr: ErrInvalidLogin,
+			name:    "login too short",
+			login:   "ab",
+			wantErr: true,
 		},
 		{
-			name: "login too long",
-			credentials: Credentials{
-				Login:    "abcdefghij1234567890abcdef", // 26 chars
-				Password: "testpass",
-			},
-			wantErr: ErrInvalidLogin,
+			name:    "login too long",
+			login:   "abcdefghij1234567890abcdef", // 26 chars
+			wantErr: true,
 		},
 		{
-			name: "login empty",
-			credentials: Credentials{
-				Login:    "",
-				Password: "testpass",
-			},
-			wantErr: ErrInvalidLogin,
-		},
-		{
-			name: "password too short",
-			credentials: Credentials{
-				Login:    "testuser",
-				Password: "ab",
-			},
-			wantErr: ErrInvalidPassword,
-		},
-		{
-			name: "password too long",
-			credentials: Credentials{
-				Login:    "testuser",
-				Password: "12345678901234567", // 17 chars
-			},
-			wantErr: ErrInvalidPassword,
-		},
-		{
-			name: "password empty",
-			credentials: Credentials{
-				Login:    "testuser",
-				Password: "",
-			},
-			wantErr: ErrInvalidPassword,
-		},
-		{
-			name: "both empty",
-			credentials: Credentials{
-				Login:    "",
-				Password: "",
-			},
-			wantErr: ErrInvalidLogin, // login checked first
+			name:    "login empty",
+			login:   "",
+			wantErr: true,
 		},
 	}
 
@@ -101,11 +51,70 @@ func TestCredentials_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tt.credentials.Validate()
+			err := ValidateLogin(tt.login)
 
-			if tt.wantErr != nil {
+			if tt.wantErr {
 				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidatePassword(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		password string
+		wantErr  bool
+	}{
+		{
+			name:     "valid password",
+			password: "testpass",
+			wantErr:  false,
+		},
+		{
+			name:     "valid minimum length",
+			password: "123456",
+			wantErr:  false,
+		},
+		{
+			name:     "valid maximum length",
+			password: "1234567890123456", // 16 chars
+			wantErr:  false,
+		},
+		{
+			name:     "password too short - less than 6",
+			password: "ab",
+			wantErr:  true,
+		},
+		{
+			name:     "password too short - exactly 5",
+			password: "12345",
+			wantErr:  true,
+		},
+		{
+			name:     "password too long",
+			password: "12345678901234567", // 17 chars
+			wantErr:  true,
+		},
+		{
+			name:     "password empty",
+			password: "",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidatePassword(tt.password)
+
+			if tt.wantErr {
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}

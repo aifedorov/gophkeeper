@@ -252,3 +252,42 @@ func TestLogin(t *testing.T) {
 		})
 	}
 }
+
+func TestLogin_InvalidPassword(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns error for invalid password", func(t *testing.T) {
+		t.Parallel()
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mocks.NewMockRepository(ctrl)
+		expectedID := uuid.New()
+
+		// Generate hash for correct password
+		correctPassword := "correctpassword"
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(correctPassword), bcrypt.DefaultCost)
+
+		expectedUser := &repository2.User{
+			ID:           expectedID,
+			Login:        testLogin,
+			PasswordHash: string(hashedPassword),
+		}
+
+		mockRepo.EXPECT().
+			GetUser(testLogin).
+			Times(1).
+			Return(expectedUser, nil)
+
+		logger := zap.NewNop()
+		service := NewService(mockRepo, logger)
+
+		// Try to login with wrong password
+		user, err := service.Login(testLogin, "wrongpassword")
+
+		require.Error(t, err)
+		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "failed to compare hash and password")
+	})
+}

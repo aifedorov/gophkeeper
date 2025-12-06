@@ -3,7 +3,6 @@ package register
 import (
 	"fmt"
 
-	"github.com/aifedorov/gophkeeper/internal/client/cli/validator"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	"github.com/spf13/cobra"
 )
@@ -52,10 +51,10 @@ func (c *RegisterCommand) GetCommand() *cobra.Command {
 }
 
 func (c *RegisterCommand) run(cmd *cobra.Command, args []string) error {
-	if err := validator.ValidateLogin(creds.login); err != nil {
+	if err := auth.ValidateLogin(creds.login); err != nil {
 		return fmt.Errorf("invalid login: %w", err)
 	}
-	if err := validator.ValidatePassword(creds.password); err != nil {
+	if err := auth.ValidatePassword(creds.password); err != nil {
 		return fmt.Errorf("invalid password: %w", err)
 	}
 

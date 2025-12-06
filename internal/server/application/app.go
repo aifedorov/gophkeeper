@@ -9,7 +9,7 @@ import (
 	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
-	"github.com/aifedorov/gophkeeper/pkg/posgres"
+	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -19,6 +19,8 @@ type App struct {
 	logger *zap.Logger
 }
 
+// NewApp creates a new instance of the application with the provided configuration and logger.
+// It initializes the main application structure that orchestrates the server components.
 func NewApp(cfg *config.Config, logger *zap.Logger) *App {
 	return &App{
 		cfg:    cfg,
@@ -26,6 +28,10 @@ func NewApp(cfg *config.Config, logger *zap.Logger) *App {
 	}
 }
 
+// Run initializes and starts the server application.
+// It establishes database connection, initializes services (user service, JWT service),
+// creates the gRPC server with authentication handlers, and starts listening for requests.
+// Returns an error if any initialization step fails.
 func (a *App) Run() error {
 	ctx := context.Background()
 	db := posgres.NewPosgresConnection(ctx, a.cfg.StorageDSN)

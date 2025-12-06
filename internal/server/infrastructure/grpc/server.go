@@ -13,7 +13,10 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+// GRPCServer defines the interface for running a gRPC server.
 type GRPCServer interface {
+	// Run starts the gRPC server and blocks until the server stops.
+	// It sets up TLS credentials, registers services, and begins listening on the configured address.
 	Run(ctx context.Context) error
 }
 
@@ -24,6 +27,8 @@ type grpcServer struct {
 	authServer *AuthServer
 }
 
+// NewGRRPCServer creates a new instance of GRPCServer with the provided dependencies.
+// It initializes the gRPC server that will handle authentication service requests.
 func NewGRRPCServer(cfg *config.Config, logger *zap.Logger, grpc *grpc.Server, authServer *AuthServer) GRPCServer {
 	return &grpcServer{
 		cfg:        cfg,
@@ -33,6 +38,9 @@ func NewGRRPCServer(cfg *config.Config, logger *zap.Logger, grpc *grpc.Server, a
 	}
 }
 
+// Run starts the gRPC server and blocks until the server stops.
+// It loads TLS credentials from certificate files, registers the AuthService,
+// enables gRPC reflection, and begins listening on the configured address.
 func (s *grpcServer) Run(ctx context.Context) error {
 	s.logger.Info("starting grpc server", zap.String("addr", s.cfg.GRPCAddr))
 

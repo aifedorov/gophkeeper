@@ -27,7 +27,7 @@ func (p *PostgresConnection) Open() error {
 	ctx, cancel := context.WithTimeout(p.ctx, defaultDBTimeout)
 	defer cancel()
 
-	dbpool, err := pgxpool.New(context.Background(), p.dsn)
+	dbpool, err := pgxpool.New(ctx, p.dsn)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,9 @@ func (p *PostgresConnection) Open() error {
 }
 
 func (p *PostgresConnection) Close() {
-	p.dbPool.Close()
+	if p.dbPool != nil {
+		p.dbPool.Close()
+	}
 }
 
 func (p *PostgresConnection) DBPool() *pgxpool.Pool {

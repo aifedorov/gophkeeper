@@ -4,27 +4,47 @@ package auth.v1;
 
 option go_package = "github.com/aifedorov/gen/auth/v1";
 
+// AuthService provides authentication operations for user registration and login.
 service AuthService {
+  // Register creates a new user account with the provided credentials.
+  // Returns user ID and JWT access token upon successful registration.
+  // Returns AlreadyExists error if the login is already taken.
   rpc Register(RegisterRequest) returns (RegisterResponse);
+  
+  // Login authenticates an existing user with the provided credentials.
+  // Returns user ID and JWT access token upon successful authentication.
+  // Returns Unauthenticated error if credentials are invalid.
   rpc Login(LoginRequest) returns (LoginResponse);
 }
 
+// RegisterRequest contains the credentials for user registration.
 message RegisterRequest {
+  // login is the unique username for the new account.
   string login = 1;
+  // password is the plain text password that will be hashed before storage.
   string password = 2;
 }
 
+// RegisterResponse contains the result of successful user registration.
 message RegisterResponse {
+  // user_id is the unique identifier assigned to the newly created user.
   string user_id = 1;
+  // access_token is the JWT token that can be used for authenticated requests.
   string access_token = 2;
 }
 
+// LoginRequest contains the credentials for user authentication.
 message LoginRequest {
+  // login is the username of the existing account.
   string login = 1;
+  // password is the plain text password to verify against the stored hash.
   string password = 2;
 }
 
+// LoginResponse contains the result of successful user authentication.
 message LoginResponse {
+  // user_id is the unique identifier of the authenticated user.
   string user_id = 1;
+  // access_token is the JWT token that can be used for authenticated requests.
   string access_token = 2;
 }

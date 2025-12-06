@@ -21,8 +21,14 @@ var (
 	ErrInvalidSigningMethod = errors.New("unexpected signing method")
 )
 
+// Service defines the interface for JWT token operations.
 type Service interface {
+	// IssueToken creates a new JWT token for the given user ID.
+	// The token is signed with HS256 algorithm and includes expiration time.
 	IssueToken(userID string) (string, error)
+	// ValidateToken validates a JWT token string and extracts the user ID.
+	// Returns ErrEmptyToken if the token is empty, ErrInvalidToken if validation fails,
+	// or ErrInvalidSigningMethod if the token uses an unexpected signing method.
 	ValidateToken(tokenString string) (string, error)
 }
 
@@ -37,6 +43,9 @@ type Claims struct {
 	UserID string
 }
 
+// NewService creates a new instance of the JWT service with the provided secret key,
+// token expiration duration, and logger. It initializes the service that handles
+// JWT token creation and validation.
 func NewService(secretKey string, tokenExp time.Duration, logger *zap.Logger) Service {
 	return &service{
 		secretKey: secretKey,

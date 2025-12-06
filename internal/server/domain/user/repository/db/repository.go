@@ -16,7 +16,7 @@ type Repository interface {
 
 type repository struct {
 	ctx     context.Context
-	queries *Queries
+	queries Querier
 	logger  *zap.Logger
 }
 
@@ -24,6 +24,14 @@ func NewRepository(ctx context.Context, db DBTX, logger *zap.Logger) Repository 
 	return &repository{
 		ctx:     ctx,
 		queries: New(db),
+		logger:  logger,
+	}
+}
+
+func NewRepositoryWithQuerier(ctx context.Context, querier Querier, logger *zap.Logger) Repository {
+	return &repository{
+		ctx:     ctx,
+		queries: querier,
 		logger:  logger,
 	}
 }
