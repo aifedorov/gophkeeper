@@ -1,4 +1,4 @@
-package register
+package login
 
 import (
 	"fmt"
@@ -15,20 +15,20 @@ type credentials struct {
 
 var creds = &credentials{}
 
-type RegisterCommand struct {
+type LoginCommand struct {
 	cmd     *cobra.Command
 	authSrv auth.Service
 }
 
-func NewCommand(authSrv auth.Service) *RegisterCommand {
-	c := &RegisterCommand{
+func NewCommand(authSrv auth.Service) *LoginCommand {
+	c := &LoginCommand{
 		authSrv: authSrv,
 	}
 
 	cmd := &cobra.Command{
-		Use:   "register -l <login> -p <password>",
-		Short: "Register a new user",
-		Long:  `Register a new user with the given login and password.`,
+		Use:   "login -l <login> -p <password>",
+		Short: "Login to the system",
+		Long:  `Login to the system with the given login and password.`,
 		RunE:  c.run,
 	}
 
@@ -43,11 +43,11 @@ func NewCommand(authSrv auth.Service) *RegisterCommand {
 	return c
 }
 
-func (c *RegisterCommand) GetCommand() *cobra.Command {
+func (c *LoginCommand) GetCommand() *cobra.Command {
 	return c.cmd
 }
 
-func (c *RegisterCommand) run(cmd *cobra.Command, args []string) error {
+func (c *LoginCommand) run(cmd *cobra.Command, args []string) error {
 	if err := validator.ValidateLogin(creds.login); err != nil {
 		return fmt.Errorf("invalid login: %w", err)
 	}
@@ -55,11 +55,11 @@ func (c *RegisterCommand) run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid password: %w", err)
 	}
 
-	if err := c.authSrv.Register(cmd.Context(), auth.Credentials{
+	if err := c.authSrv.Login(cmd.Context(), auth.Credentials{
 		Login:    creds.login,
 		Password: creds.password,
 	}); err != nil {
-		return fmt.Errorf("failed to register: %w", err)
+		return fmt.Errorf("failed to login: %w", err)
 	}
 
 	fmt.Println("You have been successfully logged in")

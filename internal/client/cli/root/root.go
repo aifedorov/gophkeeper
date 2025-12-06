@@ -1,26 +1,34 @@
 package root
 
 import (
+	"github.com/aifedorov/gophkeeper/internal/client/cli/login"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/register"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	"github.com/spf13/cobra"
 )
 
 type RootCommand struct {
-	cmd *cobra.Command
+	cmd     *cobra.Command
+	authSrv auth.Service
 }
 
-func NewCommand() *RootCommand {
+func NewCommand(authSrv auth.Service) *RootCommand {
 	cmd := &cobra.Command{
 		Use:   "gophkeeper",
 		Short: "GophKeeper is a secure password manager",
 		Long:  `GophKeeper is a secure password manager that allows you to store and retrieve your passwords securely.`,
 	}
-	return &RootCommand{
-		cmd: cmd,
-	}
-}
 
-func (r *RootCommand) AddCommand(cmd *cobra.Command) {
-	r.cmd.AddCommand(cmd)
+	loginCmd := login.NewCommand(authSrv)
+	cmd.AddCommand(loginCmd.GetCommand())
+
+	registerCmd := register.NewCommand(authSrv)
+	cmd.AddCommand(registerCmd.GetCommand())
+
+	return &RootCommand{
+		cmd:     cmd,
+		authSrv: authSrv,
+	}
 }
 
 func (r *RootCommand) Execute() error {

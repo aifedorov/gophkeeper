@@ -11,7 +11,7 @@ import (
 
 type Repository interface {
 	CreateUser(login, passHash string) (*User, error)
-	GetUser(login, passHash string) (*User, error)
+	GetUser(login string) (*User, error)
 }
 
 type repository struct {
@@ -42,11 +42,8 @@ func (s *repository) CreateUser(login, passHash string) (*User, error) {
 	return &user, err
 }
 
-func (s *repository) GetUser(login, passHash string) (*User, error) {
-	user, err := s.queries.GetUser(s.ctx, GetUserParams{
-		Login:        login,
-		PasswordHash: passHash,
-	})
+func (s *repository) GetUser(login string) (*User, error) {
+	user, err := s.queries.GetUser(s.ctx, login)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrUserNotFound
 	}

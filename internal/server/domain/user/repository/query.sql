@@ -1,8 +1,7 @@
 -- name: GetUser :one
 SELECT *
 FROM users
-WHERE login = $1
-  AND password_hash = $2;
+WHERE login = $1;
 
 -- name: CreateUser :one
 INSERT INTO users (login, password_hash)

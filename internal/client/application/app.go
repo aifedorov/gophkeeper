@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aifedorov/gophkeeper/internal/client/cli/register"
 	cliroot "github.com/aifedorov/gophkeeper/internal/client/cli/root"
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/container"
@@ -20,15 +19,11 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config, logger *zap.Logger, services *container.Services) *App {
-	rootCmd := cliroot.NewCommand()
-	registerCmd := register.NewCommand(services.AuthSrv)
-	rootCmd.AddCommand(registerCmd.GetCommand())
-
 	return &App{
 		services: services,
 		cfg:      cfg,
 		logger:   logger,
-		rootCmd:  rootCmd,
+		rootCmd:  cliroot.NewCommand(services.AuthSrv),
 	}
 }
 

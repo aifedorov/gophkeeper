@@ -35,16 +35,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 const getUser = `-- name: GetUser :one
 SELECT id, login, password_hash, created_at
 FROM users
-WHERE login = $1 AND password_hash = $2
+WHERE login = $1
 `
 
-type GetUserParams struct {
-	Login        string
-	PasswordHash string
-}
-
-func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, getUser, arg.Login, arg.PasswordHash)
+func (q *Queries) GetUser(ctx context.Context, login string) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, login)
 	var i User
 	err := row.Scan(
 		&i.ID,
