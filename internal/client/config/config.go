@@ -11,7 +11,7 @@ type Config struct {
 	// Log level: debug, info, warn, error, fatal.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 	// gRPC server address.
-	ServerAddr string `env:"SERVER_ADDRESS"`
+	ServerAddr string `env:"SERVER_ADDRESS,required,notEmpty"`
 }
 
 func LoadConfig() (*Config, error) {

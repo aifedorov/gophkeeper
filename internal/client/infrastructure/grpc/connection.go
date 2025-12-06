@@ -66,6 +66,7 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 	config := &tls.Config{
 		RootCAs:    certPool,
 		ServerName: "localhost",
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return credentials.NewTLS(config), nil

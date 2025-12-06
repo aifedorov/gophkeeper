@@ -49,7 +49,11 @@ func main() {
 		}
 	}()
 
-	app := application.NewApp(cfg, log, services)
+	app, err := application.NewApp(cfg, log, services)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to create application: %v\n", err)
+		os.Exit(1)
+	}
 	if err := app.RunCLI(ctx); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to run application: %v\n", err)
 		os.Exit(1)

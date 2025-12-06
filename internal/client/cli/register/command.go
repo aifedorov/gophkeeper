@@ -20,7 +20,7 @@ type RegisterCommand struct {
 	authSrv auth.Service
 }
 
-func NewCommand(authSrv auth.Service) *RegisterCommand {
+func NewCommand(authSrv auth.Service) (*RegisterCommand, error) {
 	c := &RegisterCommand{
 		authSrv: authSrv,
 	}
@@ -35,12 +35,16 @@ func NewCommand(authSrv auth.Service) *RegisterCommand {
 	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "Login")
 	cmd.Flags().StringVarP(&creds.password, "password", "p", "", "Password")
 
-	cmd.MarkFlagRequired("login")
-	cmd.MarkFlagRequired("password")
+	if err := cmd.MarkFlagRequired("login"); err != nil {
+		return nil, fmt.Errorf("failed to mark login flag as required: %w", err)
+	}
+	if err := cmd.MarkFlagRequired("password"); err != nil {
+		return nil, fmt.Errorf("failed to mark password flag as required: %w", err)
+	}
 
 	c.cmd = cmd
 
-	return c
+	return c, nil
 }
 
 func (c *RegisterCommand) GetCommand() *cobra.Command {

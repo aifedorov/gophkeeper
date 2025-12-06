@@ -11,11 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	testLogin        = "testuser"
-	testPass         = "hashedpassword"
+	testPass         = "testpassword"
 	existingLogin    = "existinguser"
 	nonexistentLogin = "nonexistentuser"
 )
@@ -37,15 +38,19 @@ func TestRegister(t *testing.T) {
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
+				// Password hash is generated dynamically by bcrypt
 				expectedUser := &repository2.User{
 					ID:           expectedID,
 					Login:        testLogin,
-					PasswordHash: testPass,
+					PasswordHash: "",
 				}
 				m.EXPECT().
-					CreateUser(testLogin, testPass).
+					CreateUser(testLogin, gomock.Any()).
 					Times(1).
-					Return(expectedUser, nil)
+					DoAndReturn(func(login, passHash string) (*repository2.User, error) {
+						expectedUser.PasswordHash = passHash
+						return expectedUser, nil
+					})
 			},
 			validateUser: func(t *testing.T, user *User, expectedID uuid.UUID) {
 				require.NotNil(t, user)
@@ -59,7 +64,7 @@ func TestRegister(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser(existingLogin, testPass).
+					CreateUser(existingLogin, gomock.Any()).
 					Times(1).
 					Return(nil, repository2.ErrLoginExists)
 			},
@@ -71,7 +76,7 @@ func TestRegister(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser(testLogin, testPass).
+					CreateUser(testLogin, gomock.Any()).
 					Times(1).
 					Return(nil, errors.New("database connection failed"))
 			},
@@ -83,7 +88,7 @@ func TestRegister(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser("", testPass).
+					CreateUser("", gomock.Any()).
 					Times(1).
 					Return(nil, errors.New("invalid login"))
 			},
@@ -95,7 +100,7 @@ func TestRegister(t *testing.T) {
 			passHash: "",
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser(testLogin, "").
+					CreateUser(testLogin, gomock.Any()).
 					Times(1).
 					Return(nil, errors.New("invalid password"))
 			},
@@ -150,13 +155,15 @@ func TestLogin(t *testing.T) {
 			login:    testLogin,
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
+				// Generate a bcrypt hash for the test password
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
 				expectedUser := &repository2.User{
 					ID:           expectedID,
 					Login:        testLogin,
-					PasswordHash: testPass,
+					PasswordHash: string(hashedPassword),
 				}
 				m.EXPECT().
-					GetUser(testLogin, testPass).
+					GetUser(testLogin).
 					Times(1).
 					Return(expectedUser, nil)
 			},
@@ -172,7 +179,7 @@ func TestLogin(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser(nonexistentLogin, testPass).
+					GetUser(nonexistentLogin).
 					Times(1).
 					Return(nil, repository2.ErrUserNotFound)
 			},
@@ -184,7 +191,7 @@ func TestLogin(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser(testLogin, testPass).
+					GetUser(testLogin).
 					Times(1).
 					Return(nil, errors.New("database connection failed"))
 			},
@@ -196,7 +203,7 @@ func TestLogin(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser("", testPass).
+					GetUser("").
 					Times(1).
 					Return(nil, repository2.ErrUserNotFound)
 			},
@@ -208,7 +215,7 @@ func TestLogin(t *testing.T) {
 			passHash: "",
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser(testLogin, "").
+					GetUser(testLogin).
 					Times(1).
 					Return(nil, repository2.ErrUserNotFound)
 			},

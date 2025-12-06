@@ -13,7 +13,7 @@ type Config struct {
 	// Log level: debug, info, warn, error, fatal.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 	// gRPC server address.
-	GRPCAddr string `env:"GRPC_ADDRESS" envDefault:"localhost:50051"`
+	GRPCAddr string `env:"GRPC_ADDRESS,required,notEmpty"`
 	// Database connection string.
 	StorageDSN string `env:"DATABASE_URI,required,notEmpty"`
 	// JWT secret key.

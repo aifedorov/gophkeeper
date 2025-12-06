@@ -57,9 +57,9 @@ test:
 	go test -v ./...
 
 test-coverage:
-	@echo "Running tests with coverage (excluding generated files and GUI)..."
+	@echo "Running tests with coverage (only domain business logic)..."
 	@go test -coverprofile=coverage.out ./... > /dev/null 2>&1
-	@grep -v -E '(mocks/|\.pb\.go|query\.sql\.go|repository/db/models\.go|repository/db/db\.go|view\.go|main\.go|internal/client/gui/)' coverage.out > coverage.filtered.out || true
+	@grep -v -E '(mocks/|\.pb\.go|query\.sql\.go|repository/db/models\.go|repository/db/db\.go|view\.go|main\.go|internal/client/cli/|internal/client/application/|internal/client/container/|internal/client/gui/|internal/client/version/|internal/server/api/|internal/server/application/|internal/server/config/|internal/server/infrastructure/|pkg/logger/|pkg/posgres/|config\.go)' coverage.out > coverage.filtered.out || true
 	@go tool cover -func=coverage.filtered.out | grep total | awk '{print "Coverage: " $$3}'
 
 lint:

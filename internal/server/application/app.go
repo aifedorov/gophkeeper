@@ -6,8 +6,8 @@ import (
 
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/user"
-	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
-	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
+	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/pkg/posgres"
 	"go.uber.org/zap"
