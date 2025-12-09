@@ -41,7 +41,7 @@ func (a *App) Run() error {
 	}
 	defer db.Close()
 
-	userRepo := repository.NewRepository(ctx, db.DBPool(), a.logger)
+	userRepo := repository.NewRepository(db.DBPool(), a.logger)
 	userSrv := user.NewService(userRepo, a.logger)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 

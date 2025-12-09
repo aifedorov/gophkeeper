@@ -6,8 +6,8 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/cli/commands"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/login"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/register"
-	"github.com/aifedorov/gophkeeper/internal/client/cli/version"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	clientversion "github.com/aifedorov/gophkeeper/internal/client/version"
 	"github.com/spf13/cobra"
 )
 
@@ -18,13 +18,12 @@ type RootCommand struct {
 
 func NewCommand(authSrv auth.Service) (*RootCommand, error) {
 	cmd := &cobra.Command{
-		Use:   "gophkeeper",
-		Short: "GophKeeper is a secure password manager",
-		Long:  `GophKeeper is a secure password manager that allows you to store and retrieve your passwords securely.`,
+		Use:     "gophkeeper",
+		Short:   "GophKeeper is a secure password manager",
+		Long:    `GophKeeper is a secure password manager that allows you to store and retrieve your passwords securely.`,
+		Version: clientversion.Short(),
 	}
-
-	versionCmd := version.NewCommand()
-	cmd.AddCommand(versionCmd)
+	cmd.SetVersionTemplate(clientversion.Info() + "\n")
 
 	loginCmd, err := login.NewCommand(authSrv)
 	if err != nil {

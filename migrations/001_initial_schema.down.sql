@@ -1,2 +1,1 @@
-DROP INDEX IF EXISTS users_login;
 DROP TABLE IF EXISTS users;

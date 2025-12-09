@@ -1,10 +1,12 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/pkg/validator"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,10 +15,10 @@ import (
 type Service interface {
 	// Register creates a new user account with the provided login and password.
 	// The password is hashed before storage. Returns ErrLoginExists if the login is already taken.
-	Register(login, password string) (*User, error)
+	Register(ctx context.Context, login, password string) (*User, error)
 	// Login authenticates a user with the provided credentials.
 	// Returns ErrUserNotFound if the user doesn't exist or if the password is incorrect.
-	Login(login, password string) (*User, error)
+	Login(ctx context.Context, login, password string) (*User, error)
 }
 
 type service struct {
@@ -33,13 +35,20 @@ func NewService(repo repository.Repository, logger *zap.Logger) Service {
 	}
 }
 
-func (s *service) Register(login, password string) (*User, error) {
+func (s *service) Register(ctx context.Context, login, password string) (*User, error) {
+	if err := validator.ValidateLogin(login); err != nil {
+		return nil, fmt.Errorf("invalid login: %w", err)
+	}
+	if err := validator.ValidatePassword(password); err != nil {
+		return nil, fmt.Errorf("invalid password: %w", err)
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	user, err := s.repo.CreateUser(login, string(hashedPassword))
+	user, err := s.repo.CreateUser(ctx, login, string(hashedPassword))
 	if errors.Is(err, repository.ErrLoginExists) {
 		return nil, ErrLoginExists
 	}
@@ -49,8 +58,15 @@ func (s *service) Register(login, password string) (*User, error) {
 	return toDomainUser(user), nil
 }
 
-func (s *service) Login(login, password string) (*User, error) {
-	user, err := s.repo.GetUser(login)
+func (s *service) Login(ctx context.Context, login, password string) (*User, error) {
+	if err := validator.ValidateLogin(login); err != nil {
+		return nil, fmt.Errorf("invalid login: %w", err)
+	}
+	if err := validator.ValidatePassword(password); err != nil {
+		return nil, fmt.Errorf("invalid password: %w", err)
+	}
+
+	user, err := s.repo.GetUser(ctx, login)
 	if errors.Is(err, repository.ErrUserNotFound) {
 		return nil, ErrUserNotFound
 	}

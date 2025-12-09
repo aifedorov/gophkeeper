@@ -43,13 +43,9 @@ func NewAuthServer(cfg *config.Config, logger *zap.Logger, userSrv userdomain.Se
 // Returns an error with gRPC status code AlreadyExists if the login already exists,
 // InvalidArgument if credentials are invalid, or Internal if an unexpected error occurs.
 func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	if err := a.validateCredentials(in.GetLogin(), in.GetPassword()); err != nil {
-		return nil, err
-	}
-
 	a.logger.Debug("register user", zap.String("login", in.GetLogin()))
 
-	user, err := a.userSrv.Register(in.GetLogin(), in.GetPassword())
+	user, err := a.userSrv.Register(ctx, in.GetLogin(), in.GetPassword())
 	if errors.Is(err, userdomain.ErrLoginExists) {
 		a.logger.Info("registration failed", zap.String("reason", errMsgLoginExists))
 		return nil, status.Error(codes.AlreadyExists, errMsgLoginExists)
@@ -78,12 +74,8 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 // Returns an error with gRPC status code Unauthenticated if credentials are invalid,
 // InvalidArgument if credentials are empty, or Internal if an unexpected error occurs.
 func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginResponse, error) {
-	if err := a.validateCredentials(in.GetLogin(), in.GetPassword()); err != nil {
-		return nil, err
-	}
-
 	a.logger.Debug("login user", zap.String("login", in.GetLogin()))
-	user, err := a.userSrv.Login(in.GetLogin(), in.GetPassword())
+	user, err := a.userSrv.Login(ctx, in.GetLogin(), in.GetPassword())
 	if errors.Is(err, userdomain.ErrUserNotFound) {
 		a.logger.Info("login failed", zap.String("reason", errMsgInvalidCredentials))
 		return nil, status.Error(codes.Unauthenticated, errMsgInvalidCredentials)
@@ -105,15 +97,6 @@ func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 		UserId:      &userID,
 		AccessToken: &token,
 	}, nil
-}
-
-func (a *AuthServer) validateCredentials(login, password string) error {
-	a.logger.Debug("validating credentials", zap.String("login", login))
-	if login == "" || password == "" {
-		a.logger.Info("invalid credentials", zap.String("reason", "empty login or password"))
-		return status.Error(codes.InvalidArgument, errMsgInvalidCredentials)
-	}
-	return nil
 }
 
 func (a *AuthServer) issueTokenAndLog(userID, operation string) (string, error) {

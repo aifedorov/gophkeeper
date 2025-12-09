@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
@@ -41,31 +42,31 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // CreateUser mocks base method.
-func (m *MockRepository) CreateUser(login, passHash string) (*repository.User, error) {
+func (m *MockRepository) CreateUser(ctx context.Context, login, passHash string) (*repository.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", login, passHash)
+	ret := m.ctrl.Call(m, "CreateUser", ctx, login, passHash)
 	ret0, _ := ret[0].(*repository.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateUser indicates an expected call of CreateUser.
-func (mr *MockRepositoryMockRecorder) CreateUser(login, passHash any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateUser(ctx, login, passHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockRepository)(nil).CreateUser), login, passHash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockRepository)(nil).CreateUser), ctx, login, passHash)
 }
 
 // GetUser mocks base method.
-func (m *MockRepository) GetUser(login string) (*repository.User, error) {
+func (m *MockRepository) GetUser(ctx context.Context, login string) (*repository.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUser", login)
+	ret := m.ctrl.Call(m, "GetUser", ctx, login)
 	ret0, _ := ret[0].(*repository.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUser indicates an expected call of GetUser.
-func (mr *MockRepositoryMockRecorder) GetUser(login any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetUser(ctx, login any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockRepository)(nil).GetUser), login)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockRepository)(nil).GetUser), ctx, login)
 }

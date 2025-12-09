@@ -22,3 +22,8 @@ func Info() string {
 		runtime.GOARCH,
 	)
 }
+
+// Short returns short version string for --version flag.
+func Short() string {
+	return Version
+}

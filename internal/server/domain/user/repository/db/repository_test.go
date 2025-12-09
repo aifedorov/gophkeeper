@@ -23,13 +23,12 @@ func TestNewRepository(t *testing.T) {
 	t.Run("creates repository", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
 		logger := zap.NewNop()
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockQuerier := NewMockQuerier(ctrl)
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
 
 		require.NotNil(t, repo)
 	})
@@ -65,8 +64,8 @@ func TestRepository_CreateUser(t *testing.T) {
 			}).
 			Return(expectedUser, nil)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.CreateUser(login, passwordHash)
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.CreateUser(ctx, login, passwordHash)
 
 		require.NoError(t, err)
 		require.NotNil(t, user)
@@ -95,8 +94,8 @@ func TestRepository_CreateUser(t *testing.T) {
 			}).
 			Return(User{}, pgErr)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.CreateUser("existinguser", "password")
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.CreateUser(ctx, "existinguser", "password")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrLoginExists)
@@ -121,8 +120,8 @@ func TestRepository_CreateUser(t *testing.T) {
 			}).
 			Return(User{}, dbErr)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.CreateUser("testuser", "password")
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.CreateUser(ctx, "testuser", "password")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create auth.proto")
@@ -157,8 +156,8 @@ func TestRepository_GetUser(t *testing.T) {
 			GetUser(ctx, login).
 			Return(expectedUser, nil)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.GetUser(login)
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.GetUser(ctx, login)
 
 		require.NoError(t, err)
 		require.NotNil(t, user)
@@ -180,8 +179,8 @@ func TestRepository_GetUser(t *testing.T) {
 			GetUser(ctx, "nonexistent").
 			Return(User{}, sql.ErrNoRows)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.GetUser("nonexistent")
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.GetUser(ctx, "nonexistent")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrUserNotFound)
@@ -203,8 +202,8 @@ func TestRepository_GetUser(t *testing.T) {
 			GetUser(ctx, "testuser").
 			Return(User{}, dbErr)
 
-		repo := NewRepositoryWithQuerier(ctx, mockQuerier, logger)
-		user, err := repo.GetUser("testuser")
+		repo := NewRepositoryWithQuerier(mockQuerier, logger)
+		user, err := repo.GetUser(ctx, "testuser")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to get auth.proto")

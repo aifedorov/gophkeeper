@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -45,9 +46,9 @@ func TestRegister(t *testing.T) {
 					PasswordHash: "",
 				}
 				m.EXPECT().
-					CreateUser(testLogin, gomock.Any()).
+					CreateUser(gomock.Any(), testLogin, gomock.Any()).
 					Times(1).
-					DoAndReturn(func(login, passHash string) (*repository2.User, error) {
+					DoAndReturn(func(ctx context.Context, login, passHash string) (*repository2.User, error) {
 						expectedUser.PasswordHash = passHash
 						return expectedUser, nil
 					})
@@ -64,7 +65,7 @@ func TestRegister(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser(existingLogin, gomock.Any()).
+					CreateUser(gomock.Any(), existingLogin, gomock.Any()).
 					Times(1).
 					Return(nil, repository2.ErrLoginExists)
 			},
@@ -76,7 +77,7 @@ func TestRegister(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					CreateUser(testLogin, gomock.Any()).
+					CreateUser(gomock.Any(), testLogin, gomock.Any()).
 					Times(1).
 					Return(nil, errors.New("database connection failed"))
 			},
@@ -87,10 +88,7 @@ func TestRegister(t *testing.T) {
 			login:    "",
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
-				m.EXPECT().
-					CreateUser("", gomock.Any()).
-					Times(1).
-					Return(nil, errors.New("invalid login"))
+				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid login"),
 		},
@@ -99,10 +97,7 @@ func TestRegister(t *testing.T) {
 			login:    testLogin,
 			passHash: "",
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
-				m.EXPECT().
-					CreateUser(testLogin, gomock.Any()).
-					Times(1).
-					Return(nil, errors.New("invalid password"))
+				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid password"),
 		},
@@ -122,7 +117,8 @@ func TestRegister(t *testing.T) {
 			logger := zap.NewNop()
 			service := NewService(mockRepo, logger)
 
-			user, err := service.Register(tt.login, tt.passHash)
+			ctx := context.Background()
+			user, err := service.Register(ctx, tt.login, tt.passHash)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -163,7 +159,7 @@ func TestLogin(t *testing.T) {
 					PasswordHash: string(hashedPassword),
 				}
 				m.EXPECT().
-					GetUser(testLogin).
+					GetUser(gomock.Any(), testLogin).
 					Times(1).
 					Return(expectedUser, nil)
 			},
@@ -179,7 +175,7 @@ func TestLogin(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser(nonexistentLogin).
+					GetUser(gomock.Any(), nonexistentLogin).
 					Times(1).
 					Return(nil, repository2.ErrUserNotFound)
 			},
@@ -191,7 +187,7 @@ func TestLogin(t *testing.T) {
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
 				m.EXPECT().
-					GetUser(testLogin).
+					GetUser(gomock.Any(), testLogin).
 					Times(1).
 					Return(nil, errors.New("database connection failed"))
 			},
@@ -202,24 +198,18 @@ func TestLogin(t *testing.T) {
 			login:    "",
 			passHash: testPass,
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
-				m.EXPECT().
-					GetUser("").
-					Times(1).
-					Return(nil, repository2.ErrUserNotFound)
+				// No mock expectation - validation fails before repository call
 			},
-			wantErrIs: ErrUserNotFound,
+			wantErr: errors.New("invalid login"),
 		},
 		{
 			name:     "empty password hash",
 			login:    testLogin,
 			passHash: "",
 			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
-				m.EXPECT().
-					GetUser(testLogin).
-					Times(1).
-					Return(nil, repository2.ErrUserNotFound)
+				// No mock expectation - validation fails before repository call
 			},
-			wantErrIs: ErrUserNotFound,
+			wantErr: errors.New("invalid password"),
 		},
 	}
 
@@ -237,7 +227,8 @@ func TestLogin(t *testing.T) {
 			logger := zap.NewNop()
 			service := NewService(mockRepo, logger)
 
-			user, err := service.Login(tt.login, tt.passHash)
+			ctx := context.Background()
+			user, err := service.Login(ctx, tt.login, tt.passHash)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -276,7 +267,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		}
 
 		mockRepo.EXPECT().
-			GetUser(testLogin).
+			GetUser(gomock.Any(), testLogin).
 			Times(1).
 			Return(expectedUser, nil)
 
@@ -284,7 +275,8 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		service := NewService(mockRepo, logger)
 
 		// Try to login with wrong password
-		user, err := service.Login(testLogin, "wrongpassword")
+		ctx := context.Background()
+		user, err := service.Login(ctx, testLogin, "wrongpassword")
 
 		require.Error(t, err)
 		assert.Nil(t, user)

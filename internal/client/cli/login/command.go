@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	"github.com/aifedorov/gophkeeper/pkg/validator"
 	"github.com/spf13/cobra"
 )
 
@@ -51,10 +52,10 @@ func (c *LoginCommand) GetCommand() *cobra.Command {
 }
 
 func (c *LoginCommand) run(cmd *cobra.Command, args []string) error {
-	if err := auth.ValidateLogin(creds.login); err != nil {
+	if err := validator.ValidateLogin(creds.login); err != nil {
 		return fmt.Errorf("invalid login: %w", err)
 	}
-	if err := auth.ValidatePassword(creds.password); err != nil {
+	if err := validator.ValidatePassword(creds.password); err != nil {
 		return fmt.Errorf("invalid password: %w", err)
 	}
 
