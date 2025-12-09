@@ -23,10 +23,10 @@ var (
 
 // Service defines the interface for JWT token operations.
 type Service interface {
-	// IssueToken creates a new JWT token for the given user ID.
+	// IssueToken creates a new JWT token for the given auth ID.
 	// The token is signed with HS256 algorithm and includes expiration time.
 	IssueToken(userID string) (string, error)
-	// ValidateToken validates a JWT token string and extracts the user ID.
+	// ValidateToken validates a JWT token string and extracts the auth ID.
 	// Returns ErrEmptyToken if the token is empty, ErrInvalidToken if validation fails,
 	// or ErrInvalidSigningMethod if the token uses an unexpected signing method.
 	ValidateToken(tokenString string) (string, error)

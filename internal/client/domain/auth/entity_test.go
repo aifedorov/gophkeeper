@@ -9,7 +9,7 @@ import (
 func TestUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("create user", func(t *testing.T) {
+	t.Run("create auth", func(t *testing.T) {
 		t.Parallel()
 
 		user := User{

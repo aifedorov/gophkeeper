@@ -1,7 +1,7 @@
-package user
+package auth
 
 import (
-	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
 )
 
 func toDomainUser(user *repository.User) *User {

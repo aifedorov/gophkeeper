@@ -39,7 +39,7 @@ func TestRepository_Save(t *testing.T) {
 
 		session := Session{
 			User: User{
-				ID:    "user-id-123",
+				ID:    "auth-id-123",
 				Login: "testuser",
 			},
 			AccessToken: "token-xyz",
@@ -68,7 +68,7 @@ func TestRepository_Load(t *testing.T) {
 
 		expectedSession := Session{
 			User: User{
-				ID:    "user-id-123",
+				ID:    "auth-id-123",
 				Login: "testuser",
 			},
 			AccessToken: "token-xyz",
@@ -109,7 +109,7 @@ func TestRepository_Delete(t *testing.T) {
 
 		session := Session{
 			User: User{
-				ID:    "user-id-123",
+				ID:    "auth-id-123",
 				Login: "testuser",
 			},
 			AccessToken: "token-xyz",
@@ -131,17 +131,17 @@ func TestRepository_Delete(t *testing.T) {
 func TestToDomainUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("converts memory user to domain user", func(t *testing.T) {
+	t.Run("converts memory auth to domain auth", func(t *testing.T) {
 		t.Parallel()
 
 		memoryUser := memory.User{
-			ID:    "user-id-123",
+			ID:    "auth-id-123",
 			Login: "testuser",
 		}
 
 		domainUser := toDomainUser(memoryUser)
 
-		assert.Equal(t, "user-id-123", domainUser.ID)
+		assert.Equal(t, "auth-id-123", domainUser.ID)
 		assert.Equal(t, "testuser", domainUser.Login)
 	})
 }
@@ -154,7 +154,7 @@ func TestToDomainSession(t *testing.T) {
 
 		memorySession := memory.Session{
 			User: memory.User{
-				ID:    "user-id-123",
+				ID:    "auth-id-123",
 				Login: "testuser",
 			},
 			AccessToken: "token-xyz",
@@ -162,7 +162,7 @@ func TestToDomainSession(t *testing.T) {
 
 		domainSession := toDomainSession(memorySession)
 
-		assert.Equal(t, "user-id-123", domainSession.User.ID)
+		assert.Equal(t, "auth-id-123", domainSession.User.ID)
 		assert.Equal(t, "testuser", domainSession.User.Login)
 		assert.Equal(t, "token-xyz", domainSession.AccessToken)
 	})
@@ -176,7 +176,7 @@ func TestToMemorySession(t *testing.T) {
 
 		domainSession := Session{
 			User: User{
-				ID:    "user-id-123",
+				ID:    "auth-id-123",
 				Login: "testuser",
 			},
 			AccessToken: "token-xyz",
@@ -184,7 +184,7 @@ func TestToMemorySession(t *testing.T) {
 
 		memorySession := toMemorySession(domainSession)
 
-		assert.Equal(t, "user-id-123", memorySession.User.ID)
+		assert.Equal(t, "auth-id-123", memorySession.User.ID)
 		assert.Equal(t, "testuser", memorySession.User.Login)
 		assert.Equal(t, "token-xyz", memorySession.AccessToken)
 	})
@@ -193,17 +193,17 @@ func TestToMemorySession(t *testing.T) {
 func TestToMemoryUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("converts domain user to memory user", func(t *testing.T) {
+	t.Run("converts domain auth to memory auth", func(t *testing.T) {
 		t.Parallel()
 
 		domainUser := User{
-			ID:    "user-id-123",
+			ID:    "auth-id-123",
 			Login: "testuser",
 		}
 
 		memoryUser := toMemoryUser(domainUser)
 
-		assert.Equal(t, "user-id-123", memoryUser.ID)
+		assert.Equal(t, "auth-id-123", memoryUser.ID)
 		assert.Equal(t, "testuser", memoryUser.Login)
 	})
 }

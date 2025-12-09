@@ -37,7 +37,7 @@ func TestNewRepository(t *testing.T) {
 func TestRepository_CreateUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("creates user successfully", func(t *testing.T) {
+	t.Run("creates auth successfully", func(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
@@ -132,7 +132,7 @@ func TestRepository_CreateUser(t *testing.T) {
 func TestRepository_GetUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("gets user successfully", func(t *testing.T) {
+	t.Run("gets auth successfully", func(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
@@ -166,7 +166,7 @@ func TestRepository_GetUser(t *testing.T) {
 		assert.Equal(t, passwordHash, user.PasswordHash)
 	})
 
-	t.Run("returns ErrUserNotFound when user not found", func(t *testing.T) {
+	t.Run("returns ErrUserNotFound when auth not found", func(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()

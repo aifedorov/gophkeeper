@@ -14,7 +14,7 @@ import (
 const (
 	testLogin    = "testuser"
 	testPassword = "testpass"
-	testUserID   = "user-id-123"
+	testUserID   = "auth-id-123"
 	testToken    = "token-xyz-456"
 )
 
@@ -147,7 +147,7 @@ func TestService_Register(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "registration fails - user already exists",
+			name: "registration fails - auth already exists",
 			creds: Credentials{
 				Login:    testLogin,
 				Password: testPassword,

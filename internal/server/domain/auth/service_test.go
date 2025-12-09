@@ -1,12 +1,12 @@
-package user
+package auth
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	repository2 "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
-	"github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db/mocks"
+	repository2 "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

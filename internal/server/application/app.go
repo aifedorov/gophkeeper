@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/server/config"
-	"github.com/aifedorov/gophkeeper/internal/server/domain/user"
-	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	repository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
@@ -29,7 +29,7 @@ func NewApp(cfg *config.Config, logger *zap.Logger) *App {
 }
 
 // Run initializes and starts the server application.
-// It establishes database connection, initializes services (user service, JWT service),
+// It establishes database connection, initializes services (auth service, JWT service),
 // creates the gRPC server with authentication handlers, and starts listening for requests.
 // Returns an error if any initialization step fails.
 func (a *App) Run() error {
@@ -42,7 +42,7 @@ func (a *App) Run() error {
 	defer db.Close()
 
 	userRepo := repository.NewRepository(db.DBPool(), a.logger)
-	userSrv := user.NewService(userRepo, a.logger)
+	userSrv := auth.NewService(userRepo, a.logger)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, userSrv, jwtSrv)

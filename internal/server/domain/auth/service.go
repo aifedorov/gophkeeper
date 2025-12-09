@@ -1,23 +1,23 @@
-package user
+package auth
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	repository "github.com/aifedorov/gophkeeper/internal/server/domain/user/repository/db"
+	repository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
 	"github.com/aifedorov/gophkeeper/pkg/validator"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Service defines the interface for user domain operations.
+// Service defines the interface for auth domain operations.
 type Service interface {
-	// Register creates a new user account with the provided login and password.
+	// Register creates a new auth account with the provided login and password.
 	// The password is hashed before storage. Returns ErrLoginExists if the login is already taken.
 	Register(ctx context.Context, login, password string) (*User, error)
-	// Login authenticates a user with the provided credentials.
-	// Returns ErrUserNotFound if the user doesn't exist or if the password is incorrect.
+	// Login authenticates a auth with the provided credentials.
+	// Returns ErrUserNotFound if the auth doesn't exist or if the password is incorrect.
 	Login(ctx context.Context, login, password string) (*User, error)
 }
 
@@ -26,8 +26,8 @@ type service struct {
 	logger *zap.Logger
 }
 
-// NewService creates a new instance of the user service with the provided repository and logger.
-// It initializes the service that handles user registration and authentication business logic.
+// NewService creates a new instance of the auth service with the provided repository and logger.
+// It initializes the service that handles auth registration and authentication business logic.
 func NewService(repo repository.Repository, logger *zap.Logger) Service {
 	return &service{
 		repo:   repo,

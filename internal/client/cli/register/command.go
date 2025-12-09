@@ -27,8 +27,8 @@ func NewCommand(authSrv auth.Service) (*RegisterCommand, error) {
 
 	cmd := &cobra.Command{
 		Use:   "register -l <login> -p <password>",
-		Short: "Register a new user",
-		Long:  `Register a new user with the given login and password.`,
+		Short: "Register a new auth",
+		Long:  `Register a new auth with the given login and password.`,
 		RunE:  c.run,
 	}
 
