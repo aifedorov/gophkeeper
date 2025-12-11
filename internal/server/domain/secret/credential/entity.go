@@ -1,19 +1,16 @@
 package credential
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
 type Credential struct {
-	id        uuid.UUID
-	name      string
-	login     string
-	password  string
-	metadata  string
-	createdAt time.Time
-	updatedAt time.Time
+	id       uuid.UUID
+	userID   uuid.UUID
+	name     string
+	login    string
+	password string
+	metadata string
 }
 
 func NewCredential(name, login, password, metadata string) (*Credential, error) {
@@ -28,12 +25,34 @@ func NewCredential(name, login, password, metadata string) (*Credential, error) 
 	}
 
 	return &Credential{
-		id:        uuid.New(),
-		name:      name,
-		login:     login,
-		password:  password,
-		metadata:  metadata,
-		createdAt: time.Now(),
-		updatedAt: time.Now(),
+		id:       uuid.New(),
+		name:     name,
+		login:    login,
+		password: password,
+		metadata: metadata,
 	}, nil
+}
+
+func (c *Credential) GetID() uuid.UUID {
+	return c.id
+}
+
+func (c *Credential) GetUserID() uuid.UUID {
+	return c.userID
+}
+
+func (c *Credential) GetName() string {
+	return c.name
+}
+
+func (c *Credential) GetLogin() string {
+	return c.login
+}
+
+func (c *Credential) GetPassword() string {
+	return c.password
+}
+
+func (c *Credential) GetMetadata() string {
+	return c.metadata
 }

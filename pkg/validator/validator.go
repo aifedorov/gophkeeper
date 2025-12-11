@@ -38,3 +38,10 @@ func ValidatePassword(password string) error {
 	}
 	return nil
 }
+
+func ValidateSalt(salt string) error {
+	if len(salt) == 0 {
+		return fmt.Errorf("salt can't be empty")
+	}
+	return nil
+}

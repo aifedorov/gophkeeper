@@ -10,13 +10,13 @@ import (
 )
 
 type Credential struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Name      string
-	Login     string
-	Password  string
-	Metadata  string
-	DeletedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	CreatedAt pgtype.Timestamp
+	ID                uuid.UUID
+	UserID            uuid.UUID
+	Name              string
+	Encryptedlogin    []byte
+	Encryptedpassword []byte
+	Encryptednotes    []byte
+	DeletedAt         pgtype.Timestamp
+	UpdatedAt         pgtype.Timestamp
+	CreatedAt         pgtype.Timestamp
 }

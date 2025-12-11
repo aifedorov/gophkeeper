@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	repository2 "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
-	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db/mocks"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,7 +30,7 @@ func TestRegister(t *testing.T) {
 		name         string
 		login        string
 		passHash     string
-		setupMock    func(*mocks.MockRepository, uuid.UUID)
+		setupMock    func(*mocks.MockRepository, *mocks.MockCryptoService, uuid.UUID)
 		wantErr      error
 		wantErrIs    error
 		validateUser func(*testing.T, *User, uuid.UUID)
@@ -38,18 +39,27 @@ func TestRegister(t *testing.T) {
 			name:     "successful registration",
 			login:    testLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
-				// Password hash is generated dynamically by bcrypt
-				expectedUser := &repository2.User{
-					ID:           expectedID,
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, expectedID uuid.UUID) {
+				testSalt := []byte("test-salt-32-bytes-long-string!!")
+				encryptionKey := argon2.IDKey([]byte(testPass), testSalt, 1, 64*1024, 4, 32)
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
+
+				c.EXPECT().GenerateSalt().Return(testSalt, nil).Times(1)
+				c.EXPECT().DeriveEncryptionKey(testPass, string(testSalt)).Return(encryptionKey).Times(1)
+				c.EXPECT().HashPassword(testPass).Return(string(hashedPassword), nil).Times(1)
+
+				expectedUser := interfaces.RepositoryUser{
+					ID:           expectedID.String(),
 					Login:        testLogin,
-					PasswordHash: "",
+					PasswordHash: string(hashedPassword),
+					Salt:         string(testSalt),
 				}
 				m.EXPECT().
-					CreateUser(gomock.Any(), testLogin, gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					DoAndReturn(func(ctx context.Context, login, passHash string) (*repository2.User, error) {
+					DoAndReturn(func(ctx context.Context, user interfaces.RepositoryUser, passHash string) (interfaces.RepositoryUser, error) {
 						expectedUser.PasswordHash = passHash
+						expectedUser.Salt = user.Salt
 						return expectedUser, nil
 					})
 			},
@@ -63,11 +73,19 @@ func TestRegister(t *testing.T) {
 			name:     "login already exists",
 			login:    existingLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
+				testSalt := []byte("test-salt-32-bytes-long-string!!")
+				encryptionKey := argon2.IDKey([]byte(testPass), testSalt, 1, 64*1024, 4, 32)
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
+
+				c.EXPECT().GenerateSalt().Return(testSalt, nil).Times(1)
+				c.EXPECT().DeriveEncryptionKey(testPass, string(testSalt)).Return(encryptionKey).Times(1)
+				c.EXPECT().HashPassword(testPass).Return(string(hashedPassword), nil).Times(1)
+
 				m.EXPECT().
-					CreateUser(gomock.Any(), existingLogin, gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(nil, repository2.ErrLoginExists)
+					Return(interfaces.RepositoryUser{}, ErrLoginExists)
 			},
 			wantErrIs: ErrLoginExists,
 		},
@@ -75,11 +93,19 @@ func TestRegister(t *testing.T) {
 			name:     "inMemory error",
 			login:    testLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
+				testSalt := []byte("test-salt-32-bytes-long-string!!")
+				encryptionKey := argon2.IDKey([]byte(testPass), testSalt, 1, 64*1024, 4, 32)
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
+
+				c.EXPECT().GenerateSalt().Return(testSalt, nil).Times(1)
+				c.EXPECT().DeriveEncryptionKey(testPass, string(testSalt)).Return(encryptionKey).Times(1)
+				c.EXPECT().HashPassword(testPass).Return(string(hashedPassword), nil).Times(1)
+
 				m.EXPECT().
-					CreateUser(gomock.Any(), testLogin, gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(nil, errors.New("database connection failed"))
+					Return(interfaces.RepositoryUser{}, errors.New("database connection failed"))
 			},
 			wantErr: errors.New("database connection failed"),
 		},
@@ -87,7 +113,7 @@ func TestRegister(t *testing.T) {
 			name:     "empty login",
 			login:    "",
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid login"),
@@ -96,7 +122,7 @@ func TestRegister(t *testing.T) {
 			name:     "empty password hash",
 			login:    testLogin,
 			passHash: "",
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid password"),
@@ -111,11 +137,12 @@ func TestRegister(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockRepo := mocks.NewMockRepository(ctrl)
+			mockCrypto := mocks.NewMockCryptoService(ctrl)
 			expectedID := uuid.New()
-			tt.setupMock(mockRepo, expectedID)
+			tt.setupMock(mockRepo, mockCrypto, expectedID)
 
 			logger := zap.NewNop()
-			service := NewService(mockRepo, logger)
+			service := NewService(mockRepo, logger, mockCrypto)
 
 			ctx := context.Background()
 			user, err := service.Register(ctx, tt.login, tt.passHash)
@@ -141,7 +168,7 @@ func TestLogin(t *testing.T) {
 		name         string
 		login        string
 		passHash     string
-		setupMock    func(*mocks.MockRepository, uuid.UUID)
+		setupMock    func(*mocks.MockRepository, *mocks.MockCryptoService, uuid.UUID)
 		wantErr      error
 		wantErrIs    error
 		validateUser func(*testing.T, *User, uuid.UUID)
@@ -150,18 +177,23 @@ func TestLogin(t *testing.T) {
 			name:     "successful login",
 			login:    testLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, expectedID uuid.UUID) {
-				// Generate a bcrypt hash for the test password
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, expectedID uuid.UUID) {
 				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
-				expectedUser := &repository2.User{
-					ID:           expectedID,
+				testSalt := "testsalt"
+				encryptionKey := argon2.IDKey([]byte(testPass), []byte(testSalt), 1, 64*1024, 4, 32)
+
+				expectedUser := interfaces.RepositoryUser{
+					ID:           expectedID.String(),
 					Login:        testLogin,
 					PasswordHash: string(hashedPassword),
+					Salt:         testSalt,
 				}
 				m.EXPECT().
 					GetUser(gomock.Any(), testLogin).
 					Times(1).
 					Return(expectedUser, nil)
+				c.EXPECT().CompareHashAndPassword(string(hashedPassword), testPass).Return(nil).Times(1)
+				c.EXPECT().DeriveEncryptionKey(testPass, testSalt).Return(encryptionKey).Times(1)
 			},
 			validateUser: func(t *testing.T, user *User, expectedID uuid.UUID) {
 				require.NotNil(t, user)
@@ -170,14 +202,14 @@ func TestLogin(t *testing.T) {
 			},
 		},
 		{
-			name:     "auth.proto not found",
+			name:     "user not found",
 			login:    nonexistentLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				m.EXPECT().
 					GetUser(gomock.Any(), nonexistentLogin).
 					Times(1).
-					Return(nil, repository2.ErrUserNotFound)
+					Return(interfaces.RepositoryUser{}, ErrUserNotFound)
 			},
 			wantErrIs: ErrUserNotFound,
 		},
@@ -185,11 +217,11 @@ func TestLogin(t *testing.T) {
 			name:     "inMemory error",
 			login:    testLogin,
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				m.EXPECT().
 					GetUser(gomock.Any(), testLogin).
 					Times(1).
-					Return(nil, errors.New("database connection failed"))
+					Return(interfaces.RepositoryUser{}, errors.New("database connection failed"))
 			},
 			wantErr: errors.New("database connection failed"),
 		},
@@ -197,7 +229,7 @@ func TestLogin(t *testing.T) {
 			name:     "empty login",
 			login:    "",
 			passHash: testPass,
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid login"),
@@ -206,7 +238,7 @@ func TestLogin(t *testing.T) {
 			name:     "empty password hash",
 			login:    testLogin,
 			passHash: "",
-			setupMock: func(m *mocks.MockRepository, _ uuid.UUID) {
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
 				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid password"),
@@ -221,11 +253,12 @@ func TestLogin(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockRepo := mocks.NewMockRepository(ctrl)
+			mockCrypto := mocks.NewMockCryptoService(ctrl)
 			expectedID := uuid.New()
-			tt.setupMock(mockRepo, expectedID)
+			tt.setupMock(mockRepo, mockCrypto, expectedID)
 
 			logger := zap.NewNop()
-			service := NewService(mockRepo, logger)
+			service := NewService(mockRepo, logger, mockCrypto)
 
 			ctx := context.Background()
 			user, err := service.Login(ctx, tt.login, tt.passHash)
@@ -256,14 +289,14 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		mockRepo := mocks.NewMockRepository(ctrl)
 		expectedID := uuid.New()
 
-		// Generate hash for correct password
 		correctPassword := "correctpassword"
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(correctPassword), bcrypt.DefaultCost)
 
-		expectedUser := &repository2.User{
-			ID:           expectedID,
+		expectedUser := interfaces.RepositoryUser{
+			ID:           expectedID.String(),
 			Login:        testLogin,
 			PasswordHash: string(hashedPassword),
+			Salt:         "testsalt",
 		}
 
 		mockRepo.EXPECT().
@@ -271,10 +304,13 @@ func TestLogin_InvalidPassword(t *testing.T) {
 			Times(1).
 			Return(expectedUser, nil)
 
-		logger := zap.NewNop()
-		service := NewService(mockRepo, logger)
+		mockCrypto := mocks.NewMockCryptoService(ctrl)
+		mockCrypto.EXPECT().CompareHashAndPassword(string(hashedPassword), "wrongpassword").
+			Return(bcrypt.ErrMismatchedHashAndPassword).Times(1)
 
-		// Try to login with wrong password
+		logger := zap.NewNop()
+		service := NewService(mockRepo, logger, mockCrypto)
+
 		ctx := context.Background()
 		user, err := service.Login(ctx, testLogin, "wrongpassword")
 

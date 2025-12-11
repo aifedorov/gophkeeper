@@ -10,30 +10,32 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (login, password_hash)
-VALUES ($1, $2)
-RETURNING id, login, password_hash, created_at
+INSERT INTO users (login, password_hash, salt)
+VALUES ($1, $2, $3)
+RETURNING id, login, password_hash, salt, created_at
 `
 
 type CreateUserParams struct {
 	Login        string
 	PasswordHash string
+	Salt         string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Login, arg.PasswordHash)
+	row := q.db.QueryRow(ctx, createUser, arg.Login, arg.PasswordHash, arg.Salt)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Login,
 		&i.PasswordHash,
+		&i.Salt,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, login, password_hash, created_at
+SELECT id, login, password_hash, salt, created_at
 FROM users
 WHERE login = $1
 `
@@ -45,6 +47,7 @@ func (q *Queries) GetUser(ctx context.Context, login string) (User, error) {
 		&i.ID,
 		&i.Login,
 		&i.PasswordHash,
+		&i.Salt,
 		&i.CreatedAt,
 	)
 	return i, err

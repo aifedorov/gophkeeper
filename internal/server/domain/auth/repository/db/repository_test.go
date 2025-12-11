@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -65,11 +67,12 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(expectedUser, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		user, err := repo.CreateUser(ctx, login, passwordHash)
+		usr := interfaces.RepositoryUser{Login: login, PasswordHash: passwordHash}
+		user, err := repo.CreateUser(ctx, usr, passwordHash)
 
 		require.NoError(t, err)
 		require.NotNil(t, user)
-		assert.Equal(t, userID, user.ID)
+		assert.Equal(t, userID.String(), user.ID)
 		assert.Equal(t, login, user.Login)
 		assert.Equal(t, passwordHash, user.PasswordHash)
 	})
@@ -95,11 +98,11 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(User{}, pgErr)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		user, err := repo.CreateUser(ctx, "existinguser", "password")
+		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{Login: "existinguser"}, "password")
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, ErrLoginExists)
-		assert.Nil(t, user)
+		assert.ErrorIs(t, err, auth.ErrLoginExists)
+		assert.Equal(t, interfaces.RepositoryUser{}, user)
 	})
 
 	t.Run("returns error on database error", func(t *testing.T) {
@@ -121,11 +124,11 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(User{}, dbErr)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		user, err := repo.CreateUser(ctx, "testuser", "password")
+		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{Login: "testuser"}, "password")
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to create auth.proto")
-		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "failed to create user")
+		assert.Equal(t, interfaces.RepositoryUser{}, user)
 	})
 }
 
@@ -161,7 +164,7 @@ func TestRepository_GetUser(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, user)
-		assert.Equal(t, userID, user.ID)
+		assert.Equal(t, userID.String(), user.ID)
 		assert.Equal(t, login, user.Login)
 		assert.Equal(t, passwordHash, user.PasswordHash)
 	})
@@ -183,8 +186,8 @@ func TestRepository_GetUser(t *testing.T) {
 		user, err := repo.GetUser(ctx, "nonexistent")
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, ErrUserNotFound)
-		assert.Nil(t, user)
+		assert.ErrorIs(t, err, auth.ErrUserNotFound)
+		assert.Equal(t, interfaces.RepositoryUser{}, user)
 	})
 
 	t.Run("returns error on database error", func(t *testing.T) {
@@ -206,7 +209,7 @@ func TestRepository_GetUser(t *testing.T) {
 		user, err := repo.GetUser(ctx, "testuser")
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to get auth.proto")
-		assert.Nil(t, user)
+		assert.Contains(t, err.Error(), "failed to get user")
+		assert.Equal(t, interfaces.RepositoryUser{}, user)
 	})
 }

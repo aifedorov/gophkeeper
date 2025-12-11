@@ -6,7 +6,7 @@ WHERE id = $1
   AND deleted_at IS NULL;
 
 -- name: CreateCredential :one
-INSERT INTO credentials (user_id, name, login, password, metadata)
+INSERT INTO credentials (user_id, name, encryptedLogin, encryptedPassword, encryptedNotes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
@@ -19,9 +19,9 @@ WHERE user_id = $1
 -- name: UpdateCredential :one
 UPDATE credentials
 SET name       = $3,
-    login      = $4,
-    password   = $5,
-    metadata   = $6,
+    encryptedLogin    = $4,
+    encryptedPassword = $5,
+    encryptedNotes    = $6,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND user_id = $2

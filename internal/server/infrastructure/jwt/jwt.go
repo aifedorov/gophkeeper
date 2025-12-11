@@ -23,13 +23,13 @@ var (
 
 // Service defines the interface for JWT token operations.
 type Service interface {
-	// IssueToken creates a new JWT token for the given auth ID.
+	// IssueToken creates a new JWT token for the given auth id.
 	// The token is signed with HS256 algorithm and includes expiration time.
 	IssueToken(userID string) (string, error)
-	// ValidateToken validates a JWT token string and extracts the auth ID.
+	// ValidateToken validates a JWT token string and extracts the auth id.
 	// Returns ErrEmptyToken if the token is empty, ErrInvalidToken if validation fails,
 	// or ErrInvalidSigningMethod if the token uses an unexpected signing method.
-	ValidateToken(tokenString string) (string, error)
+	ExtractUserID(tokenString string) (string, error)
 }
 
 type service struct {
@@ -71,7 +71,7 @@ func (s *service) IssueToken(userID string) (string, error) {
 	return tokenString, nil
 }
 
-func (s *service) ValidateToken(tokenString string) (string, error) {
+func (s *service) ExtractUserID(tokenString string) (string, error) {
 	if tokenString == "" {
 		s.logger.Error("jwt: empty token")
 		return "", ErrEmptyToken

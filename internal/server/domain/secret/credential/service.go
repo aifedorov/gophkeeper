@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	repository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
 	"github.com/google/uuid"
 )
 
@@ -18,33 +18,37 @@ type Service interface {
 }
 
 type service struct {
-	repo repository.Repository
+	repo interfaces.Repository
 }
 
-func NewService(repo repository.Repository) Service {
+func NewService(repo interfaces.Repository) Service {
 	return &service{
 		repo: repo,
 	}
 }
 
 func (s *service) Create(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error) {
-	rCredential, err := s.repo.CreateCredential(ctx, userID, toRepositoryCredential(credential))
-	if errors.Is(err, repository.ErrNameExists) {
+	rCredential := toRepositoryCredential(credential)
+	result, err := s.repo.CreateCredential(ctx, userID, rCredential)
+	if errors.Is(err, ErrNameExists) {
 		return nil, ErrNameExists
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create credential: %w", err)
 	}
-	if rCredential == nil {
+	if result == nil {
 		return nil, fmt.Errorf("failed to create credential: credential is nil")
 	}
-	credential = toDomainCredential(*rCredential)
-	return &credential, nil
+	domainCred, err := toDomainCredential(*result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert credential: %w", err)
+	}
+	return &domainCred, nil
 }
 
 func (s *service) Get(ctx context.Context, userID, id uuid.UUID) (*Credential, error) {
 	rCredential, err := s.repo.GetCredential(ctx, userID, id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
@@ -53,8 +57,11 @@ func (s *service) Get(ctx context.Context, userID, id uuid.UUID) (*Credential, e
 	if rCredential == nil {
 		return nil, fmt.Errorf("failed to get credential: credential is nil")
 	}
-	credential := toDomainCredential(*rCredential)
-	return &credential, nil
+	domainCred, err := toDomainCredential(*rCredential)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert credential: %w", err)
+	}
+	return &domainCred, nil
 }
 
 func (s *service) List(ctx context.Context, userID uuid.UUID) ([]Credential, error) {
@@ -65,30 +72,38 @@ func (s *service) List(ctx context.Context, userID uuid.UUID) ([]Credential, err
 
 	res := make([]Credential, len(credentials))
 	for i, cred := range credentials {
-		res[i] = toDomainCredential(cred)
+		domainCred, err := toDomainCredential(cred)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert credential: %w", err)
+		}
+		res[i] = domainCred
 	}
 
 	return res, nil
 }
 
 func (s *service) Update(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error) {
-	rCredential, err := s.repo.UpdateCredential(ctx, userID, toRepositoryCredential(credential))
-	if errors.Is(err, repository.ErrNotFound) {
+	rCredential := toRepositoryCredential(credential)
+	result, err := s.repo.UpdateCredential(ctx, userID, rCredential)
+	if errors.Is(err, ErrNotFound) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to update credential: %w", err)
 	}
-	if rCredential == nil {
+	if result == nil {
 		return nil, fmt.Errorf("failed to update credential: credential is nil")
 	}
-	credential = toDomainCredential(*rCredential)
-	return &credential, nil
+	domainCred, err := toDomainCredential(*result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert credential: %w", err)
+	}
+	return &domainCred, nil
 }
 
 func (s *service) Delete(ctx context.Context, userID, id uuid.UUID) error {
 	err := s.repo.DeleteCredential(ctx, userID, id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		return ErrNotFound
 	}
 	if err != nil {

@@ -21,10 +21,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// RegisterRequest contains the credentials for user registration.
 type RegisterRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Login         *string                `protobuf:"bytes,1,opt,name=login" json:"login,omitempty"`
-	Password      *string                `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// login is the unique username for the new account.
+	Login *string `protobuf:"bytes,1,opt,name=login" json:"login,omitempty"`
+	// password is the plain text password that will be hashed before storage.
+	Password      *string `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,10 +76,13 @@ func (x *RegisterRequest) GetPassword() string {
 	return ""
 }
 
+// RegisterResponse contains the result of successful user registration.
 type RegisterResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        *string                `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
-	AccessToken   *string                `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// user_id is the unique identifier assigned to the newly created user.
+	UserId *string `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+	// access_token is the JWT token that can be used for authenticated requests.
+	AccessToken   *string `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,10 +131,13 @@ func (x *RegisterResponse) GetAccessToken() string {
 	return ""
 }
 
+// LoginRequest contains the credentials for user authentication.
 type LoginRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Login         *string                `protobuf:"bytes,1,opt,name=login" json:"login,omitempty"`
-	Password      *string                `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// login is the username of the existing account.
+	Login *string `protobuf:"bytes,1,opt,name=login" json:"login,omitempty"`
+	// password is the plain text password to verify against the stored hash.
+	Password      *string `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,10 +186,13 @@ func (x *LoginRequest) GetPassword() string {
 	return ""
 }
 
+// LoginResponse contains the result of successful user authentication.
 type LoginResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        *string                `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
-	AccessToken   *string                `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// user_id is the unique identifier of the authenticated user.
+	UserId *string `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
+	// access_token is the JWT token that can be used for authenticated requests.
+	AccessToken   *string `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

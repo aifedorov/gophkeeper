@@ -12,35 +12,35 @@ import (
 )
 
 const createCredential = `-- name: CreateCredential :one
-INSERT INTO credentials (user_id, name, login, password, metadata)
+INSERT INTO credentials (user_id, name, encryptedLogin, encryptedPassword, encryptedNotes)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, name, login, password, metadata, deleted_at, updated_at, created_at
+RETURNING id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
 `
 
 type CreateCredentialParams struct {
-	UserID   uuid.UUID
-	Name     string
-	Login    string
-	Password string
-	Metadata string
+	UserID            uuid.UUID
+	Name              string
+	Encryptedlogin    []byte
+	Encryptedpassword []byte
+	Encryptednotes    []byte
 }
 
 func (q *Queries) CreateCredential(ctx context.Context, arg CreateCredentialParams) (Credential, error) {
 	row := q.db.QueryRow(ctx, createCredential,
 		arg.UserID,
 		arg.Name,
-		arg.Login,
-		arg.Password,
-		arg.Metadata,
+		arg.Encryptedlogin,
+		arg.Encryptedpassword,
+		arg.Encryptednotes,
 	)
 	var i Credential
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.Name,
-		&i.Login,
-		&i.Password,
-		&i.Metadata,
+		&i.Encryptedlogin,
+		&i.Encryptedpassword,
+		&i.Encryptednotes,
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
@@ -51,7 +51,9 @@ func (q *Queries) CreateCredential(ctx context.Context, arg CreateCredentialPara
 const deleteCredential = `-- name: DeleteCredential :exec
 UPDATE credentials
 SET deleted_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
 `
 
 type DeleteCredentialParams struct {
@@ -65,9 +67,11 @@ func (q *Queries) DeleteCredential(ctx context.Context, arg DeleteCredentialPara
 }
 
 const getCredential = `-- name: GetCredential :one
-SELECT id, user_id, name, login, password, metadata, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
 FROM credentials
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
 `
 
 type GetCredentialParams struct {
@@ -82,9 +86,9 @@ func (q *Queries) GetCredential(ctx context.Context, arg GetCredentialParams) (C
 		&i.ID,
 		&i.UserID,
 		&i.Name,
-		&i.Login,
-		&i.Password,
-		&i.Metadata,
+		&i.Encryptedlogin,
+		&i.Encryptedpassword,
+		&i.Encryptednotes,
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
@@ -93,9 +97,10 @@ func (q *Queries) GetCredential(ctx context.Context, arg GetCredentialParams) (C
 }
 
 const listCredentials = `-- name: ListCredentials :many
-SELECT id, user_id, name, login, password, metadata, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
 FROM credentials
-WHERE user_id =$1 AND deleted_at IS NULL
+WHERE user_id = $1
+  AND deleted_at IS NULL
 `
 
 func (q *Queries) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Credential, error) {
@@ -111,9 +116,9 @@ func (q *Queries) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Cred
 			&i.ID,
 			&i.UserID,
 			&i.Name,
-			&i.Login,
-			&i.Password,
-			&i.Metadata,
+			&i.Encryptedlogin,
+			&i.Encryptedpassword,
+			&i.Encryptednotes,
 			&i.DeletedAt,
 			&i.UpdatedAt,
 			&i.CreatedAt,
@@ -130,18 +135,24 @@ func (q *Queries) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Cred
 
 const updateCredential = `-- name: UpdateCredential :one
 UPDATE credentials
-SET name = $3, login = $4, password = $5, metadata = $6, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-RETURNING id, user_id, name, login, password, metadata, deleted_at, updated_at, created_at
+SET name       = $3,
+    encryptedLogin      = $4,
+    encryptedPassword   = $5,
+    encryptedNotes   = $6,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
+RETURNING id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
 `
 
 type UpdateCredentialParams struct {
-	ID       uuid.UUID
-	UserID   uuid.UUID
-	Name     string
-	Login    string
-	Password string
-	Metadata string
+	ID                uuid.UUID
+	UserID            uuid.UUID
+	Name              string
+	Encryptedlogin    []byte
+	Encryptedpassword []byte
+	Encryptednotes    []byte
 }
 
 func (q *Queries) UpdateCredential(ctx context.Context, arg UpdateCredentialParams) (Credential, error) {
@@ -149,18 +160,18 @@ func (q *Queries) UpdateCredential(ctx context.Context, arg UpdateCredentialPara
 		arg.ID,
 		arg.UserID,
 		arg.Name,
-		arg.Login,
-		arg.Password,
-		arg.Metadata,
+		arg.Encryptedlogin,
+		arg.Encryptedpassword,
+		arg.Encryptednotes,
 	)
 	var i Credential
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.Name,
-		&i.Login,
-		&i.Password,
-		&i.Metadata,
+		&i.Encryptedlogin,
+		&i.Encryptedpassword,
+		&i.Encryptednotes,
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,

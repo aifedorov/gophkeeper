@@ -7,6 +7,7 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
 	repository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
@@ -42,7 +43,8 @@ func (a *App) Run() error {
 	defer db.Close()
 
 	userRepo := repository.NewRepository(db.DBPool(), a.logger)
-	userSrv := auth.NewService(userRepo, a.logger)
+	cryptoSrv := crypto.NewService()
+	userSrv := auth.NewService(userRepo, a.logger, cryptoSrv)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, userSrv, jwtSrv)
