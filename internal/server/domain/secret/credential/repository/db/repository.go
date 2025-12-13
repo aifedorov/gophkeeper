@@ -22,100 +22,123 @@ func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
 	}
 }
 
-func NewRepositoryWithQuerier(querier Querier, logger *zap.Logger) interfaces.Repository {
-	return &repository{
-		queries: querier,
-		logger:  logger,
-	}
-}
-
 func (r *repository) CreateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+	r.logger.Debug("repo: creating credential",
+		zap.String("user_id", userID.String()),
+		zap.String("name", credential.Name))
+
 	dbCredential, err := r.queries.CreateCredential(ctx, CreateCredentialParams{
 		UserID:            userID,
 		Name:              credential.Name,
-		Encryptedlogin:    credential.Encryptedlogin,
-		Encryptedpassword: credential.Encryptedpassword,
-		Encryptednotes:    credential.Encryptednotes,
+		Encryptedlogin:    credential.EncryptedLogin,
+		Encryptedpassword: credential.EncryptedPassword,
+		Encryptednotes:    credential.EncryptedNotes,
 	})
 	if conflictError(err) {
+		r.logger.Debug("repo: credential name already exists", zap.String("name", credential.Name))
 		return nil, credentialDomain.ErrNameExists
 	}
 	if err != nil {
+		r.logger.Error("repo: failed to create credential", zap.Error(err))
 		return nil, fmt.Errorf("repo: failed to create credential: %w", err)
 	}
 	result := toInterfacesCredential(dbCredential)
+	r.logger.Debug("repo: credential created successfully", zap.String("id", result.ID))
 	return &result, nil
 }
 
 func (r *repository) GetCredential(ctx context.Context, userID, id uuid.UUID) (*interfaces.RepositoryCredential, error) {
+	r.logger.Debug("repo: getting credential",
+		zap.String("user_id", userID.String()),
+		zap.String("id", id.String()))
+
 	dbCredential, err := r.queries.GetCredential(ctx, GetCredentialParams{
 		ID:     id,
 		UserID: userID,
 	})
 	if notFoundError(err) {
+		r.logger.Debug("repo: credential not found", zap.String("id", id.String()))
 		return nil, credentialDomain.ErrNotFound
 	}
 	if err != nil {
+		r.logger.Error("repo: failed to get credential", zap.Error(err))
 		return nil, fmt.Errorf("repo: failed to get credential: %w", err)
 	}
 	result := toInterfacesCredential(dbCredential)
+	r.logger.Debug("repo: credential found", zap.String("id", result.ID))
 	return &result, nil
 }
 
 func (r *repository) ListCredentials(ctx context.Context, userID uuid.UUID) ([]interfaces.RepositoryCredential, error) {
+	r.logger.Debug("repo: listing credentials", zap.String("user_id", userID.String()))
+
 	dbCredentials, err := r.queries.ListCredentials(ctx, userID)
 	if notFoundError(err) {
+		r.logger.Debug("repo: no credentials found", zap.String("user_id", userID.String()))
 		return []interfaces.RepositoryCredential{}, nil
 	}
 	if err != nil {
+		r.logger.Error("repo: failed to list credentials", zap.Error(err))
 		return nil, fmt.Errorf("repo: failed to list credentials: %w", err)
 	}
 	result := make([]interfaces.RepositoryCredential, len(dbCredentials))
 	for i, cred := range dbCredentials {
 		result[i] = toInterfacesCredential(cred)
 	}
+	r.logger.Debug("repo: credentials listed successfully", zap.Int("count", len(result)))
 	return result, nil
 }
 
 func (r *repository) UpdateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+	r.logger.Debug("repo: updating credential",
+		zap.String("user_id", userID.String()),
+		zap.String("id", credential.ID))
+
 	id, err := uuid.Parse(credential.ID)
 	if err != nil {
+		r.logger.Error("repo: failed to parse credential id", zap.Error(err))
 		return nil, fmt.Errorf("repo: failed to parse credential id: %w", err)
-	}
-	userIDParsed, err := uuid.Parse(credential.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
 	}
 
 	dbCredential, err := r.queries.UpdateCredential(ctx, UpdateCredentialParams{
 		ID:                id,
-		UserID:            userIDParsed,
+		UserID:            userID,
 		Name:              credential.Name,
-		Encryptedlogin:    credential.Encryptedlogin,
-		Encryptedpassword: credential.Encryptedpassword,
-		Encryptednotes:    credential.Encryptednotes,
+		Encryptedlogin:    credential.EncryptedLogin,
+		Encryptedpassword: credential.EncryptedPassword,
+		Encryptednotes:    credential.EncryptedNotes,
 	})
 	if notFoundError(err) {
+		r.logger.Debug("repo: credential not found for update", zap.String("id", credential.ID))
 		return nil, credentialDomain.ErrNotFound
 	}
 	if err != nil {
+		r.logger.Error("repo: failed to update credential", zap.Error(err))
 		return nil, fmt.Errorf("repo: failed to update credential: %w", err)
 	}
 	result := toInterfacesCredential(dbCredential)
+	r.logger.Debug("repo: credential updated successfully", zap.String("id", result.ID))
 	return &result, nil
 }
 
 func (r *repository) DeleteCredential(ctx context.Context, userID, id uuid.UUID) error {
+	r.logger.Debug("repo: deleting credential",
+		zap.String("user_id", userID.String()),
+		zap.String("id", id.String()))
+
 	err := r.queries.DeleteCredential(ctx, DeleteCredentialParams{
 		ID:     id,
 		UserID: userID,
 	})
 	if notFoundError(err) {
+		r.logger.Debug("repo: credential not found for deletion", zap.String("id", id.String()))
 		return credentialDomain.ErrNotFound
 	}
 	if err != nil {
+		r.logger.Error("repo: failed to delete credential", zap.Error(err))
 		return fmt.Errorf("repo: failed to delete credential: %w", err)
 	}
+	r.logger.Debug("repo: credential deleted successfully", zap.String("id", id.String()))
 	return nil
 }
 
@@ -124,8 +147,8 @@ func toInterfacesCredential(credential Credential) interfaces.RepositoryCredenti
 		ID:                credential.ID.String(),
 		UserID:            credential.UserID.String(),
 		Name:              credential.Name,
-		Encryptedlogin:    credential.Encryptedlogin,
-		Encryptedpassword: credential.Encryptedpassword,
-		Encryptednotes:    credential.Encryptednotes,
+		EncryptedLogin:    credential.Encryptedlogin,
+		EncryptedPassword: credential.Encryptedpassword,
+		EncryptedNotes:    credential.Encryptednotes,
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type CredentialService struct {
+type CredentialServer struct {
 	pb.UnimplementedCredentialServiceServer
 	cfg     *config.Config
 	logger  *zap.Logger
@@ -21,8 +21,8 @@ type CredentialService struct {
 	credSrv credential.Service
 }
 
-func NewService(cfg *config.Config, logger *zap.Logger, authSev auth.Service, credSrv credential.Service) *CredentialService {
-	return &CredentialService{
+func NewCredentialServer(cfg *config.Config, logger *zap.Logger, authSev auth.Service, credSrv credential.Service) *CredentialServer {
+	return &CredentialServer{
 		cfg:     cfg,
 		logger:  logger,
 		authSev: authSev,
@@ -30,33 +30,37 @@ func NewService(cfg *config.Config, logger *zap.Logger, authSev auth.Service, cr
 	}
 }
 
-func (s *CredentialService) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
-	s.logger.Debug("Create called", zap.Any("req", req))
+func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+	s.logger.Debug("grpc: create credential request received", zap.String("name", req.GetName()))
 
 	userIDString, err := s.authSev.GetUserIDFromContext(ctx)
 	if err != nil {
-		s.logger.Error("Failed to get userID", zap.Error(err))
+		s.logger.Error("grpc: failed to get userID", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
+
 	userID, err := uuid.Parse(userIDString)
 	if err != nil {
-		s.logger.Error("Failed to parse user id", zap.Error(err))
+		s.logger.Error("grpc: failed to parse user id", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid request")
 	}
+	s.logger.Debug("grpc: user authenticated", zap.String("user_id", userID.String()))
 
 	newCred, err := credential.NewCredential(req.GetName(), req.GetLogin(), req.GetPassword(), req.GetMetadata())
 	if err != nil || newCred == nil {
-		s.logger.Error("Failed to create credential", zap.Error(err))
+		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	res, err := s.credSrv.Create(ctx, userID, *newCred)
 	if err != nil {
-		s.logger.Error("Failed to create credential", zap.Error(err))
+		s.logger.Error("grpc: failed to create credential", zap.Error(err))
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
 	id := res.GetID().String()
+	s.logger.Debug("grpc: credential created successfully", zap.String("id", id))
+
 	resp := pb.CreateResponse{
 		Id: &id,
 	}

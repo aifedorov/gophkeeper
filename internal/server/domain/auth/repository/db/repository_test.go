@@ -63,6 +63,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			CreateUser(ctx, CreateUserParams{
 				Login:        login,
 				PasswordHash: passwordHash,
+				Salt:         []byte{},
 			}).
 			Return(expectedUser, nil)
 
@@ -94,6 +95,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			CreateUser(ctx, CreateUserParams{
 				Login:        "existinguser",
 				PasswordHash: "password",
+				Salt:         []byte{},
 			}).
 			Return(User{}, pgErr)
 
@@ -120,6 +122,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			CreateUser(ctx, CreateUserParams{
 				Login:        "testuser",
 				PasswordHash: "password",
+				Salt:         []byte{},
 			}).
 			Return(User{}, dbErr)
 

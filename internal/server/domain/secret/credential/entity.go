@@ -10,7 +10,7 @@ type Credential struct {
 	name     string
 	login    string
 	password string
-	metadata string
+	notes    string
 }
 
 func NewCredential(name, login, password, metadata string) (*Credential, error) {
@@ -29,7 +29,7 @@ func NewCredential(name, login, password, metadata string) (*Credential, error) 
 		name:     name,
 		login:    login,
 		password: password,
-		metadata: metadata,
+		notes:    metadata,
 	}, nil
 }
 
@@ -54,5 +54,5 @@ func (c *Credential) GetPassword() string {
 }
 
 func (c *Credential) GetMetadata() string {
-	return c.metadata
+	return c.notes
 }

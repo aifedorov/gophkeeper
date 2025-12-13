@@ -6,7 +6,9 @@ import (
 
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
-	repository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
+	authrepository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
+	credrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
@@ -42,15 +44,20 @@ func (a *App) Run() error {
 	}
 	defer db.Close()
 
-	userRepo := repository.NewRepository(db.DBPool(), a.logger)
-	cryptoSrv := crypto.NewService()
-	userSrv := auth.NewService(userRepo, a.logger, cryptoSrv)
+	sessionStore := auth.NewSessionStore(a.logger)
+	authRepo := authrepository.NewRepository(db.DBPool(), a.logger)
+	cryptoSrv := crypto.NewService(a.logger)
+	authSrv := auth.NewService(authRepo, a.logger, cryptoSrv)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 
-	authServer := server.NewAuthServer(a.cfg, a.logger, userSrv, jwtSrv)
-	grpcSrv := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer)
+	credRepo := credrepository.NewRepository(db.DBPool(), a.logger)
+	credSrv := credential.NewService(credRepo, cryptoSrv, sessionStore, a.logger)
 
-	if err := grpcSrv.Run(ctx); err != nil {
+	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
+	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)
+	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, jwtSrv, authSrv)
+
+	if err := grpcServer.Run(ctx); err != nil {
 		return err
 	}
 

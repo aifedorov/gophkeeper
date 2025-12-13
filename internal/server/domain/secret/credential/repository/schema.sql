@@ -2,11 +2,11 @@ CREATE TABLE IF NOT EXISTS credentials
 (
     id                UUID PRIMARY KEY   DEFAULT gen_random_uuid(),
     user_id           UUID      NOT NULL REFERENCES users (id),
-    name       VARCHAR(255) NOT NULL,
+    name           VARCHAR(255) NOT NULL,
     encryptedLogin    BYTEA     NOT NULL,
     encryptedPassword BYTEA     NOT NULL,
-    encryptedNotes    BYTEA     NOT NULL,
-    deleted_at TIMESTAMP,
+    encryptedNotes BYTEA,
+    deleted_at     TIMESTAMP,
     updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

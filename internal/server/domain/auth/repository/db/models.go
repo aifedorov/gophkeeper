@@ -13,6 +13,6 @@ type User struct {
 	ID           uuid.UUID
 	Login        string
 	PasswordHash string
-	Salt         string
+	Salt         []byte
 	CreatedAt    pgtype.Timestamp
 }

@@ -7,7 +7,7 @@
 //
 
 // Package client is a generated GoMock package.
-package client
+package grpc
 
 import (
 	context "context"

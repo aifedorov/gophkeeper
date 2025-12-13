@@ -18,7 +18,7 @@ RETURNING id, login, password_hash, salt, created_at
 type CreateUserParams struct {
 	Login        string
 	PasswordHash string
-	Salt         string
+	Salt         []byte
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {

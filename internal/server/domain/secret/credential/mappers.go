@@ -7,11 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: Implement encryption/decryption logic for credentials
-// Currently using direct byte conversion as placeholder
-// Need to add proper encryption when storing and decryption when retrieving
-
-func toDomainCredential(credential interfaces.RepositoryCredential) (Credential, error) {
+func toDomainCredential(crypto interfaces.CryptoService, key []byte, credential interfaces.RepositoryCredential) (Credential, error) {
 	id, err := uuid.Parse(credential.ID)
 	if err != nil {
 		return Credential{}, fmt.Errorf("failed to parse credential id: %w", err)
@@ -20,23 +16,51 @@ func toDomainCredential(credential interfaces.RepositoryCredential) (Credential,
 	if err != nil {
 		return Credential{}, fmt.Errorf("failed to parse user id: %w", err)
 	}
+	login, err := crypto.Decrypt(credential.EncryptedLogin, key)
+	if err != nil {
+		return Credential{}, fmt.Errorf("failed to decrypt login: %w", err)
+	}
+	password, err := crypto.Decrypt(credential.EncryptedPassword, key)
+	if err != nil {
+		return Credential{}, fmt.Errorf("failed to decrypt password: %w", err)
+	}
+	notes, err := crypto.Decrypt(credential.EncryptedNotes, key)
+	if err != nil {
+		return Credential{}, fmt.Errorf("failed to decrypt notes: %w", err)
+	}
+
 	return Credential{
 		id:       id,
 		userID:   userID,
 		name:     credential.Name,
-		login:    string(credential.Encryptedlogin),    // TODO: decrypt
-		password: string(credential.Encryptedpassword), // TODO: decrypt
-		metadata: string(credential.Encryptednotes),    // TODO: decrypt
+		login:    login,
+		password: password,
+		notes:    notes,
 	}, nil
 }
 
-func toRepositoryCredential(credential Credential) interfaces.RepositoryCredential {
+func toRepositoryCredential(crypto interfaces.CryptoService, key []byte, credential Credential) (interfaces.RepositoryCredential, error) {
+	encryptLogin, err := crypto.Encrypt(credential.login, key)
+	if err != nil {
+		return interfaces.RepositoryCredential{}, fmt.Errorf("failed to encrypt login: %w", err)
+	}
+
+	ecryptPassword, err := crypto.Encrypt(credential.password, key)
+	if err != nil {
+		return interfaces.RepositoryCredential{}, fmt.Errorf("failed to encrypt password: %w", err)
+	}
+
+	ecryptNotes, err := crypto.Encrypt(credential.notes, key)
+	if err != nil {
+		return interfaces.RepositoryCredential{}, fmt.Errorf("failed to encrypt notes: %w", err)
+	}
+
 	return interfaces.RepositoryCredential{
 		ID:                credential.GetID().String(),
 		UserID:            credential.GetUserID().String(),
 		Name:              credential.GetName(),
-		Encryptedlogin:    []byte(credential.GetLogin()),    // TODO: encrypt
-		Encryptedpassword: []byte(credential.GetPassword()), // TODO: encrypt
-		Encryptednotes:    []byte(credential.GetMetadata()), // TODO: encrypt
-	}
+		EncryptedLogin:    encryptLogin,
+		EncryptedPassword: ecryptPassword,
+		EncryptedNotes:    ecryptNotes,
+	}, nil
 }

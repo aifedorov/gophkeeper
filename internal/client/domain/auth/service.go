@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	client "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
+	client "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
 )
 
 type Service interface {

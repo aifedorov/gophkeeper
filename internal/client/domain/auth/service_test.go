@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
+	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"

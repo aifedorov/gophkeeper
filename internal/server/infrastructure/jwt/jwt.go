@@ -55,6 +55,8 @@ func NewService(secretKey string, tokenExp time.Duration, logger *zap.Logger) Se
 }
 
 func (s *service) IssueToken(userID string) (string, error) {
+	s.logger.Debug("jwt: issuing token", zap.String("user_id", userID))
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExp)),
@@ -68,10 +70,13 @@ func (s *service) IssueToken(userID string) (string, error) {
 		return "", err
 	}
 
+	s.logger.Debug("jwt: token issued successfully")
 	return tokenString, nil
 }
 
 func (s *service) ExtractUserID(tokenString string) (string, error) {
+	s.logger.Debug("jwt: extracting user id from token")
+
 	if tokenString == "" {
 		s.logger.Error("jwt: empty token")
 		return "", ErrEmptyToken
@@ -96,5 +101,6 @@ func (s *service) ExtractUserID(tokenString string) (string, error) {
 		return "", ErrInvalidToken
 	}
 
+	s.logger.Debug("jwt: user id extracted successfully", zap.String("user_id", claims.UserID))
 	return claims.UserID, nil
 }

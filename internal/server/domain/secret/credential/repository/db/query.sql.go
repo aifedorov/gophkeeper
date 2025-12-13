@@ -136,9 +136,9 @@ func (q *Queries) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Cred
 const updateCredential = `-- name: UpdateCredential :one
 UPDATE credentials
 SET name       = $3,
-    encryptedLogin      = $4,
-    encryptedPassword   = $5,
-    encryptedNotes   = $6,
+    encryptedLogin    = $4,
+    encryptedPassword = $5,
+    encryptedNotes    = $6,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND user_id = $2

@@ -11,9 +11,9 @@ type RepositoryCredential struct {
 	ID                string
 	UserID            string
 	Name              string
-	Encryptedlogin    []byte
-	Encryptedpassword []byte
-	Encryptednotes    []byte
+	EncryptedLogin    []byte
+	EncryptedPassword []byte
+	EncryptedNotes    []byte
 }
 
 // Repository defines the interface for credential repository operations.

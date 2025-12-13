@@ -7,6 +7,7 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
+	auth2 "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/memory"
 	"go.uber.org/zap"
 )
@@ -24,7 +25,7 @@ func NewServices(ctx context.Context, cfg *config.Config, logger *zap.Logger) (*
 		return nil, fmt.Errorf("failed to create grpc connection: %w", err)
 	}
 
-	authClient := grpcClient.NewAuthClient(conn.Conn())
+	authClient := auth2.NewAuthClient(conn.Conn())
 	storage := memory.NewStorage()
 	repo := auth.NewRepository(ctx, logger, storage)
 	authService := auth.NewService(authClient, repo)
