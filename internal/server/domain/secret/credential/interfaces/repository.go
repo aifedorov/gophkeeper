@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=repository.go -destination=mocks/mock_repository.go -package=mocks
+
 // RepositoryCredential represents credential data as stored in the repository.
 type RepositoryCredential struct {
 	ID                string

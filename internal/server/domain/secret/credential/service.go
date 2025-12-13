@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	authInterfaces "github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -22,11 +22,11 @@ type Service interface {
 type service struct {
 	repo         interfaces.Repository
 	crypto       interfaces.CryptoService
-	sessionStore auth.SessionStore
+	sessionStore authInterfaces.SessionStore
 	logger       *zap.Logger
 }
 
-func NewService(repo interfaces.Repository, crypto interfaces.CryptoService, sessionStore auth.SessionStore, logger *zap.Logger) Service {
+func NewService(repo interfaces.Repository, crypto interfaces.CryptoService, sessionStore authInterfaces.SessionStore, logger *zap.Logger) Service {
 	return &service{
 		repo:         repo,
 		crypto:       crypto,

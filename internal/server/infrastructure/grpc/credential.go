@@ -13,6 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// CredentialServer implements the CredentialService gRPC service.
+// It handles CRUD operations for user credentials with encryption support.
+// All operations require authentication via JWT token in request metadata.
 type CredentialServer struct {
 	pb.UnimplementedCredentialServiceServer
 	cfg     *config.Config
@@ -21,6 +24,8 @@ type CredentialServer struct {
 	credSrv credential.Service
 }
 
+// NewCredentialServer creates a new instance of CredentialServer with the provided dependencies.
+// It initializes the gRPC credential server that handles credential CRUD operations.
 func NewCredentialServer(cfg *config.Config, logger *zap.Logger, authSev auth.Service, credSrv credential.Service) *CredentialServer {
 	return &CredentialServer{
 		cfg:     cfg,
@@ -30,6 +35,11 @@ func NewCredentialServer(cfg *config.Config, logger *zap.Logger, authSev auth.Se
 	}
 }
 
+// Create handles credential creation requests.
+// It validates the request, extracts user ID from JWT token, creates the credential entity,
+// and stores it with encryption. Returns the ID of the newly created credential.
+// Returns Unauthenticated if JWT token is invalid, InvalidArgument if request data is invalid,
+// or Internal if an unexpected error occurs.
 func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	s.logger.Debug("grpc: create credential request received", zap.String("name", req.GetName()))
 

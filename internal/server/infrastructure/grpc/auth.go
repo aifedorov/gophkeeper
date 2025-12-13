@@ -13,12 +13,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Error messages returned to clients
 const (
 	errMsgInvalidCredentials = "invalid login or password"
 	errMsgLoginExists        = "login already exists"
 	errMsgInternalError      = "internal server error"
 )
 
+// AuthServer implements the AuthService gRPC service.
+// It handles user registration and authentication, issuing JWT tokens for successful operations.
 type AuthServer struct {
 	pb.UnimplementedAuthServiceServer
 	cfg     *config.Config
@@ -104,6 +107,8 @@ func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 	}, nil
 }
 
+// issueTokenAndLog generates a JWT token for the given user ID and logs the operation.
+// It validates the user ID and returns an error if token generation fails.
 func (a *AuthServer) issueTokenAndLog(userID, operation string) (string, error) {
 	a.logger.Debug("grpc: issuing token", zap.String("user_id", userID), zap.String("operation", operation))
 

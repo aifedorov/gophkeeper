@@ -4,6 +4,8 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=repository.go -destination=mocks/mock_repository.go -package=mocks
+
 // RepositoryUser represents user data as stored in the repository.
 type RepositoryUser struct {
 	ID           string

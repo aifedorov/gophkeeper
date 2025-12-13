@@ -31,7 +31,7 @@ type Service interface {
 type service struct {
 	repo         interfaces.Repository
 	logger       *zap.Logger
-	sessionStore SessionStore
+	sessionStore interfaces.SessionStore
 	cryptoSrv    interfaces.CryptoService
 }
 

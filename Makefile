@@ -1,4 +1,6 @@
-.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-coverage lint  fmt all proto-gen
+.PHONY: server client build-server build-client build-client-all docker-up docker-down docker-restart docker-logs docker-db-up docker-clean test test-coverage lint  fmt all proto-gen generate help
+
+.DEFAULT_GOAL := help
 
 # Build variables
 VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "dev")
@@ -74,3 +76,43 @@ all: fmt lint test
 # Generate
 proto-gen:
 	cd internal/server/api/grpc && buf generate
+
+generate:
+	@echo "Generating mocks..."
+	go generate ./internal/server/domain/auth/interfaces/...
+	go generate ./internal/server/domain/secret/credential/interfaces/...
+	go generate ./internal/server/domain/secret/credential/repository/db/...
+	@echo "Done!"
+
+# Help
+help:
+	@echo "Available targets:"
+	@echo "  Development:"
+	@echo "    server              - Run server locally"
+	@echo "    client              - Run client locally"
+	@echo ""
+	@echo "  Docker:"
+	@echo "    docker-up           - Start all services with docker-compose"
+	@echo "    docker-down         - Stop all services"
+	@echo "    docker-restart      - Restart server container"
+	@echo "    docker-logs         - Follow server logs"
+	@echo "    docker-db-up        - Start only database and migrations"
+	@echo "    docker-clean        - Remove all containers and volumes"
+	@echo ""
+	@echo "  Build:"
+	@echo "    build-server        - Build server binary"
+	@echo "    build-client        - Build client binary"
+	@echo "    build-client-all    - Build client for all platforms"
+	@echo ""
+	@echo "  Testing:"
+	@echo "    test                - Run all tests"
+	@echo "    test-coverage       - Run tests with coverage report"
+	@echo ""
+	@echo "  Code Quality:"
+	@echo "    lint                - Run linter"
+	@echo "    fmt                 - Format code"
+	@echo "    all                 - Run fmt, lint, and test"
+	@echo ""
+	@echo "  Generate:"
+	@echo "    proto-gen           - Generate protobuf code"
+	@echo "    generate            - Generate mocks from interfaces"

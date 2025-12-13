@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=querier.go -destination=mock_querier_test.go -package=repository
+
 type Querier interface {
 	CreateCredential(ctx context.Context, arg CreateCredentialParams) (Credential, error)
 	GetCredential(ctx context.Context, arg GetCredentialParams) (Credential, error)

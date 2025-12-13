@@ -3,21 +3,17 @@ package auth
 import (
 	"sync"
 
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
-
-type SessionStore interface {
-	GetEncryptionKey(userID uuid.UUID) ([]byte, bool)
-	Set(userID uuid.UUID, key []byte)
-}
 
 type sessionStore struct {
 	keys   sync.Map
 	logger *zap.Logger
 }
 
-func NewSessionStore(logger *zap.Logger) SessionStore {
+func NewSessionStore(logger *zap.Logger) interfaces.SessionStore {
 	return &sessionStore{
 		keys:   sync.Map{},
 		logger: logger,

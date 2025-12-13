@@ -1,5 +1,7 @@
 package interfaces
 
+//go:generate mockgen -source=crypto.go -destination=mocks/mock_crypto.go -package=mocks
+
 // CryptoService defines the interface for cryptographic operations.
 type CryptoService interface {
 	// GenerateSalt generates a random salt for password encryption.
