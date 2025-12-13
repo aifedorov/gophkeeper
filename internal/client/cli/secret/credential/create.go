@@ -35,8 +35,8 @@ func NewCreateCommand(credentialSrv credential.Service) (*CreateCommand, error) 
 	}
 
 	cmd.Flags().StringVarP(&creds.name, "name", "n", "", "Name")
-	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "Login")
-	cmd.Flags().StringVarP(&creds.password, "password", "p", "", "Password")
+	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "login")
+	cmd.Flags().StringVarP(&creds.password, "password", "p", "", "password")
 	cmd.Flags().StringVarP(&creds.notes, "info", "i", "", "Info")
 
 	if err := cmd.MarkFlagRequired("name"); err != nil {

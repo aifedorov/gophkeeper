@@ -9,8 +9,8 @@ import (
 )
 
 type AuthClient interface {
-	Register(ctx context.Context, login, pass string) (userID, token string, err error)
-	Login(ctx context.Context, login, pass string) (userID, token string, err error)
+	Register(ctx context.Context, login, pass string) (token string, encryptionKey []byte, err error)
+	Login(ctx context.Context, login, pass string) (token string, encryptionKey []byte, err error)
 }
 
 type authClient struct {
@@ -23,26 +23,26 @@ func NewAuthClient(conn *grpc.ClientConn) AuthClient {
 	}
 }
 
-func (c *authClient) Register(ctx context.Context, login, pass string) (userID, token string, err error) {
+func (c *authClient) Register(ctx context.Context, login, pass string) (token string, encryptionKey []byte, err error) {
 	resp, err := c.client.Register(ctx, &pb.RegisterRequest{
 		Login:    &login,
 		Password: &pass,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("authClient: failed to register: %w", err)
+		return "", nil, fmt.Errorf("authClient: failed to register: %w", err)
 	}
 
-	return resp.GetUserId(), resp.GetAccessToken(), nil
+	return resp.GetAccessToken(), resp.GetEncryptionKey(), nil
 }
 
-func (c *authClient) Login(ctx context.Context, login, pass string) (userID, token string, err error) {
+func (c *authClient) Login(ctx context.Context, login, pass string) (token string, encryptionKey []byte, err error) {
 	resp, err := c.client.Login(ctx, &pb.LoginRequest{
 		Login:    &login,
 		Password: &pass,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("authClient: failed to login: %w", err)
+		return "", nil, fmt.Errorf("authClient: failed to login: %w", err)
 	}
 
-	return resp.GetUserId(), resp.GetAccessToken(), nil
+	return resp.GetAccessToken(), resp.GetEncryptionKey(), nil
 }

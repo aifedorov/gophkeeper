@@ -79,10 +79,10 @@ func (x *RegisterRequest) GetPassword() string {
 // RegisterResponse contains the result of successful user registration.
 type RegisterResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// user_id is the unique identifier assigned to the newly created user.
-	UserId *string `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
 	// access_token is the JWT token that can be used for authenticated requests.
-	AccessToken   *string `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	AccessToken *string `protobuf:"bytes,1,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	// encryption_key is the key used to encrypt the user's data.
+	EncryptionKey []byte `protobuf:"bytes,2,opt,name=encryption_key,json=encryptionKey" json:"encryption_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,18 +117,18 @@ func (*RegisterResponse) Descriptor() ([]byte, []int) {
 	return file_auth_v1_auth_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RegisterResponse) GetUserId() string {
-	if x != nil && x.UserId != nil {
-		return *x.UserId
-	}
-	return ""
-}
-
 func (x *RegisterResponse) GetAccessToken() string {
 	if x != nil && x.AccessToken != nil {
 		return *x.AccessToken
 	}
 	return ""
+}
+
+func (x *RegisterResponse) GetEncryptionKey() []byte {
+	if x != nil {
+		return x.EncryptionKey
+	}
+	return nil
 }
 
 // LoginRequest contains the credentials for user authentication.
@@ -189,10 +189,10 @@ func (x *LoginRequest) GetPassword() string {
 // LoginResponse contains the result of successful user authentication.
 type LoginResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// user_id is the unique identifier of the authenticated user.
-	UserId *string `protobuf:"bytes,1,opt,name=user_id,json=userId" json:"user_id,omitempty"`
 	// access_token is the JWT token that can be used for authenticated requests.
-	AccessToken   *string `protobuf:"bytes,2,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	AccessToken *string `protobuf:"bytes,1,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
+	// encryption_key is the key used to encrypt the user's data.
+	EncryptionKey []byte `protobuf:"bytes,2,opt,name=encryption_key,json=encryptionKey" json:"encryption_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -227,18 +227,18 @@ func (*LoginResponse) Descriptor() ([]byte, []int) {
 	return file_auth_v1_auth_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *LoginResponse) GetUserId() string {
-	if x != nil && x.UserId != nil {
-		return *x.UserId
-	}
-	return ""
-}
-
 func (x *LoginResponse) GetAccessToken() string {
 	if x != nil && x.AccessToken != nil {
 		return *x.AccessToken
 	}
 	return ""
+}
+
+func (x *LoginResponse) GetEncryptionKey() []byte {
+	if x != nil {
+		return x.EncryptionKey
+	}
+	return nil
 }
 
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
@@ -248,16 +248,16 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x12auth/v1/auth.proto\x12\aauth.v1\"C\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"N\n" +
-	"\x10RegisterResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\"@\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\\\n" +
+	"\x10RegisterResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12%\n" +
+	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"K\n" +
-	"\rLoginResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\faccess_token\x18\x02 \x01(\tR\vaccessToken2\x86\x01\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"Y\n" +
+	"\rLoginResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12%\n" +
+	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey2\x86\x01\n" +
 	"\vAuthService\x12?\n" +
 	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponseBw\n" +

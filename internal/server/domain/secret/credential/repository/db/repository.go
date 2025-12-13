@@ -22,13 +22,19 @@ func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
 	}
 }
 
-func (r *repository) CreateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+func (r *repository) CreateCredential(ctx context.Context, userID string, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
 	r.logger.Debug("repo: creating credential",
-		zap.String("user_id", userID.String()),
+		zap.String("user_id", userID),
 		zap.String("name", credential.Name))
 
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
 	dbCredential, err := r.queries.CreateCredential(ctx, CreateCredentialParams{
-		UserID:            userID,
+		UserID:            userUUID,
 		Name:              credential.Name,
 		Encryptedlogin:    credential.EncryptedLogin,
 		Encryptedpassword: credential.EncryptedPassword,
@@ -47,17 +53,29 @@ func (r *repository) CreateCredential(ctx context.Context, userID uuid.UUID, cre
 	return &result, nil
 }
 
-func (r *repository) GetCredential(ctx context.Context, userID, id uuid.UUID) (*interfaces.RepositoryCredential, error) {
+func (r *repository) GetCredential(ctx context.Context, userID, id string) (*interfaces.RepositoryCredential, error) {
 	r.logger.Debug("repo: getting credential",
-		zap.String("user_id", userID.String()),
-		zap.String("id", id.String()))
+		zap.String("user_id", userID),
+		zap.String("id", id))
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
+	idUUID, err := uuid.Parse(id)
+	if err != nil {
+		r.logger.Error("repo: failed to parse credential id", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to parse credential id: %w", err)
+	}
 
 	dbCredential, err := r.queries.GetCredential(ctx, GetCredentialParams{
-		ID:     id,
-		UserID: userID,
+		ID:     idUUID,
+		UserID: userUUID,
 	})
 	if notFoundError(err) {
-		r.logger.Debug("repo: credential not found", zap.String("id", id.String()))
+		r.logger.Debug("repo: credential not found", zap.String("id", id))
 		return nil, credentialDomain.ErrNotFound
 	}
 	if err != nil {
@@ -69,12 +87,18 @@ func (r *repository) GetCredential(ctx context.Context, userID, id uuid.UUID) (*
 	return &result, nil
 }
 
-func (r *repository) ListCredentials(ctx context.Context, userID uuid.UUID) ([]interfaces.RepositoryCredential, error) {
-	r.logger.Debug("repo: listing credentials", zap.String("user_id", userID.String()))
+func (r *repository) ListCredentials(ctx context.Context, userID string) ([]interfaces.RepositoryCredential, error) {
+	r.logger.Debug("repo: listing credentials", zap.String("user_id", userID))
 
-	dbCredentials, err := r.queries.ListCredentials(ctx, userID)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
+	dbCredentials, err := r.queries.ListCredentials(ctx, userUUID)
 	if notFoundError(err) {
-		r.logger.Debug("repo: no credentials found", zap.String("user_id", userID.String()))
+		r.logger.Debug("repo: no credentials found", zap.String("user_id", userID))
 		return []interfaces.RepositoryCredential{}, nil
 	}
 	if err != nil {
@@ -89,10 +113,16 @@ func (r *repository) ListCredentials(ctx context.Context, userID uuid.UUID) ([]i
 	return result, nil
 }
 
-func (r *repository) UpdateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+func (r *repository) UpdateCredential(ctx context.Context, userID string, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
 	r.logger.Debug("repo: updating credential",
-		zap.String("user_id", userID.String()),
+		zap.String("user_id", userID),
 		zap.String("id", credential.ID))
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
 
 	id, err := uuid.Parse(credential.ID)
 	if err != nil {
@@ -102,7 +132,7 @@ func (r *repository) UpdateCredential(ctx context.Context, userID uuid.UUID, cre
 
 	dbCredential, err := r.queries.UpdateCredential(ctx, UpdateCredentialParams{
 		ID:                id,
-		UserID:            userID,
+		UserID:            userUUID,
 		Name:              credential.Name,
 		Encryptedlogin:    credential.EncryptedLogin,
 		Encryptedpassword: credential.EncryptedPassword,
@@ -121,24 +151,36 @@ func (r *repository) UpdateCredential(ctx context.Context, userID uuid.UUID, cre
 	return &result, nil
 }
 
-func (r *repository) DeleteCredential(ctx context.Context, userID, id uuid.UUID) error {
+func (r *repository) DeleteCredential(ctx context.Context, userID, id string) error {
 	r.logger.Debug("repo: deleting credential",
-		zap.String("user_id", userID.String()),
-		zap.String("id", id.String()))
+		zap.String("user_id", userID),
+		zap.String("id", id))
 
-	err := r.queries.DeleteCredential(ctx, DeleteCredentialParams{
-		ID:     id,
-		UserID: userID,
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
+	idUUID, err := uuid.Parse(id)
+	if err != nil {
+		r.logger.Error("repo: failed to parse credential id", zap.Error(err))
+		return fmt.Errorf("repo: failed to parse credential id: %w", err)
+	}
+
+	err = r.queries.DeleteCredential(ctx, DeleteCredentialParams{
+		ID:     idUUID,
+		UserID: userUUID,
 	})
 	if notFoundError(err) {
-		r.logger.Debug("repo: credential not found for deletion", zap.String("id", id.String()))
+		r.logger.Debug("repo: credential not found for deletion", zap.String("id", id))
 		return credentialDomain.ErrNotFound
 	}
 	if err != nil {
 		r.logger.Error("repo: failed to delete credential", zap.Error(err))
 		return fmt.Errorf("repo: failed to delete credential: %w", err)
 	}
-	r.logger.Debug("repo: credential deleted successfully", zap.String("id", id.String()))
+	r.logger.Debug("repo: credential deleted successfully", zap.String("id", id))
 	return nil
 }
 

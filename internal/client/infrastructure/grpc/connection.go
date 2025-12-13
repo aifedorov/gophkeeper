@@ -25,7 +25,7 @@ type grpcConnection struct {
 	conn *grpc.ClientConn
 }
 
-func NewGRPCConnection(serverAddr string, tokenProvider client.TokenProvider) (GRPCConnection, error) {
+func NewGRPCConnection(serverAddr string, tokenProvider client.SessionProvider) (GRPCConnection, error) {
 	creds, err := loadTLSCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS credentials: %w", err)

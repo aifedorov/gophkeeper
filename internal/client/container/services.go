@@ -18,14 +18,14 @@ import (
 type Services struct {
 	AuthSrv       auth.Service
 	CredsSrv      credential.Service
-	TokenProvider client.TokenProvider
+	TokenProvider client.SessionProvider
 
 	grpcConn grpcClient.GRPCConnection
 }
 
 func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 	sessionStore := storage.NewStorage()
-	tokenProvider := auth.NewTokeProvider(sessionStore)
+	tokenProvider := auth.NewSessionProvider(sessionStore)
 	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr, tokenProvider)
 	if err != nil {
 		return nil, fmt.Errorf("container: failed to create grpc connection: %w", err)

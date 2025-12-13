@@ -145,7 +145,7 @@ func TestRegister(t *testing.T) {
 			service := NewService(mockRepo, logger, mockCrypto)
 
 			ctx := context.Background()
-			user, err := service.Register(ctx, tt.login, tt.passHash)
+			user, _, err := service.Register(ctx, tt.login, tt.passHash)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -261,7 +261,7 @@ func TestLogin(t *testing.T) {
 			service := NewService(mockRepo, logger, mockCrypto)
 
 			ctx := context.Background()
-			user, err := service.Login(ctx, tt.login, tt.passHash)
+			user, _, err := service.Login(ctx, tt.login, tt.passHash)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -305,6 +305,8 @@ func TestLogin_InvalidPassword(t *testing.T) {
 			Return(expectedUser, nil)
 
 		mockCrypto := mocks.NewMockCryptoService(ctrl)
+		mockCrypto.EXPECT().DeriveEncryptionKey("wrongpassword", "testsalt").
+			Return([]byte("derived-key")).Times(1)
 		mockCrypto.EXPECT().CompareHashAndPassword(string(hashedPassword), "wrongpassword").
 			Return(bcrypt.ErrMismatchedHashAndPassword).Times(1)
 
@@ -312,7 +314,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		service := NewService(mockRepo, logger, mockCrypto)
 
 		ctx := context.Background()
-		user, err := service.Login(ctx, testLogin, "wrongpassword")
+		user, _, err := service.Login(ctx, testLogin, "wrongpassword")
 
 		require.Error(t, err)
 		assert.Nil(t, user)

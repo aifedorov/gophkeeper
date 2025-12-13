@@ -27,10 +27,10 @@ message RegisterRequest {
 
 // RegisterResponse contains the result of successful user registration.
 message RegisterResponse {
-  // user_id is the unique identifier assigned to the newly created user.
-  string user_id = 1;
   // access_token is the JWT token that can be used for authenticated requests.
-  string access_token = 2;
+  string access_token = 1;
+  // encryption_key is the key used to encrypt the user's data.
+  bytes encryption_key = 2;
 }
 
 // LoginRequest contains the credentials for user authentication.
@@ -43,8 +43,8 @@ message LoginRequest {
 
 // LoginResponse contains the result of successful user authentication.
 message LoginResponse {
-  // user_id is the unique identifier of the authenticated user.
-  string user_id = 1;
   // access_token is the JWT token that can be used for authenticated requests.
-  string access_token = 2;
+  string access_token = 1;
+  // encryption_key is the key used to encrypt the user's data.
+  bytes encryption_key = 2;
 }

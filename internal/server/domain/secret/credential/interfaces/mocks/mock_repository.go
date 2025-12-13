@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 
 	interfaces "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
-	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,7 +42,7 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // CreateCredential mocks base method.
-func (m *MockRepository) CreateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+func (m *MockRepository) CreateCredential(ctx context.Context, userID string, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCredential", ctx, userID, credential)
 	ret0, _ := ret[0].(*interfaces.RepositoryCredential)
@@ -58,7 +57,7 @@ func (mr *MockRepositoryMockRecorder) CreateCredential(ctx, userID, credential a
 }
 
 // DeleteCredential mocks base method.
-func (m *MockRepository) DeleteCredential(ctx context.Context, userID, id uuid.UUID) error {
+func (m *MockRepository) DeleteCredential(ctx context.Context, userID, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteCredential", ctx, userID, id)
 	ret0, _ := ret[0].(error)
@@ -72,7 +71,7 @@ func (mr *MockRepositoryMockRecorder) DeleteCredential(ctx, userID, id any) *gom
 }
 
 // GetCredential mocks base method.
-func (m *MockRepository) GetCredential(ctx context.Context, userID, id uuid.UUID) (*interfaces.RepositoryCredential, error) {
+func (m *MockRepository) GetCredential(ctx context.Context, userID, id string) (*interfaces.RepositoryCredential, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCredential", ctx, userID, id)
 	ret0, _ := ret[0].(*interfaces.RepositoryCredential)
@@ -87,7 +86,7 @@ func (mr *MockRepositoryMockRecorder) GetCredential(ctx, userID, id any) *gomock
 }
 
 // ListCredentials mocks base method.
-func (m *MockRepository) ListCredentials(ctx context.Context, userID uuid.UUID) ([]interfaces.RepositoryCredential, error) {
+func (m *MockRepository) ListCredentials(ctx context.Context, userID string) ([]interfaces.RepositoryCredential, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListCredentials", ctx, userID)
 	ret0, _ := ret[0].([]interfaces.RepositoryCredential)
@@ -102,7 +101,7 @@ func (mr *MockRepositoryMockRecorder) ListCredentials(ctx, userID any) *gomock.C
 }
 
 // UpdateCredential mocks base method.
-func (m *MockRepository) UpdateCredential(ctx context.Context, userID uuid.UUID, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
+func (m *MockRepository) UpdateCredential(ctx context.Context, userID string, credential interfaces.RepositoryCredential) (*interfaces.RepositoryCredential, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateCredential", ctx, userID, credential)
 	ret0, _ := ret[0].(*interfaces.RepositoryCredential)

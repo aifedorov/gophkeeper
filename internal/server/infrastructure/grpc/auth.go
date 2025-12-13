@@ -48,7 +48,7 @@ func NewAuthServer(cfg *config.Config, logger *zap.Logger, userSrv userdomain.Se
 func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	a.logger.Debug("grpc: register request received", zap.String("login", in.GetLogin()))
 
-	user, err := a.userSrv.Register(ctx, in.GetLogin(), in.GetPassword())
+	user, encryptionKey, err := a.userSrv.Register(ctx, in.GetLogin(), in.GetPassword())
 	if errors.Is(err, userdomain.ErrLoginExists) {
 		a.logger.Info("grpc: registration failed", zap.String("reason", errMsgLoginExists))
 		return nil, status.Error(codes.AlreadyExists, errMsgLoginExists)
@@ -58,19 +58,19 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 		return nil, status.Error(codes.Internal, errMsgInternalError)
 	}
 
-	userID := user.GetUserID()
-	a.logger.Debug("grpc: user registered successfully", zap.String("user_id", userID))
+	a.logger.Debug("grpc: issuing token and encryption key")
 
-	token, err := a.issueTokenAndLog(userID, "register")
+	token, err := a.issueTokenAndLog(user.GetUserID(), "register")
 	if err != nil {
 		a.logger.Error("grpc: failed to issue token", zap.Error(err))
 		return nil, status.Error(codes.Internal, errMsgInternalError)
 	}
 
-	a.logger.Debug("grpc: register completed successfully", zap.String("user_id", userID))
+	a.logger.Debug("grpc: token and encryption key issued successfully", zap.String("user_id", user.GetUserID()))
+
 	return &pb.RegisterResponse{
-		UserId:      &userID,
-		AccessToken: &token,
+		AccessToken:   &token,
+		EncryptionKey: encryptionKey,
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginResponse, error) {
 	a.logger.Debug("grpc: login request received", zap.String("login", in.GetLogin()))
 
-	user, err := a.userSrv.Login(ctx, in.GetLogin(), in.GetPassword())
+	user, encryptionKey, err := a.userSrv.Login(ctx, in.GetLogin(), in.GetPassword())
 	if errors.Is(err, userdomain.ErrUserNotFound) {
 		a.logger.Info("grpc: login failed", zap.String("reason", errMsgInvalidCredentials))
 		return nil, status.Error(codes.Unauthenticated, errMsgInvalidCredentials)
@@ -102,8 +102,8 @@ func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 
 	a.logger.Debug("grpc: login completed successfully", zap.String("user_id", userID))
 	return &pb.LoginResponse{
-		UserId:      &userID,
-		AccessToken: &token,
+		AccessToken:   &token,
+		EncryptionKey: encryptionKey,
 	}, nil
 }
 

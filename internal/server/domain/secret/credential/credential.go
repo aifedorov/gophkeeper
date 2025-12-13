@@ -5,8 +5,8 @@ import (
 )
 
 type Credential struct {
-	id       uuid.UUID
-	userID   uuid.UUID
+	id       string
+	userID   string
 	name     string
 	login    string
 	password string
@@ -25,7 +25,7 @@ func NewCredential(name, login, password, metadata string) (*Credential, error) 
 	}
 
 	return &Credential{
-		id:       uuid.New(),
+		id:       uuid.New().String(),
 		name:     name,
 		login:    login,
 		password: password,
@@ -33,11 +33,11 @@ func NewCredential(name, login, password, metadata string) (*Credential, error) 
 	}, nil
 }
 
-func (c *Credential) GetID() uuid.UUID {
+func (c *Credential) GetID() string {
 	return c.id
 }
 
-func (c *Credential) GetUserID() uuid.UUID {
+func (c *Credential) GetUserID() string {
 	return c.userID
 }
 

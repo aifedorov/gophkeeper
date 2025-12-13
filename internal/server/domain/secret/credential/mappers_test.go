@@ -51,39 +51,13 @@ func TestToDomainCredential(t *testing.T) {
 					Times(1)
 			},
 			checkFunc: func(t *testing.T, c Credential) {
-				assert.Equal(t, validID, c.GetID())
-				assert.Equal(t, validUserID, c.GetUserID())
+				assert.Equal(t, validID.String(), c.GetID())
+				assert.Equal(t, validUserID.String(), c.GetUserID())
 				assert.Equal(t, "test-name", c.GetName())
 				assert.Equal(t, "decrypted-login", c.GetLogin())
 				assert.Equal(t, "decrypted-password", c.GetPassword())
 				assert.Equal(t, "decrypted-notes", c.GetMetadata())
 			},
-		},
-		{
-			name: "invalid credential ID",
-			repoCred: interfaces.RepositoryCredential{
-				ID:                "invalid-uuid",
-				UserID:            validUserID.String(),
-				Name:              "test-name",
-				EncryptedLogin:    []byte("encrypted-login"),
-				EncryptedPassword: []byte("encrypted-password"),
-				EncryptedNotes:    []byte("encrypted-notes"),
-			},
-			setupMock: func(m *credMocks.MockCryptoService) {},
-			wantErr:   true,
-		},
-		{
-			name: "invalid user ID",
-			repoCred: interfaces.RepositoryCredential{
-				ID:                validID.String(),
-				UserID:            "invalid-uuid",
-				Name:              "test-name",
-				EncryptedLogin:    []byte("encrypted-login"),
-				EncryptedPassword: []byte("encrypted-password"),
-				EncryptedNotes:    []byte("encrypted-notes"),
-			},
-			setupMock: func(m *credMocks.MockCryptoService) {},
-			wantErr:   true,
 		},
 		{
 			name: "login decryption fails",
@@ -192,8 +166,8 @@ func TestToRepositoryCredential(t *testing.T) {
 		{
 			name: "successful conversion",
 			cred: Credential{
-				id:       uuid.New(),
-				userID:   uuid.New(),
+				id:       uuid.New().String(),
+				userID:   uuid.New().String(),
 				name:     "test-name",
 				login:    "test-login",
 				password: "test-password",
@@ -223,8 +197,8 @@ func TestToRepositoryCredential(t *testing.T) {
 		{
 			name: "login encryption fails",
 			cred: Credential{
-				id:       uuid.New(),
-				userID:   uuid.New(),
+				id:       uuid.New().String(),
+				userID:   uuid.New().String(),
 				name:     "test-name",
 				login:    "test-login",
 				password: "test-password",
@@ -241,8 +215,8 @@ func TestToRepositoryCredential(t *testing.T) {
 		{
 			name: "password encryption fails",
 			cred: Credential{
-				id:       uuid.New(),
-				userID:   uuid.New(),
+				id:       uuid.New().String(),
+				userID:   uuid.New().String(),
 				name:     "test-name",
 				login:    "test-login",
 				password: "test-password",
@@ -263,8 +237,8 @@ func TestToRepositoryCredential(t *testing.T) {
 		{
 			name: "notes encryption fails",
 			cred: Credential{
-				id:       uuid.New(),
-				userID:   uuid.New(),
+				id:       uuid.New().String(),
+				userID:   uuid.New().String(),
 				name:     "test-name",
 				login:    "test-login",
 				password: "test-password",
@@ -289,8 +263,8 @@ func TestToRepositoryCredential(t *testing.T) {
 		{
 			name: "empty notes",
 			cred: Credential{
-				id:       uuid.New(),
-				userID:   uuid.New(),
+				id:       uuid.New().String(),
+				userID:   uuid.New().String(),
 				name:     "test-name",
 				login:    "test-login",
 				password: "test-password",

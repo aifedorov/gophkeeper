@@ -10,7 +10,7 @@ const (
 )
 
 // ValidateLogin validates a login string.
-// Login must be between LoginMinLength (3) and LoginMaxLength (25) characters.
+// login must be between LoginMinLength (3) and LoginMaxLength (25) characters.
 func ValidateLogin(login string) error {
 	if len(login) == 0 {
 		return fmt.Errorf("validator: login can't be empty")
@@ -25,7 +25,7 @@ func ValidateLogin(login string) error {
 }
 
 // ValidatePassword validates a password string.
-// Password must be between PasswordMinLength (6) and PasswordMaxLength (16) characters.
+// password must be between PasswordMinLength (6) and PasswordMaxLength (16) characters.
 func ValidatePassword(password string) error {
 	if len(password) == 0 {
 		return fmt.Errorf("validator: password can't be empty")

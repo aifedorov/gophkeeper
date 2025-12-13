@@ -3,7 +3,6 @@ package credential
 import (
 	"testing"
 
-	authMocks "github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces/mocks"
 	credMocks "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -21,63 +20,50 @@ const (
 )
 
 var (
-	testUserID = uuid.New()
-	testKey    = []byte("test-encryption-key-32-bytes!!")
+	testUserID        = uuid.New()
+	testKey           = []byte("test-encryption-key-32-bytes!!")
+	testEncryptionKey = "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEh" // base64 encoded testKey
 )
 
 type testSetup struct {
-	ctrl           *gomock.Controller
-	mockRepo       *credMocks.MockRepository
-	mockCrypto     *credMocks.MockCryptoService
-	mockSession    *authMocks.MockSessionStore
-	service        Service
-	logger         *zap.Logger
-	userID         uuid.UUID
-	credentialID   uuid.UUID
-	encryptionKey  []byte
-	encryptedLogin []byte
-	encryptedPass  []byte
-	encryptedNotes []byte
+	ctrl             *gomock.Controller
+	mockRepo         *credMocks.MockRepository
+	mockCrypto       *credMocks.MockCryptoService
+	service          Service
+	logger           *zap.Logger
+	userID           string
+	credentialID     string
+	encryptionKey    []byte
+	encryptionKeyStr string
+	encryptedLogin   []byte
+	encryptedPass    []byte
+	encryptedNotes   []byte
 }
 
 func newTestSetup(t *testing.T) *testSetup {
 	ctrl := gomock.NewController(t)
 
 	return &testSetup{
-		ctrl:           ctrl,
-		mockRepo:       credMocks.NewMockRepository(ctrl),
-		mockCrypto:     credMocks.NewMockCryptoService(ctrl),
-		mockSession:    authMocks.NewMockSessionStore(ctrl),
-		logger:         zap.NewNop(),
-		userID:         testUserID,
-		credentialID:   uuid.New(),
-		encryptionKey:  testKey,
-		encryptedLogin: []byte("encrypted-login"),
-		encryptedPass:  []byte("encrypted-password"),
-		encryptedNotes: []byte("encrypted-notes"),
+		ctrl:             ctrl,
+		mockRepo:         credMocks.NewMockRepository(ctrl),
+		mockCrypto:       credMocks.NewMockCryptoService(ctrl),
+		logger:           zap.NewNop(),
+		userID:           testUserID.String(),
+		credentialID:     uuid.New().String(),
+		encryptionKey:    testKey,
+		encryptionKeyStr: testEncryptionKey,
+		encryptedLogin:   []byte("encrypted-login"),
+		encryptedPass:    []byte("encrypted-password"),
+		encryptedNotes:   []byte("encrypted-notes"),
 	}
 }
 
 func (s *testSetup) initService() {
-	s.service = NewService(s.mockRepo, s.mockCrypto, s.mockSession, s.logger)
+	s.service = NewService(s.mockRepo, s.mockCrypto, s.logger)
 }
 
 func (s *testSetup) cleanup() {
 	s.ctrl.Finish()
-}
-
-func (s *testSetup) expectEncryptionKeyInSession() {
-	s.mockSession.EXPECT().
-		GetEncryptionKey(s.userID).
-		Return(s.encryptionKey, true).
-		Times(1)
-}
-
-func (s *testSetup) expectNoEncryptionKeyInSession() {
-	s.mockSession.EXPECT().
-		GetEncryptionKey(s.userID).
-		Return(nil, false).
-		Times(1)
 }
 
 func (s *testSetup) expectEncryptCredential() {
@@ -115,7 +101,7 @@ func newTestCredential() *Credential {
 	return cred
 }
 
-func assertCredentialFields(t *testing.T, cred *Credential, userID uuid.UUID) {
+func assertCredentialFields(t *testing.T, cred *Credential, userID string) {
 	t.Helper()
 	require.NotNil(t, cred)
 	assert.Equal(t, testName, cred.GetName())
@@ -125,7 +111,7 @@ func assertCredentialFields(t *testing.T, cred *Credential, userID uuid.UUID) {
 	assert.Equal(t, userID, cred.GetUserID())
 }
 
-func assertCredentialFieldsWithID(t *testing.T, cred *Credential, userID, credID uuid.UUID) {
+func assertCredentialFieldsWithID(t *testing.T, cred *Credential, userID, credID string) {
 	t.Helper()
 	assertCredentialFields(t, cred, userID)
 	assert.Equal(t, credID, cred.GetID())

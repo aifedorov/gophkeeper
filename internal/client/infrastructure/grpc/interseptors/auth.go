@@ -13,8 +13,10 @@ import (
 type ContextKey string
 
 const (
-	// jwyKey is the metadata key for extracting JWT access token from gRPC request headers
-	jwyKey ContextKey = "access_token"
+	// accessTokenKey is the metadata key for extracting JWT access token from gRPC request headers
+	accessTokenKey ContextKey = "access_token"
+	// encryptionKeyKey is the metadata key for extracting encryption key from gRPC request headers
+	encryptionKeyKey ContextKey = "encryption_key"
 )
 
 var publicMethods = map[string]bool{
@@ -23,11 +25,11 @@ var publicMethods = map[string]bool{
 }
 
 type AuthInterceptor struct {
-	tokenProvider client.TokenProvider
+	sessionProvider client.SessionProvider
 }
 
-func NewAuthInterceptor(tokenProvider client.TokenProvider) *AuthInterceptor {
-	return &AuthInterceptor{tokenProvider: tokenProvider}
+func NewAuthInterceptor(tokenProvider client.SessionProvider) *AuthInterceptor {
+	return &AuthInterceptor{sessionProvider: tokenProvider}
 }
 
 func (i *AuthInterceptor) Interceptor() grpc.UnaryClientInterceptor {
@@ -43,12 +45,16 @@ func (i *AuthInterceptor) Interceptor() grpc.UnaryClientInterceptor {
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		accessToken, err := i.tokenProvider.GetToken(ctx)
+		session, err := i.sessionProvider.GetSession(ctx)
 		if err != nil {
+			fmt.Printf("method: %s, err: %v\n", method, err.Error())
 			return fmt.Errorf("authInterseptor: failed to load session: %w", err)
 		}
 
-		ctx = metadata.AppendToOutgoingContext(ctx, string(jwyKey), accessToken)
+		ctx = metadata.AppendToOutgoingContext(ctx,
+			string(accessTokenKey), session.GetAccessToken(),
+			string(encryptionKeyKey), session.GetEncryptionKey(),
+		)
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
@@ -28,18 +29,15 @@ func NewService(client client.AuthClient, repo interfaces.Repository) Service {
 }
 
 func (s *service) Login(ctx context.Context, creds interfaces.Credentials) error {
-	userID, token, err := s.client.Login(ctx, creds.Login, creds.Password)
+	accessToken, encryptionKey, err := s.client.Login(ctx, creds.GetLogin(), creds.GetPassword())
 	if err != nil {
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	err = s.repo.Save(interfaces.Session{
-		User: interfaces.User{
-			ID:    userID,
-			Login: creds.Login,
-		},
-		AccessToken: token,
-	})
+	err = s.repo.Save(interfaces.NewSession(
+		accessToken,
+		base64.StdEncoding.EncodeToString(encryptionKey)),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to save session: %w", err)
 	}
@@ -48,18 +46,15 @@ func (s *service) Login(ctx context.Context, creds interfaces.Credentials) error
 }
 
 func (s *service) Register(ctx context.Context, creds interfaces.Credentials) error {
-	userID, token, err := s.client.Register(ctx, creds.Login, creds.Password)
+	accessToken, encryptionKey, err := s.client.Register(ctx, creds.GetLogin(), creds.GetPassword())
 	if err != nil {
 		return fmt.Errorf("failed to register: %w", err)
 	}
 
-	err = s.repo.Save(interfaces.Session{
-		User: interfaces.User{
-			ID:    userID,
-			Login: creds.Login,
-		},
-		AccessToken: token,
-	})
+	err = s.repo.Save(interfaces.NewSession(
+		accessToken,
+		base64.StdEncoding.EncodeToString(encryptionKey)),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to save session: %w", err)
 	}

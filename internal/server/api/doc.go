@@ -13,7 +13,7 @@
 //
 // Handles user authentication operations:
 //   - Register: Create new user accounts with encrypted credentials
-//   - Login: Authenticate existing users and issue JWT tokens
+//   - login: Authenticate existing users and issue JWT tokens
 //
 // ## CredentialService
 //
@@ -81,8 +81,8 @@
 //
 //	// Register new user
 //	resp, err := authClient.Register(ctx, &authv1.RegisterRequest{
-//	    Login:    "user@example.com",
-//	    Password: "secure-password",
+//	    login:    "user@example.com",
+//	    password: "secure-password",
 //	})
 //	if err != nil {
 //	    log.Fatal(err)
@@ -98,8 +98,8 @@
 //	// Create new credential
 //	credResp, err := credClient.Create(ctx, &credentialv1.CreateRequest{
 //	    Name:     "Gmail",
-//	    Login:    "user@gmail.com",
-//	    Password: "gmail-password",
+//	    login:    "user@gmail.com",
+//	    password: "gmail-password",
 //	    Metadata: "Personal email account",
 //	})
 package api

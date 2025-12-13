@@ -2,50 +2,46 @@ package credential
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
-	authInterfaces "github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 type Service interface {
-	Create(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error)
-	Get(ctx context.Context, userID, id uuid.UUID) (*Credential, error)
-	List(ctx context.Context, userID uuid.UUID) ([]Credential, error)
-	Update(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error)
-	Delete(ctx context.Context, userID, id uuid.UUID) error
+	Create(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error)
+	Get(ctx context.Context, userID, encryptionKey, id string) (*Credential, error)
+	List(ctx context.Context, userID, encryptionKey string) ([]Credential, error)
+	Update(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error)
+	Delete(ctx context.Context, userID, id string) error
 }
 
 type service struct {
-	repo         interfaces.Repository
-	crypto       interfaces.CryptoService
-	sessionStore authInterfaces.SessionStore
-	logger       *zap.Logger
+	repo   interfaces.Repository
+	crypto interfaces.CryptoService
+	logger *zap.Logger
 }
 
-func NewService(repo interfaces.Repository, crypto interfaces.CryptoService, sessionStore authInterfaces.SessionStore, logger *zap.Logger) Service {
+func NewService(repo interfaces.Repository, crypto interfaces.CryptoService, logger *zap.Logger) Service {
 	return &service{
-		repo:         repo,
-		crypto:       crypto,
-		sessionStore: sessionStore,
-		logger:       logger,
+		repo:   repo,
+		crypto: crypto,
+		logger: logger,
 	}
 }
 
-func (s *service) Create(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error) {
+func (s *service) Create(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error) {
 	s.logger.Debug("credential: creating credential",
-		zap.String("user_id", userID.String()),
+		zap.String("user_id", userID),
 		zap.String("name", credential.GetName()))
 
-	key, ok := s.sessionStore.GetEncryptionKey(userID)
-	if !ok {
-		s.logger.Debug("credential: encryption key not found in session", zap.String("user_id", userID.String()))
-		return nil, fmt.Errorf("failed to get encryption key for user: %w", ErrNotFound)
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("credential: failed to decode encryption key", zap.Error(err))
+		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
 	}
-	s.logger.Debug("credential: encryption key retrieved from session")
 
 	rCredential, err := toRepositoryCredential(s.crypto, key, credential)
 	if err != nil {
@@ -75,24 +71,24 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, credential Crede
 		return nil, fmt.Errorf("failed to convert credential: %w", err)
 	}
 
-	s.logger.Debug("credential: created successfully", zap.String("id", domainCred.GetID().String()))
+	s.logger.Debug("credential: created successfully", zap.String("id", domainCred.GetID()))
 	return &domainCred, nil
 }
 
-func (s *service) Get(ctx context.Context, userID, id uuid.UUID) (*Credential, error) {
+func (s *service) Get(ctx context.Context, userID, encryptionKey, id string) (*Credential, error) {
 	s.logger.Debug("credential: getting credential",
-		zap.String("user_id", userID.String()),
-		zap.String("id", id.String()))
+		zap.String("user_id", userID),
+		zap.String("id", id))
 
-	key, ok := s.sessionStore.GetEncryptionKey(userID)
-	if !ok {
-		s.logger.Debug("credential: encryption key not found in session", zap.String("user_id", userID.String()))
-		return nil, fmt.Errorf("failed to get encryption key for user")
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("credential: failed to decode encryption key", zap.Error(err))
+		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
 	}
 
 	rCredential, err := s.repo.GetCredential(ctx, userID, id)
 	if errors.Is(err, ErrNotFound) {
-		s.logger.Debug("credential: not found", zap.String("id", id.String()))
+		s.logger.Debug("credential: not found", zap.String("id", id))
 		return nil, ErrNotFound
 	}
 	if err != nil {
@@ -110,17 +106,17 @@ func (s *service) Get(ctx context.Context, userID, id uuid.UUID) (*Credential, e
 		return nil, fmt.Errorf("failed to convert credential: %w", err)
 	}
 
-	s.logger.Debug("credential: retrieved successfully", zap.String("id", id.String()))
+	s.logger.Debug("credential: retrieved successfully", zap.String("id", id))
 	return &domainCred, nil
 }
 
-func (s *service) List(ctx context.Context, userID uuid.UUID) ([]Credential, error) {
-	s.logger.Debug("credential: listing credentials", zap.String("user_id", userID.String()))
+func (s *service) List(ctx context.Context, userID, encryptionKey string) ([]Credential, error) {
+	s.logger.Debug("credential: listing credentials", zap.String("user_id", userID))
 
-	key, ok := s.sessionStore.GetEncryptionKey(userID)
-	if !ok {
-		s.logger.Debug("credential: encryption key not found in session", zap.String("user_id", userID.String()))
-		return nil, fmt.Errorf("failed to get encryption key for user")
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("credential: failed to decode encryption key", zap.Error(err))
+		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
 	}
 
 	credentials, err := s.repo.ListCredentials(ctx, userID)
@@ -146,15 +142,15 @@ func (s *service) List(ctx context.Context, userID uuid.UUID) ([]Credential, err
 	return res, nil
 }
 
-func (s *service) Update(ctx context.Context, userID uuid.UUID, credential Credential) (*Credential, error) {
+func (s *service) Update(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error) {
 	s.logger.Debug("credential: updating credential",
-		zap.String("user_id", userID.String()),
-		zap.String("id", credential.GetID().String()))
+		zap.String("user_id", userID),
+		zap.String("id", credential.GetID()))
 
-	key, ok := s.sessionStore.GetEncryptionKey(userID)
-	if !ok {
-		s.logger.Debug("credential: encryption key not found in session", zap.String("user_id", userID.String()))
-		return nil, fmt.Errorf("failed to get encryption key for user")
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("credential: failed to decode encryption key", zap.Error(err))
+		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
 	}
 
 	rCredential, err := toRepositoryCredential(s.crypto, key, credential)
@@ -165,7 +161,7 @@ func (s *service) Update(ctx context.Context, userID uuid.UUID, credential Crede
 
 	result, err := s.repo.UpdateCredential(ctx, userID, rCredential)
 	if errors.Is(err, ErrNotFound) {
-		s.logger.Debug("credential: not found for update", zap.String("id", credential.GetID().String()))
+		s.logger.Debug("credential: not found for update", zap.String("id", credential.GetID()))
 		return nil, ErrNotFound
 	}
 	if err != nil {
@@ -183,18 +179,19 @@ func (s *service) Update(ctx context.Context, userID uuid.UUID, credential Crede
 		return nil, fmt.Errorf("failed to convert credential: %w", err)
 	}
 
-	s.logger.Debug("credential: updated successfully", zap.String("id", domainCred.GetID().String()))
+	s.logger.Debug("credential: updated successfully", zap.String("id", domainCred.GetID()))
 	return &domainCred, nil
 }
 
-func (s *service) Delete(ctx context.Context, userID, id uuid.UUID) error {
+func (s *service) Delete(ctx context.Context, userID, id string) error {
 	s.logger.Debug("credential: deleting credential",
-		zap.String("user_id", userID.String()),
-		zap.String("id", id.String()))
+		zap.String("user_id", userID),
+		zap.String("id", id),
+	)
 
 	err := s.repo.DeleteCredential(ctx, userID, id)
 	if errors.Is(err, ErrNotFound) {
-		s.logger.Debug("credential: not found for deletion", zap.String("id", id.String()))
+		s.logger.Debug("credential: not found for deletion", zap.String("id", id))
 		return ErrNotFound
 	}
 	if err != nil {
@@ -202,6 +199,6 @@ func (s *service) Delete(ctx context.Context, userID, id uuid.UUID) error {
 		return fmt.Errorf("failed to delete credential: %w", err)
 	}
 
-	s.logger.Debug("credential: deleted successfully", zap.String("id", id.String()))
+	s.logger.Debug("credential: deleted successfully", zap.String("id", id))
 	return nil
 }

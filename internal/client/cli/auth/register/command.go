@@ -33,8 +33,8 @@ func NewCommand(authSrv auth.Service) (*Command, error) {
 		RunE:  c.run,
 	}
 
-	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "Login")
-	cmd.Flags().StringVarP(&creds.password, "password", "p", "", "Password")
+	cmd.Flags().StringVarP(&creds.login, "login", "l", "", "login")
+	cmd.Flags().StringVarP(&creds.password, "password", "p", "", "password")
 
 	if err := cmd.MarkFlagRequired("login"); err != nil {
 		return nil, fmt.Errorf("failed to mark login flag as required: %w", err)
@@ -60,10 +60,7 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid password: %w", err)
 	}
 
-	if err := c.authSrv.Register(cmd.Context(), interfaces.Credentials{
-		Login:    creds.login,
-		Password: creds.password,
-	}); err != nil {
+	if err := c.authSrv.Register(cmd.Context(), interfaces.NewCredentials(creds.login, creds.password)); err != nil {
 		return fmt.Errorf("failed to register: %w", err)
 	}
 

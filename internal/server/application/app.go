@@ -44,14 +44,13 @@ func (a *App) Run() error {
 	}
 	defer db.Close()
 
-	sessionStore := auth.NewSessionStore(a.logger)
 	authRepo := authrepository.NewRepository(db.DBPool(), a.logger)
 	cryptoSrv := crypto.NewService(a.logger)
 	authSrv := auth.NewService(authRepo, a.logger, cryptoSrv)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 
 	credRepo := credrepository.NewRepository(db.DBPool(), a.logger)
-	credSrv := credential.NewService(credRepo, cryptoSrv, sessionStore, a.logger)
+	credSrv := credential.NewService(credRepo, cryptoSrv, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
 	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)

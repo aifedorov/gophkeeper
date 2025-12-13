@@ -15,7 +15,6 @@ import (
 const (
 	testLogin    = "testuser"
 	testPassword = "testpass"
-	testUserID   = "auth-id-123"
 	testToken    = "token-xyz-456"
 )
 
@@ -30,38 +29,26 @@ func TestService_Login(t *testing.T) {
 		errCheck  func(*testing.T, error)
 	}{
 		{
-			name: "successful login",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "successful login",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return(testUserID, testToken, nil)
+					Return(testToken, []byte(testToken), nil)
 
 				repo.EXPECT().
-					Save(interfaces.Session{
-						User: interfaces.User{
-							ID:    testUserID,
-							Login: testLogin,
-						},
-						AccessToken: testToken,
-					}).
+					Save(gomock.Any()).
 					Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name: "login fails - client error",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "login fails - client error",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return("", "", ErrInvalidCredentials)
+					Return("", nil, ErrInvalidCredentials)
 			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
@@ -69,15 +56,12 @@ func TestService_Login(t *testing.T) {
 			},
 		},
 		{
-			name: "login succeeds but save fails",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "login succeeds but save fails",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return(testUserID, testToken, nil)
+					Return(testToken, []byte(testToken), nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -125,38 +109,26 @@ func TestService_Register(t *testing.T) {
 		errCheck  func(*testing.T, error)
 	}{
 		{
-			name: "successful registration",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "successful registration",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return(testUserID, testToken, nil)
+					Return(testToken, []byte(testToken), nil)
 
 				repo.EXPECT().
-					Save(interfaces.Session{
-						User: interfaces.User{
-							ID:    testUserID,
-							Login: testLogin,
-						},
-						AccessToken: testToken,
-					}).
+					Save(gomock.Any()).
 					Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name: "registration fails - auth already exists",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "registration fails - auth already exists",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return("", "", ErrUserAlreadyExists)
+					Return("", nil, ErrUserAlreadyExists)
 			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
@@ -164,15 +136,12 @@ func TestService_Register(t *testing.T) {
 			},
 		},
 		{
-			name: "registration succeeds but save fails",
-			creds: interfaces.Credentials{
-				Login:    testLogin,
-				Password: testPassword,
-			},
+			name:  "registration succeeds but save fails",
+			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return(testUserID, testToken, nil)
+					Return(testToken, []byte(testToken), nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -276,22 +245,10 @@ func TestService_GetCurrentSession(t *testing.T) {
 			setupMock: func(repo *MockRepository) {
 				repo.EXPECT().
 					Load().
-					Return(interfaces.Session{
-						User: interfaces.User{
-							ID:    testUserID,
-							Login: testLogin,
-						},
-						AccessToken: testToken,
-					}, nil)
+					Return(interfaces.NewSession(testToken, testToken), nil)
 			},
-			wantSession: interfaces.Session{
-				User: interfaces.User{
-					ID:    testUserID,
-					Login: testLogin,
-				},
-				AccessToken: testToken,
-			},
-			wantErr: false,
+			wantSession: interfaces.NewSession(testToken, testToken),
+			wantErr:     false,
 		},
 		{
 			name: "session not found",

@@ -89,7 +89,7 @@ func TestRepository_CreateCredential(t *testing.T) {
 			Return(expectedDBCred, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.CreateCredential(ctx, userID, credential)
+		result, err := repo.CreateCredential(ctx, userID.String(), credential)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -127,7 +127,7 @@ func TestRepository_CreateCredential(t *testing.T) {
 			Return(Credential{}, pgErr)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.CreateCredential(ctx, userID, credential)
+		result, err := repo.CreateCredential(ctx, userID.String(), credential)
 
 		assert.ErrorIs(t, err, credentialDomain.ErrNameExists)
 		assert.Nil(t, result)
@@ -155,7 +155,7 @@ func TestRepository_CreateCredential(t *testing.T) {
 			Return(Credential{}, sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.CreateCredential(ctx, userID, credential)
+		result, err := repo.CreateCredential(ctx, userID.String(), credential)
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -199,7 +199,7 @@ func TestRepository_GetCredential(t *testing.T) {
 			Return(expectedDBCred, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.GetCredential(ctx, userID, credID)
+		result, err := repo.GetCredential(ctx, userID.String(), credID.String())
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -231,7 +231,7 @@ func TestRepository_GetCredential(t *testing.T) {
 			Return(Credential{}, sql.ErrNoRows)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.GetCredential(ctx, userID, credID)
+		result, err := repo.GetCredential(ctx, userID.String(), credID.String())
 
 		assert.ErrorIs(t, err, credentialDomain.ErrNotFound)
 		assert.Nil(t, result)
@@ -254,7 +254,7 @@ func TestRepository_GetCredential(t *testing.T) {
 			Return(Credential{}, sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.GetCredential(ctx, userID, credID)
+		result, err := repo.GetCredential(ctx, userID.String(), credID.String())
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -303,7 +303,7 @@ func TestRepository_ListCredentials(t *testing.T) {
 			Return(expectedDBCreds, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.ListCredentials(ctx, userID)
+		result, err := repo.ListCredentials(ctx, userID.String())
 
 		require.NoError(t, err)
 		require.Len(t, result, 2)
@@ -329,7 +329,7 @@ func TestRepository_ListCredentials(t *testing.T) {
 			Return(nil, sql.ErrNoRows)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.ListCredentials(ctx, userID)
+		result, err := repo.ListCredentials(ctx, userID.String())
 
 		require.NoError(t, err)
 		assert.Empty(t, result)
@@ -351,7 +351,7 @@ func TestRepository_ListCredentials(t *testing.T) {
 			Return([]Credential{}, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.ListCredentials(ctx, userID)
+		result, err := repo.ListCredentials(ctx, userID.String())
 
 		require.NoError(t, err)
 		assert.Empty(t, result)
@@ -373,7 +373,7 @@ func TestRepository_ListCredentials(t *testing.T) {
 			Return(nil, sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.ListCredentials(ctx, userID)
+		result, err := repo.ListCredentials(ctx, userID.String())
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -429,7 +429,7 @@ func TestRepository_UpdateCredential(t *testing.T) {
 			Return(expectedDBCred, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.UpdateCredential(ctx, userID, credential)
+		result, err := repo.UpdateCredential(ctx, userID.String(), credential)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -466,7 +466,7 @@ func TestRepository_UpdateCredential(t *testing.T) {
 			Return(Credential{}, sql.ErrNoRows)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.UpdateCredential(ctx, userID, credential)
+		result, err := repo.UpdateCredential(ctx, userID.String(), credential)
 
 		assert.ErrorIs(t, err, credentialDomain.ErrNotFound)
 		assert.Nil(t, result)
@@ -492,7 +492,7 @@ func TestRepository_UpdateCredential(t *testing.T) {
 
 		mockQuerier := NewMockQuerier(ctrl)
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.UpdateCredential(ctx, userID, credential)
+		result, err := repo.UpdateCredential(ctx, userID.String(), credential)
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -523,7 +523,7 @@ func TestRepository_UpdateCredential(t *testing.T) {
 			Return(Credential{}, sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		result, err := repo.UpdateCredential(ctx, userID, credential)
+		result, err := repo.UpdateCredential(ctx, userID.String(), credential)
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -553,7 +553,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 			Return(nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		err := repo.DeleteCredential(ctx, userID, credID)
+		err := repo.DeleteCredential(ctx, userID.String(), credID.String())
 
 		require.NoError(t, err)
 	})
@@ -578,7 +578,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 			Return(sql.ErrNoRows)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		err := repo.DeleteCredential(ctx, userID, credID)
+		err := repo.DeleteCredential(ctx, userID.String(), credID.String())
 
 		assert.ErrorIs(t, err, credentialDomain.ErrNotFound)
 	})
@@ -600,7 +600,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 			Return(sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		err := repo.DeleteCredential(ctx, userID, credID)
+		err := repo.DeleteCredential(ctx, userID.String(), credID.String())
 
 		require.Error(t, err)
 	})

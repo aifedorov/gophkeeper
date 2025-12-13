@@ -24,12 +24,11 @@ func TestService_Create(t *testing.T) {
 		{
 			name: "successful creation",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -45,16 +44,8 @@ func TestService_Create(t *testing.T) {
 			},
 		},
 		{
-			name: "encryption key not found",
-			setupMock: func(s *testSetup) {
-				s.expectNoEncryptionKeyInSession()
-			},
-			wantErr: true,
-		},
-		{
 			name: "name already exists",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -67,7 +58,6 @@ func TestService_Create(t *testing.T) {
 		{
 			name: "repository error",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -80,7 +70,6 @@ func TestService_Create(t *testing.T) {
 		{
 			name: "repository returns nil",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -93,8 +82,6 @@ func TestService_Create(t *testing.T) {
 		{
 			name: "encryption fails on login",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockCrypto.EXPECT().
 					Encrypt(testLogin, s.encryptionKey).
 					Return(nil, errors.New("encryption error")).
@@ -105,12 +92,11 @@ func TestService_Create(t *testing.T) {
 		{
 			name: "decryption fails after creation",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -143,7 +129,7 @@ func TestService_Create(t *testing.T) {
 
 			ctx := context.Background()
 			cred := newTestCredential()
-			result, err := setup.service.Create(ctx, setup.userID, *cred)
+			result, err := setup.service.Create(ctx, setup.userID, setup.encryptionKeyStr, *cred)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -171,11 +157,9 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "successful retrieval",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -191,17 +175,8 @@ func TestService_Get(t *testing.T) {
 			},
 		},
 		{
-			name: "encryption key not found",
-			setupMock: func(s *testSetup) {
-				s.expectNoEncryptionKeyInSession()
-			},
-			wantErr: true,
-		},
-		{
 			name: "credential not found",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockRepo.EXPECT().
 					GetCredential(gomock.Any(), s.userID, s.credentialID).
 					Return(nil, ErrNotFound).
@@ -212,8 +187,6 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "repository error",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockRepo.EXPECT().
 					GetCredential(gomock.Any(), s.userID, s.credentialID).
 					Return(nil, errors.New("db error")).
@@ -224,8 +197,6 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "repository returns nil",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockRepo.EXPECT().
 					GetCredential(gomock.Any(), s.userID, s.credentialID).
 					Return(nil, nil).
@@ -236,11 +207,9 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "decryption fails",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -272,7 +241,7 @@ func TestService_Get(t *testing.T) {
 			setup.initService()
 
 			ctx := context.Background()
-			result, err := setup.service.Get(ctx, setup.userID, setup.credentialID)
+			result, err := setup.service.Get(ctx, setup.userID, setup.encryptionKeyStr, setup.credentialID)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -301,11 +270,9 @@ func TestService_List(t *testing.T) {
 		{
 			name: "successful list with multiple credentials",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				cred1 := interfaces.RepositoryCredential{
 					ID:                uuid.New().String(),
-					UserID:            s.userID.String(),
+					UserID:            s.userID,
 					Name:              "cred1",
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -313,7 +280,7 @@ func TestService_List(t *testing.T) {
 				}
 				cred2 := interfaces.RepositoryCredential{
 					ID:                uuid.New().String(),
-					UserID:            s.userID.String(),
+					UserID:            s.userID,
 					Name:              "cred2",
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -334,8 +301,6 @@ func TestService_List(t *testing.T) {
 		{
 			name: "successful list with empty result",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockRepo.EXPECT().
 					ListCredentials(gomock.Any(), s.userID).
 					Return([]interfaces.RepositoryCredential{}, nil).
@@ -344,17 +309,8 @@ func TestService_List(t *testing.T) {
 			wantCount: 0,
 		},
 		{
-			name: "encryption key not found",
-			setupMock: func(s *testSetup) {
-				s.expectNoEncryptionKeyInSession()
-			},
-			wantErr: true,
-		},
-		{
 			name: "repository error",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockRepo.EXPECT().
 					ListCredentials(gomock.Any(), s.userID).
 					Return(nil, errors.New("db error")).
@@ -365,11 +321,9 @@ func TestService_List(t *testing.T) {
 		{
 			name: "decryption fails for one credential",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				cred := interfaces.RepositoryCredential{
 					ID:                uuid.New().String(),
-					UserID:            s.userID.String(),
+					UserID:            s.userID,
 					Name:              "cred1",
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -401,7 +355,7 @@ func TestService_List(t *testing.T) {
 			setup.initService()
 
 			ctx := context.Background()
-			result, err := setup.service.List(ctx, setup.userID)
+			result, err := setup.service.List(ctx, setup.userID, setup.encryptionKeyStr)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)
@@ -429,12 +383,11 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "successful update",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -450,16 +403,8 @@ func TestService_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "encryption key not found",
-			setupMock: func(s *testSetup) {
-				s.expectNoEncryptionKeyInSession()
-			},
-			wantErr: true,
-		},
-		{
 			name: "credential not found",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -472,7 +417,6 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "repository error",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -485,7 +429,6 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "repository returns nil",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				s.mockRepo.EXPECT().
@@ -498,8 +441,6 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "encryption fails",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
-
 				s.mockCrypto.EXPECT().
 					Encrypt(testLogin, s.encryptionKey).
 					Return(nil, errors.New("encryption error")).
@@ -510,12 +451,11 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "decryption fails after update",
 			setupMock: func(s *testSetup) {
-				s.expectEncryptionKeyInSession()
 				s.expectEncryptCredential()
 
 				repoCred := interfaces.RepositoryCredential{
-					ID:                s.credentialID.String(),
-					UserID:            s.userID.String(),
+					ID:                s.credentialID,
+					UserID:            s.userID,
 					Name:              testName,
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
@@ -551,7 +491,7 @@ func TestService_Update(t *testing.T) {
 			cred.id = setup.credentialID
 			cred.userID = setup.userID
 
-			result, err := setup.service.Update(ctx, setup.userID, *cred)
+			result, err := setup.service.Update(ctx, setup.userID, setup.encryptionKeyStr, *cred)
 
 			if tt.wantErrIs != nil {
 				assert.ErrorIs(t, err, tt.wantErrIs)

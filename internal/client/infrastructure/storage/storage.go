@@ -9,7 +9,7 @@ import (
 
 const (
 	filename = "storage.json"
-	fileMode = 0644
+	fileMode = 0600
 )
 
 type Storage struct {

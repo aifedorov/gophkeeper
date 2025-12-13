@@ -17,23 +17,23 @@ type Repository interface {
 }
 
 type repository struct {
-	ctx      context.Context
-	mStorage *storage.Storage
+	ctx   context.Context
+	store *storage.Storage
 }
 
-func NewRepository(ctx context.Context, mStorage *storage.Storage) Repository {
+func NewRepository(ctx context.Context, store *storage.Storage) Repository {
 	return &repository{
-		ctx:      ctx,
-		mStorage: mStorage,
+		ctx:   ctx,
+		store: store,
 	}
 }
 
 func (r *repository) Save(session interfaces.Session) error {
-	return r.mStorage.Save(toMemorySession(session))
+	return r.store.Save(toStoreSession(session))
 }
 
 func (r *repository) Load() (interfaces.Session, error) {
-	session, err := r.mStorage.Load()
+	session, err := r.store.Load()
 	if err != nil {
 		return interfaces.Session{}, auth.ErrSessionNotFound
 	}
@@ -41,33 +41,19 @@ func (r *repository) Load() (interfaces.Session, error) {
 }
 
 func (r *repository) Delete() error {
-	return r.mStorage.Delete()
-}
-
-func toDomainUser(user storage.User) interfaces.User {
-	return interfaces.User{
-		ID:    user.ID,
-		Login: user.Login,
-	}
+	return r.store.Delete()
 }
 
 func toDomainSession(session storage.Session) interfaces.Session {
-	return interfaces.Session{
-		User:        toDomainUser(session.User),
-		AccessToken: session.AccessToken,
-	}
+	return interfaces.NewSession(
+		session.GetAccessToken(),
+		session.GetEncryptionKey(),
+	)
 }
 
-func toMemorySession(session interfaces.Session) storage.Session {
-	return storage.Session{
-		User:        toMemoryUser(session.User),
-		AccessToken: session.AccessToken,
-	}
-}
-
-func toMemoryUser(user interfaces.User) storage.User {
-	return storage.User{
-		ID:    user.ID,
-		Login: user.Login,
-	}
+func toStoreSession(session interfaces.Session) storage.Session {
+	return storage.NewSession(
+		session.GetAccessToken(),
+		session.GetEncryptionKey(),
+	)
 }

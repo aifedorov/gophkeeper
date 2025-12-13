@@ -2,6 +2,6 @@ package interfaces
 
 import "context"
 
-type TokenProvider interface {
-	GetToken(ctx context.Context) (string, error)
+type SessionProvider interface {
+	GetSession(ctx context.Context) (Session, error)
 }

@@ -19,9 +19,16 @@ import (
 type ContextKey string
 
 const (
-	// jwyKey is the metadata key for extracting JWT access token from gRPC request headers
-	jwyKey ContextKey = "access_token"
+	// accessTokenKey is the metadata key for extracting JWT access token from gRPC request headers
+	accessTokenKey ContextKey = "access_token"
+	// encryptionKeyKey is the metadata key for extracting encryption key from gRPC request headers
+	encryptionKeyKey ContextKey = "encryption_key"
 )
+
+var publicMethods = map[string]bool{
+	"/auth.v1.AuthService/Login":    true,
+	"/auth.v1.AuthService/Register": true,
+}
 
 // AuthInterceptor provides JWT-based authentication for gRPC requests.
 // It validates tokens from request metadata and injects user context for downstream handlers.
@@ -53,25 +60,37 @@ func (i *AuthInterceptor) UnaryAuthInterceptor(
 ) (interface{}, error) {
 	i.logger.Debug("interseptors: auth interceptor called", zap.String("method", info.FullMethod))
 
+	if publicMethods[info.FullMethod] {
+		return handler(ctx, req)
+	}
+
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		i.logger.Debug("interseptors: no metadata in request")
 		return nil, status.Errorf(codes.Unauthenticated, "no metadata")
 	}
 
-	token := md.Get(string(jwyKey))
-	if len(token) == 0 {
-		i.logger.Debug("interseptors: jwt token not found in metadata")
-		return nil, status.Errorf(codes.Unauthenticated, "jwt token not found")
+	accessToken := md.Get(string(accessTokenKey))
+	if len(accessToken) == 0 {
+		i.logger.Debug("interseptors: jwt accessToken not found in metadata")
+		return nil, status.Errorf(codes.Unauthenticated, "jwt accessToken not found")
 	}
 
-	userID, err := i.jwtSrv.ExtractUserID(token[0])
+	encryptionKeyEncoded := md.Get(string(encryptionKeyKey))
+	if len(encryptionKeyEncoded) == 0 {
+		i.logger.Debug("interseptors: encryption key not found in metadata")
+		return nil, status.Errorf(codes.Unauthenticated, "encryption key not found")
+	}
+
+	userID, err := i.jwtSrv.ExtractUserID(accessToken[0])
 	if err != nil {
-		i.logger.Debug("interseptors: failed to extract user id from token", zap.Error(err))
-		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+		i.logger.Debug("interseptors: failed to extract user id from accessToken", zap.Error(err))
+		return nil, status.Errorf(codes.Unauthenticated, "invalid accessToken")
 	}
 	i.logger.Debug("interseptors: user authenticated", zap.String("user_id", userID))
 
-	ctx = i.authSrv.SetUserIDToContext(ctx, userID)
+	ctx = i.authSrv.SetEncryptionKeyEncoded(ctx, encryptionKeyEncoded[0])
+	ctx = i.authSrv.SetUserID(ctx, userID)
+
 	return handler(ctx, req)
 }
