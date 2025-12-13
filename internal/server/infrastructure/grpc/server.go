@@ -9,7 +9,7 @@ import (
 	credv1 "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
-	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/mw"
+	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/interseptors"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -76,12 +76,12 @@ func (s *grpcServer) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	authInterceptor := mw.NewAuthInterceptor(s.jwtSrv, s.authSrv, s.logger)
-	grpc.NewServer(
+	authInterceptor := interseptors.NewAuthInterceptor(s.jwtSrv, s.authSrv, s.logger)
+
+	s.grpc = grpc.NewServer(
+		grpc.Creds(creds),
 		grpc.ChainUnaryInterceptor(authInterceptor.UnaryAuthInterceptor),
 	)
-
-	s.grpc = grpc.NewServer(grpc.Creds(creds))
 	authv1.RegisterAuthServiceServer(s.grpc, s.authServer)
 	credv1.RegisterCredentialServiceServer(s.grpc, s.credSrv)
 

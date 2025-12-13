@@ -29,11 +29,27 @@ const (
 // CredentialServiceClient is the client API for CredentialService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// CredentialService provides operations for managing user credentials.
+// All operations require authentication via JWT token in metadata.
 type CredentialServiceClient interface {
+	// Create creates a new credential for the authenticated user.
+	// Returns the ID of the newly created credential.
+	// Returns AlreadyExists error if a credential with the same name already exists.
+	// Returns InvalidArgument error if required fields are missing or invalid.
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
+	// Get retrieves a specific credential by ID for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	// Update updates an existing credential for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
+	// Returns InvalidArgument error if required fields are missing or invalid.
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
+	// Delete soft deletes a credential for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// List retrieves all credentials for the authenticated user.
+	// Returns an empty list if the user has no credentials.
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 }
 
@@ -98,11 +114,27 @@ func (c *credentialServiceClient) List(ctx context.Context, in *ListRequest, opt
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
+//
+// CredentialService provides operations for managing user credentials.
+// All operations require authentication via JWT token in metadata.
 type CredentialServiceServer interface {
+	// Create creates a new credential for the authenticated user.
+	// Returns the ID of the newly created credential.
+	// Returns AlreadyExists error if a credential with the same name already exists.
+	// Returns InvalidArgument error if required fields are missing or invalid.
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
+	// Get retrieves a specific credential by ID for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Get(context.Context, *GetRequest) (*GetResponse, error)
+	// Update updates an existing credential for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
+	// Returns InvalidArgument error if required fields are missing or invalid.
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
+	// Delete soft deletes a credential for the authenticated user.
+	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// List retrieves all credentials for the authenticated user.
+	// Returns an empty list if the user has no credentials.
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }

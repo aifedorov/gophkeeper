@@ -6,37 +6,49 @@ import (
 
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	client "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/repository"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
 	auth2 "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
-	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/memory"
-	"go.uber.org/zap"
+	grpc "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/credential"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage"
 )
 
 type Services struct {
-	AuthSrv auth.Service
+	AuthSrv       auth.Service
+	CredsSrv      credential.Service
+	TokenProvider client.TokenProvider
 
 	grpcConn grpcClient.GRPCConnection
-	logger   *zap.Logger
 }
 
-func NewServices(ctx context.Context, cfg *config.Config, logger *zap.Logger) (*Services, error) {
-	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr)
+func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
+	sessionStore := storage.NewStorage()
+	tokenProvider := auth.NewTokeProvider(sessionStore)
+	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr, tokenProvider)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create grpc connection: %w", err)
+		return nil, fmt.Errorf("container: failed to create grpc connection: %w", err)
 	}
 
 	authClient := auth2.NewAuthClient(conn.Conn())
-	storage := memory.NewStorage()
-	repo := auth.NewRepository(ctx, logger, storage)
+	store := storage.NewStorage()
+	repo := repository.NewRepository(ctx, store)
 	authService := auth.NewService(authClient, repo)
+
+	credClient := grpc.NewCredentialClient(conn.Conn())
+	credService := credential.NewService(credClient)
 
 	return &Services{
 		AuthSrv:  authService,
+		CredsSrv: credService,
 		grpcConn: conn,
-		logger:   logger,
 	}, nil
 }
 
 func (s *Services) Close() error {
+	if s.grpcConn == nil {
+		return fmt.Errorf("container: grpc connection is not initialized")
+	}
 	return s.grpcConn.Close()
 }

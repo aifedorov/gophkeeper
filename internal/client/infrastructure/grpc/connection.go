@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	client "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/interseptors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -23,13 +25,16 @@ type grpcConnection struct {
 	conn *grpc.ClientConn
 }
 
-func NewGRPCConnection(serverAddr string) (GRPCConnection, error) {
+func NewGRPCConnection(serverAddr string, tokenProvider client.TokenProvider) (GRPCConnection, error) {
 	creds, err := loadTLSCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS credentials: %w", err)
 	}
 
+	ai := interseptors.NewAuthInterceptor(tokenProvider)
+
 	opts := []grpc.DialOption{
+		grpc.WithUnaryInterceptor(ai.Interceptor()),
 		grpc.WithTransportCredentials(creds),
 	}
 

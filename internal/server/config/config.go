@@ -23,7 +23,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	// Load .env.client file if exists (optional)
+	// Load .env.client storage if exists (optional)
 	_ = godotenv.Load(dotEnvFile)
 
 	var cfg Config

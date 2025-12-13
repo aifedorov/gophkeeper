@@ -56,7 +56,7 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 	}
 	s.logger.Debug("grpc: user authenticated", zap.String("user_id", userID.String()))
 
-	newCred, err := credential.NewCredential(req.GetName(), req.GetLogin(), req.GetPassword(), req.GetMetadata())
+	newCred, err := credential.NewCredential(req.GetName(), req.GetLogin(), req.GetPassword(), req.GetNotes())
 	if err != nil || newCred == nil {
 		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

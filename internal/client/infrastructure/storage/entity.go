@@ -1,6 +1,4 @@
-package memory
-
-import "time"
+package storage
 
 type User struct {
 	ID    string
@@ -10,5 +8,4 @@ type User struct {
 type Session struct {
 	User        User
 	AccessToken string
-	ExpiresAt   time.Time
 }

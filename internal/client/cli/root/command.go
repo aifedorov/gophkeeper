@@ -1,22 +1,24 @@
 package root
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/auth/login"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/auth/register"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/commands"
-	"github.com/aifedorov/gophkeeper/internal/client/cli/login"
-	"github.com/aifedorov/gophkeeper/internal/client/cli/register"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/credential"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	domaincredential "github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	clientversion "github.com/aifedorov/gophkeeper/internal/client/version"
 	"github.com/spf13/cobra"
 )
 
-type RootCommand struct {
-	cmd     *cobra.Command
-	authSrv auth.Service
+type Command struct {
+	cmd *cobra.Command
 }
 
-func NewCommand(authSrv auth.Service) (*RootCommand, error) {
+func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service) (*Command, error) {
 	cmd := &cobra.Command{
 		Use:     "gophkeeper",
 		Short:   "GophKeeper is a secure password manager",
@@ -40,12 +42,17 @@ func NewCommand(authSrv auth.Service) (*RootCommand, error) {
 	listCmd := commands.NewListCommand()
 	cmd.AddCommand(listCmd)
 
-	return &RootCommand{
-		cmd:     cmd,
-		authSrv: authSrv,
+	credentialCmd, err := credential.NewCommand(credentialSrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create credential command: %w", err)
+	}
+	cmd.AddCommand(credentialCmd.GetCommand())
+
+	return &Command{
+		cmd: cmd,
 	}, nil
 }
 
-func (r *RootCommand) Execute() error {
-	return r.cmd.Execute()
+func (r *Command) ExecuteContext(ctx context.Context) error {
+	return r.cmd.ExecuteContext(ctx)
 }

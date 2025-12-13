@@ -1,4 +1,4 @@
-package grpc
+package client
 
 import (
 	"context"
@@ -29,8 +29,9 @@ func (c *authClient) Register(ctx context.Context, login, pass string) (userID, 
 		Password: &pass,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to register: %w", err)
+		return "", "", fmt.Errorf("authClient: failed to register: %w", err)
 	}
+
 	return resp.GetUserId(), resp.GetAccessToken(), nil
 }
 
@@ -40,7 +41,8 @@ func (c *authClient) Login(ctx context.Context, login, pass string) (userID, tok
 		Password: &pass,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to login: %w", err)
+		return "", "", fmt.Errorf("authClient: failed to login: %w", err)
 	}
+
 	return resp.GetUserId(), resp.GetAccessToken(), nil
 }

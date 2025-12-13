@@ -1,7 +1,7 @@
-// Package mw provides gRPC middleware for cross-cutting concerns.
+// Package interseptors provides gRPC middleware for cross-cutting concerns.
 // It includes authentication interceptors for validating JWT tokens and
 // injecting user context into request handlers.
-package mw
+package interseptors
 
 import (
 	"context"
@@ -51,26 +51,26 @@ func (i *AuthInterceptor) UnaryAuthInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
-	i.logger.Debug("mw: auth interceptor called", zap.String("method", info.FullMethod))
+	i.logger.Debug("interseptors: auth interceptor called", zap.String("method", info.FullMethod))
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		i.logger.Debug("mw: no metadata in request")
+		i.logger.Debug("interseptors: no metadata in request")
 		return nil, status.Errorf(codes.Unauthenticated, "no metadata")
 	}
 
 	token := md.Get(string(jwyKey))
 	if len(token) == 0 {
-		i.logger.Debug("mw: jwt token not found in metadata")
+		i.logger.Debug("interseptors: jwt token not found in metadata")
 		return nil, status.Errorf(codes.Unauthenticated, "jwt token not found")
 	}
 
 	userID, err := i.jwtSrv.ExtractUserID(token[0])
 	if err != nil {
-		i.logger.Debug("mw: failed to extract user id from token", zap.Error(err))
+		i.logger.Debug("interseptors: failed to extract user id from token", zap.Error(err))
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
-	i.logger.Debug("mw: user authenticated", zap.String("user_id", userID))
+	i.logger.Debug("interseptors: user authenticated", zap.String("user_id", userID))
 
 	ctx = i.authSrv.SetUserIDToContext(ctx, userID)
 	return handler(ctx, req)

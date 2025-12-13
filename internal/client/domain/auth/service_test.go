@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,14 +24,14 @@ func TestService_Login(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		creds     Credentials
+		creds     interfaces.Credentials
 		setupMock func(*grpcClient.MockAuthClient, *MockRepository)
 		wantErr   bool
 		errCheck  func(*testing.T, error)
 	}{
 		{
 			name: "successful login",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -40,8 +41,8 @@ func TestService_Login(t *testing.T) {
 					Return(testUserID, testToken, nil)
 
 				repo.EXPECT().
-					Save(Session{
-						User: User{
+					Save(interfaces.Session{
+						User: interfaces.User{
 							ID:    testUserID,
 							Login: testLogin,
 						},
@@ -53,7 +54,7 @@ func TestService_Login(t *testing.T) {
 		},
 		{
 			name: "login fails - client error",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -69,7 +70,7 @@ func TestService_Login(t *testing.T) {
 		},
 		{
 			name: "login succeeds but save fails",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -118,14 +119,14 @@ func TestService_Register(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		creds     Credentials
+		creds     interfaces.Credentials
 		setupMock func(*grpcClient.MockAuthClient, *MockRepository)
 		wantErr   bool
 		errCheck  func(*testing.T, error)
 	}{
 		{
 			name: "successful registration",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -135,8 +136,8 @@ func TestService_Register(t *testing.T) {
 					Return(testUserID, testToken, nil)
 
 				repo.EXPECT().
-					Save(Session{
-						User: User{
+					Save(interfaces.Session{
+						User: interfaces.User{
 							ID:    testUserID,
 							Login: testLogin,
 						},
@@ -148,7 +149,7 @@ func TestService_Register(t *testing.T) {
 		},
 		{
 			name: "registration fails - auth already exists",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -164,7 +165,7 @@ func TestService_Register(t *testing.T) {
 		},
 		{
 			name: "registration succeeds but save fails",
-			creds: Credentials{
+			creds: interfaces.Credentials{
 				Login:    testLogin,
 				Password: testPassword,
 			},
@@ -266,7 +267,7 @@ func TestService_GetCurrentSession(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupMock   func(*MockRepository)
-		wantSession Session
+		wantSession interfaces.Session
 		wantErr     bool
 		errCheck    func(*testing.T, error)
 	}{
@@ -275,16 +276,16 @@ func TestService_GetCurrentSession(t *testing.T) {
 			setupMock: func(repo *MockRepository) {
 				repo.EXPECT().
 					Load().
-					Return(Session{
-						User: User{
+					Return(interfaces.Session{
+						User: interfaces.User{
 							ID:    testUserID,
 							Login: testLogin,
 						},
 						AccessToken: testToken,
 					}, nil)
 			},
-			wantSession: Session{
-				User: User{
+			wantSession: interfaces.Session{
+				User: interfaces.User{
 					ID:    testUserID,
 					Login: testLogin,
 				},
@@ -297,7 +298,7 @@ func TestService_GetCurrentSession(t *testing.T) {
 			setupMock: func(repo *MockRepository) {
 				repo.EXPECT().
 					Load().
-					Return(Session{}, ErrSessionNotFound)
+					Return(interfaces.Session{}, ErrSessionNotFound)
 			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {

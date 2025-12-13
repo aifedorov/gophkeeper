@@ -8,7 +8,6 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/application"
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/container"
-	"github.com/aifedorov/gophkeeper/pkg/logger"
 )
 
 func main() {
@@ -19,16 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log, err := logger.New(cfg.LogLevel)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
-	}
-	defer func() {
-		_ = log.Sync()
-	}()
-
-	services, err := container.NewServices(ctx, cfg, log)
+	services, err := container.NewServices(ctx, cfg)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create services: %v\n", err)
 		os.Exit(1)
@@ -39,7 +29,7 @@ func main() {
 		}
 	}()
 
-	app, err := application.NewApp(cfg, log, services)
+	app, err := application.NewApp(cfg, services)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create application: %v\n", err)
 		os.Exit(1)
