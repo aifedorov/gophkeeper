@@ -70,21 +70,6 @@ func (mr *MockQuerierMockRecorder) DeleteCredential(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredential", reflect.TypeOf((*MockQuerier)(nil).DeleteCredential), ctx, arg)
 }
 
-// GetCredential mocks base method.
-func (m *MockQuerier) GetCredential(ctx context.Context, arg GetCredentialParams) (Credential, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCredential", ctx, arg)
-	ret0, _ := ret[0].(Credential)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCredential indicates an expected call of GetCredential.
-func (mr *MockQuerierMockRecorder) GetCredential(ctx, arg any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredential", reflect.TypeOf((*MockQuerier)(nil).GetCredential), ctx, arg)
-}
-
 // ListCredentials mocks base method.
 func (m *MockQuerier) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Credential, error) {
 	m.ctrl.T.Helper()

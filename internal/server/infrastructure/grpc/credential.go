@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
@@ -43,19 +44,11 @@ func NewCredentialServer(cfg *config.Config, logger *zap.Logger, authSev auth.Se
 func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	s.logger.Debug("grpc: create credential request received", zap.String("name", req.GetName()))
 
-	userID, err := s.authSev.GetUserIDFromContext(ctx)
+	userID, encryptionKey, err := s.authUser(ctx)
 	if err != nil {
-		s.logger.Error("grpc: failed to get userID", zap.Error(err))
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
-
-	encryptionKey, err := s.authSev.GetEncryptionKeyFromContext(ctx)
-	if err != nil {
-		s.logger.Error("grpc: failed to get encryption key", zap.Error(err))
-		return nil, status.Error(codes.Unauthenticated, "invalid token")
-	}
-
-	s.logger.Debug("grpc: user authenticated", zap.String("user_id", userID))
 
 	newCred, err := credential.NewCredential(req.GetName(), req.GetLogin(), req.GetPassword(), req.GetNotes())
 	if err != nil || newCred == nil {
@@ -83,43 +76,57 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 	return &resp, nil
 }
 
-// Get handles credential retrieval requests.
+// List handles credential list requests.
 // It validates the request, extracts user ID and encryption key from JWT token,
-// retrieves the credential entity, and returns the decrypted credential data.
-// Returns Unauthenticated if JWT token is invalid, NotFound if credential is not found,
-// or Internal if an unexpected error occurs.
-func (s *CredentialServer) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-	s.logger.Debug("grpc: get credential request received", zap.String("id", req.GetId()))
+// retrieves the list of credentials, and returns the list of credentials.
+// Returns Unauthenticated if JWT token is invalid, or Internal if an unexpected error occurs.
+func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListResponse, error) {
+	s.logger.Debug("grpc: list credential request received")
 
-	userID, err := s.authSev.GetUserIDFromContext(ctx)
+	userID, encryptionKey, err := s.authUser(ctx)
 	if err != nil {
-		s.logger.Error("grpc: failed to get userID", zap.Error(err))
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
-	encryptionKey, err := s.authSev.GetEncryptionKeyFromContext(ctx)
+	creds, err := s.credSrv.List(ctx, userID, encryptionKey)
 	if err != nil {
-		s.logger.Error("grpc: failed to get encryption key", zap.Error(err))
-		return nil, status.Error(codes.Unauthenticated, "invalid token")
-	}
-
-	cred, err := s.credSrv.Get(ctx, userID, encryptionKey, req.GetId())
-	if err != nil {
-		s.logger.Error("grpc: failed to get credential", zap.Error(err))
+		s.logger.Error("grpc: failed to get list of credentials", zap.Error(err))
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
-	id := cred.GetID()
-	name := cred.GetName()
-	login := cred.GetLogin()
-	password := cred.GetPassword()
-	notes := cred.GetMetadata()
+	credentials := make([]*pb.ListResponse_ListItem, len(creds))
+	for i, cred := range creds {
+		id := cred.GetID()
+		name := cred.GetName()
+		login := cred.GetLogin()
+		password := cred.GetPassword()
+		notes := cred.GetMetadata()
 
-	return &pb.GetResponse{
-		Id:       &id,
-		Name:     &name,
-		Login:    &login,
-		Password: &password,
-		Notes:    &notes,
+		credentials[i] = &pb.ListResponse_ListItem{
+			Id:       &id,
+			Name:     &name,
+			Login:    &login,
+			Password: &password,
+			Notes:    &notes,
+		}
+	}
+
+	return &pb.ListResponse{
+		Credentials: credentials,
 	}, nil
+}
+
+func (s *CredentialServer) authUser(ctx context.Context) (userID string, encryptionKey string, err error) {
+	userID, err = s.authSev.GetUserIDFromContext(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("grpc: failed to get userID: %w", err)
+	}
+
+	encryptionKey, err = s.authSev.GetEncryptionKeyFromContext(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("grpc: failed to get encryption key: %w", err)
+	}
+
+	return userID, encryptionKey, nil
 }

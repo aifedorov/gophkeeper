@@ -7,7 +7,6 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, creds Credential) error
-	Get(ctx context.Context, id string) (Credential, error)
 	List(ctx context.Context) ([]Credential, error)
 	Update(ctx context.Context, id string, cred Credential) error
 	Delete(ctx context.Context, id string) error
@@ -33,14 +32,6 @@ func (s *service) Create(ctx context.Context, creds Credential) error {
 		return fmt.Errorf("credential: failed to create credential: %w", err)
 	}
 	return nil
-}
-
-func (s *service) Get(ctx context.Context, id string) (Credential, error) {
-	cred, err := s.client.Get(ctx, id)
-	if err != nil {
-		return Credential{}, fmt.Errorf("credential: failed to get credential: %w", err)
-	}
-	return cred, nil
 }
 
 func (s *service) List(ctx context.Context) ([]Credential, error) {

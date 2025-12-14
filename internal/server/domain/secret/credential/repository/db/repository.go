@@ -53,40 +53,6 @@ func (r *repository) CreateCredential(ctx context.Context, userID string, creden
 	return &result, nil
 }
 
-func (r *repository) GetCredential(ctx context.Context, userID, id string) (*interfaces.RepositoryCredential, error) {
-	r.logger.Debug("repo: getting credential",
-		zap.String("user_id", userID),
-		zap.String("id", id))
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		r.logger.Error("repo: failed to parse user id", zap.Error(err))
-		return nil, fmt.Errorf("repo: failed to parse user id: %w", err)
-	}
-
-	idUUID, err := uuid.Parse(id)
-	if err != nil {
-		r.logger.Error("repo: failed to parse credential id", zap.Error(err))
-		return nil, fmt.Errorf("repo: failed to parse credential id: %w", err)
-	}
-
-	dbCredential, err := r.queries.GetCredential(ctx, GetCredentialParams{
-		ID:     idUUID,
-		UserID: userUUID,
-	})
-	if notFoundError(err) {
-		r.logger.Debug("repo: credential not found", zap.String("id", id))
-		return nil, credentialDomain.ErrNotFound
-	}
-	if err != nil {
-		r.logger.Error("repo: failed to get credential", zap.Error(err))
-		return nil, fmt.Errorf("repo: failed to get credential: %w", err)
-	}
-	result := toInterfacesCredential(dbCredential)
-	r.logger.Debug("repo: credential found", zap.String("id", result.ID))
-	return &result, nil
-}
-
 func (r *repository) ListCredentials(ctx context.Context, userID string) ([]interfaces.RepositoryCredential, error) {
 	r.logger.Debug("repo: listing credentials", zap.String("user_id", userID))
 

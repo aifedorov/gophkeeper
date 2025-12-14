@@ -68,21 +68,6 @@ func (mr *MockCredentialClientMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockCredentialClient)(nil).Delete), ctx, id)
 }
 
-// Get mocks base method.
-func (m *MockCredentialClient) Get(ctx context.Context, id string) (Credential, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(Credential)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockCredentialClientMockRecorder) Get(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCredentialClient)(nil).Get), ctx, id)
-}
-
 // List mocks base method.
 func (m *MockCredentialClient) List(ctx context.Context) ([]Credential, error) {
 	m.ctrl.T.Helper()

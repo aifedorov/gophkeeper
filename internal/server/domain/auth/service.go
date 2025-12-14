@@ -26,11 +26,11 @@ type Service interface {
 	Login(ctx context.Context, login, password string) (*User, []byte, error)
 	// SetUserID Set userID in context.
 	SetUserID(ctx context.Context, userID string) context.Context
-	// GetUserIDFromContext Get userID from context.
+	// GetUserIDFromContext List userID from context.
 	GetUserIDFromContext(ctx context.Context) (string, error)
 	// SetEncryptionKeyEncoded Set encryption key in base64 in context.
 	SetEncryptionKeyEncoded(ctx context.Context, encryptionKey string) context.Context
-	// GetEncryptionKeyFromContext Get an encryption key in base64 from context.
+	// GetEncryptionKeyFromContext List an encryption key in base64 from context.
 	GetEncryptionKeyFromContext(ctx context.Context) (string, error)
 }
 

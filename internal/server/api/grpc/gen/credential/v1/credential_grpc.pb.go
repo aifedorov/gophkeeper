@@ -20,10 +20,9 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	CredentialService_Create_FullMethodName = "/credential.v1.CredentialService/Create"
-	CredentialService_Get_FullMethodName    = "/credential.v1.CredentialService/Get"
+	CredentialService_List_FullMethodName   = "/credential.v1.CredentialService/List"
 	CredentialService_Update_FullMethodName = "/credential.v1.CredentialService/Update"
 	CredentialService_Delete_FullMethodName = "/credential.v1.CredentialService/Delete"
-	CredentialService_List_FullMethodName   = "/credential.v1.CredentialService/List"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -38,9 +37,9 @@ type CredentialServiceClient interface {
 	// Returns AlreadyExists error if a credential with the same name already exists.
 	// Returns InvalidArgument error if required fields are missing or invalid.
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
-	// Get retrieves a specific credential by ID for the authenticated user.
-	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
-	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	// List retrieves all credentials for the authenticated user.
+	// Returns an empty list if the user has no credentials.
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	// Update updates an existing credential for the authenticated user.
 	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	// Returns InvalidArgument error if required fields are missing or invalid.
@@ -48,9 +47,6 @@ type CredentialServiceClient interface {
 	// Delete soft deletes a credential for the authenticated user.
 	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
-	// List retrieves all credentials for the authenticated user.
-	// Returns an empty list if the user has no credentials.
-	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -71,10 +67,10 @@ func (c *credentialServiceClient) Create(ctx context.Context, in *CreateRequest,
 	return out, nil
 }
 
-func (c *credentialServiceClient) Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error) {
+func (c *credentialServiceClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetResponse)
-	err := c.cc.Invoke(ctx, CredentialService_Get_FullMethodName, in, out, cOpts...)
+	out := new(ListResponse)
+	err := c.cc.Invoke(ctx, CredentialService_List_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,16 +97,6 @@ func (c *credentialServiceClient) Delete(ctx context.Context, in *DeleteRequest,
 	return out, nil
 }
 
-func (c *credentialServiceClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListResponse)
-	err := c.cc.Invoke(ctx, CredentialService_List_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -123,9 +109,9 @@ type CredentialServiceServer interface {
 	// Returns AlreadyExists error if a credential with the same name already exists.
 	// Returns InvalidArgument error if required fields are missing or invalid.
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
-	// Get retrieves a specific credential by ID for the authenticated user.
-	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
-	Get(context.Context, *GetRequest) (*GetResponse, error)
+	// List retrieves all credentials for the authenticated user.
+	// Returns an empty list if the user has no credentials.
+	List(context.Context, *ListRequest) (*ListResponse, error)
 	// Update updates an existing credential for the authenticated user.
 	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	// Returns InvalidArgument error if required fields are missing or invalid.
@@ -133,9 +119,6 @@ type CredentialServiceServer interface {
 	// Delete soft deletes a credential for the authenticated user.
 	// Returns NotFound error if the credential doesn't exist or doesn't belong to the user.
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
-	// List retrieves all credentials for the authenticated user.
-	// Returns an empty list if the user has no credentials.
-	List(context.Context, *ListRequest) (*ListResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -149,17 +132,14 @@ type UnimplementedCredentialServiceServer struct{}
 func (UnimplementedCredentialServiceServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedCredentialServiceServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+func (UnimplementedCredentialServiceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedCredentialServiceServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedCredentialServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
-}
-func (UnimplementedCredentialServiceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -200,20 +180,20 @@ func _CredentialService_Create_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CredentialService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRequest)
+func _CredentialService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CredentialServiceServer).Get(ctx, in)
+		return srv.(CredentialServiceServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CredentialService_Get_FullMethodName,
+		FullMethod: CredentialService_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CredentialServiceServer).Get(ctx, req.(*GetRequest))
+		return srv.(CredentialServiceServer).List(ctx, req.(*ListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -254,24 +234,6 @@ func _CredentialService_Delete_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CredentialService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CredentialServiceServer).List(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CredentialService_List_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CredentialServiceServer).List(ctx, req.(*ListRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -284,8 +246,8 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CredentialService_Create_Handler,
 		},
 		{
-			MethodName: "Get",
-			Handler:    _CredentialService_Get_Handler,
+			MethodName: "List",
+			Handler:    _CredentialService_List_Handler,
 		},
 		{
 			MethodName: "Update",
@@ -294,10 +256,6 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _CredentialService_Delete_Handler,
-		},
-		{
-			MethodName: "List",
-			Handler:    _CredentialService_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

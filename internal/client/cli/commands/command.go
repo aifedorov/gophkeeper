@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewListCommand() *cobra.Command {
+func NewAllCommandsCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "list",
-		Short: "List all available commands",
+		Use:   "commands",
+		Short: "List all available commands with their descriptions",
 		Long:  `List all available commands with their descriptions.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			commands := cmd.Root().Commands()

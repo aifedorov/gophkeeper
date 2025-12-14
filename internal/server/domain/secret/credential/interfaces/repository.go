@@ -21,9 +21,6 @@ type Repository interface {
 	// CreateCredential creates a new credential in the repository.
 	// Returns ErrNameExists if a credential with the same name already exists for the user.
 	CreateCredential(ctx context.Context, userID string, credential RepositoryCredential) (*RepositoryCredential, error)
-	// GetCredential retrieves a credential by ID for the specified user.
-	// Returns ErrNotFound if the credential doesn't exist.
-	GetCredential(ctx context.Context, userID, id string) (*RepositoryCredential, error)
 	// ListCredentials retrieves all credentials for the specified user.
 	ListCredentials(ctx context.Context, userID string) ([]RepositoryCredential, error)
 	// UpdateCredential updates an existing credential in the repository.

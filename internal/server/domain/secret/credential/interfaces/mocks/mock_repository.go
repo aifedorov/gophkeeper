@@ -70,21 +70,6 @@ func (mr *MockRepositoryMockRecorder) DeleteCredential(ctx, userID, id any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredential", reflect.TypeOf((*MockRepository)(nil).DeleteCredential), ctx, userID, id)
 }
 
-// GetCredential mocks base method.
-func (m *MockRepository) GetCredential(ctx context.Context, userID, id string) (*interfaces.RepositoryCredential, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCredential", ctx, userID, id)
-	ret0, _ := ret[0].(*interfaces.RepositoryCredential)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCredential indicates an expected call of GetCredential.
-func (mr *MockRepositoryMockRecorder) GetCredential(ctx, userID, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredential", reflect.TypeOf((*MockRepository)(nil).GetCredential), ctx, userID, id)
-}
-
 // ListCredentials mocks base method.
 func (m *MockRepository) ListCredentials(ctx context.Context, userID string) ([]interfaces.RepositoryCredential, error) {
 	m.ctrl.T.Helper()

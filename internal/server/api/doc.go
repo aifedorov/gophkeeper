@@ -19,7 +19,7 @@
 //
 // Manages user credentials with end-to-end encryption:
 //   - Create: Store new credentials with encryption
-//   - Get: Retrieve and decrypt a specific credential
+//   - List: Retrieve and decrypt a specific credential
 //   - Update: Modify existing credentials
 //   - Delete: Soft delete credentials
 //   - List: Retrieve all user credentials

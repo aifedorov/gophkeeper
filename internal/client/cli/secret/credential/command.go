@@ -19,8 +19,8 @@ func NewCommand(credentialSrv domaincredential.Service) (*Command, error) {
 
 	cmd := &cobra.Command{
 		Use:   "credential",
-		Short: "Manage credentials",
-		Long:  `Manage credentials: create, list, get, update, delete`,
+		Short: "Manage credential",
+		Long:  `Manage credential: create, list, get, update, delete`,
 	}
 
 	createCommand, err := NewCreateCommand(credentialSrv)
@@ -29,6 +29,13 @@ func NewCommand(credentialSrv domaincredential.Service) (*Command, error) {
 	}
 
 	cmd.AddCommand(createCommand.GetCommand())
+
+	listCommand, err := NewListCommand(credentialSrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create list command: %w", err)
+	}
+
+	cmd.AddCommand(listCommand.GetCommand())
 
 	c.cmd = cmd
 

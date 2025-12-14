@@ -33,23 +33,6 @@ func (c *credentialClient) Create(ctx context.Context, creds credential.Credenti
 	return nil
 }
 
-func (c *credentialClient) Get(ctx context.Context, id string) (credential.Credential, error) {
-	request := pb.GetRequest{
-		Id: &id,
-	}
-	response, err := c.client.Get(ctx, &request)
-	if err != nil {
-		return credential.Credential{}, fmt.Errorf("client: failed to get credential: %w", err)
-	}
-	return credential.Credential{
-		ID:       response.GetId(),
-		Name:     response.GetName(),
-		Login:    response.GetLogin(),
-		Password: response.GetPassword(),
-		Notes:    response.GetNotes(),
-	}, nil
-}
-
 func (c *credentialClient) Update(ctx context.Context, id string, creds credential.Credential) error {
 	request := pb.UpdateRequest{
 		Id:       &id,

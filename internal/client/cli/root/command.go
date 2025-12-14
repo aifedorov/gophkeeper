@@ -39,8 +39,8 @@ func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service) (*
 	}
 	cmd.AddCommand(registerCmd.GetCommand())
 
-	listCmd := commands.NewListCommand()
-	cmd.AddCommand(listCmd)
+	allCommandsCmd := commands.NewAllCommandsCommand()
+	cmd.AddCommand(allCommandsCmd)
 
 	credentialCmd, err := credential.NewCommand(credentialSrv)
 	if err != nil {

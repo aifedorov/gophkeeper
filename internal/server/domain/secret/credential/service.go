@@ -12,7 +12,6 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error)
-	Get(ctx context.Context, userID, encryptionKey, id string) (*Credential, error)
 	List(ctx context.Context, userID, encryptionKey string) ([]Credential, error)
 	Update(ctx context.Context, userID, encryptionKey string, credential Credential) (*Credential, error)
 	Delete(ctx context.Context, userID, id string) error
@@ -72,41 +71,6 @@ func (s *service) Create(ctx context.Context, userID, encryptionKey string, cred
 	}
 
 	s.logger.Debug("credential: created successfully", zap.String("id", domainCred.GetID()))
-	return &domainCred, nil
-}
-
-func (s *service) Get(ctx context.Context, userID, encryptionKey, id string) (*Credential, error) {
-	s.logger.Debug("credential: getting credential",
-		zap.String("user_id", userID),
-		zap.String("id", id))
-
-	key, err := base64.StdEncoding.DecodeString(encryptionKey)
-	if err != nil {
-		s.logger.Error("credential: failed to decode encryption key", zap.Error(err))
-		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
-	}
-
-	rCredential, err := s.repo.GetCredential(ctx, userID, id)
-	if errors.Is(err, ErrNotFound) {
-		s.logger.Debug("credential: not found", zap.String("id", id))
-		return nil, ErrNotFound
-	}
-	if err != nil {
-		s.logger.Error("credential: failed to get from repository", zap.Error(err))
-		return nil, fmt.Errorf("failed to get credential: %w", err)
-	}
-	if rCredential == nil {
-		s.logger.Error("credential: repository returned nil")
-		return nil, fmt.Errorf("failed to get credential: credential is nil")
-	}
-
-	domainCred, err := toDomainCredential(s.crypto, key, *rCredential)
-	if err != nil {
-		s.logger.Error("credential: failed to decrypt", zap.Error(err))
-		return nil, fmt.Errorf("failed to convert credential: %w", err)
-	}
-
-	s.logger.Debug("credential: retrieved successfully", zap.String("id", id))
 	return &domainCred, nil
 }
 

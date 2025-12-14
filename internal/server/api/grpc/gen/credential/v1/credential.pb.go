@@ -144,134 +144,6 @@ func (x *CreateResponse) GetId() string {
 	return ""
 }
 
-// GetRequest contains the identifier for retrieving a credential.
-type GetRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// id is the unique identifier of the credential to retrieve.
-	Id            *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetRequest) Reset() {
-	*x = GetRequest{}
-	mi := &file_credential_v1_credential_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetRequest) ProtoMessage() {}
-
-func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
-func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *GetRequest) GetId() string {
-	if x != nil && x.Id != nil {
-		return *x.Id
-	}
-	return ""
-}
-
-// GetResponse contains the decrypted credential data.
-type GetResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// id is the unique identifier of the credential.
-	Id *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	// name is the credential's display name.
-	Name *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	// login is the decrypted username or email.
-	Login *string `protobuf:"bytes,3,opt,name=login" json:"login,omitempty"`
-	// password is the decrypted password.
-	Password *string `protobuf:"bytes,4,opt,name=password" json:"password,omitempty"`
-	// metadata contains decrypted additional information.
-	Notes         *string `protobuf:"bytes,5,opt,name=notes" json:"notes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetResponse) Reset() {
-	*x = GetResponse{}
-	mi := &file_credential_v1_credential_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetResponse) ProtoMessage() {}
-
-func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
-func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetResponse) GetId() string {
-	if x != nil && x.Id != nil {
-		return *x.Id
-	}
-	return ""
-}
-
-func (x *GetResponse) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
-	}
-	return ""
-}
-
-func (x *GetResponse) GetLogin() string {
-	if x != nil && x.Login != nil {
-		return *x.Login
-	}
-	return ""
-}
-
-func (x *GetResponse) GetPassword() string {
-	if x != nil && x.Password != nil {
-		return *x.Password
-	}
-	return ""
-}
-
-func (x *GetResponse) GetNotes() string {
-	if x != nil && x.Notes != nil {
-		return *x.Notes
-	}
-	return ""
-}
-
 // UpdateRequest contains the data for updating an existing credential.
 type UpdateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -295,7 +167,7 @@ type UpdateRequest struct {
 
 func (x *UpdateRequest) Reset() {
 	*x = UpdateRequest{}
-	mi := &file_credential_v1_credential_proto_msgTypes[4]
+	mi := &file_credential_v1_credential_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -307,7 +179,7 @@ func (x *UpdateRequest) String() string {
 func (*UpdateRequest) ProtoMessage() {}
 
 func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[4]
+	mi := &file_credential_v1_credential_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +192,7 @@ func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRequest) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{4}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UpdateRequest) GetId() string {
@@ -369,7 +241,7 @@ type UpdateResponse struct {
 
 func (x *UpdateResponse) Reset() {
 	*x = UpdateResponse{}
-	mi := &file_credential_v1_credential_proto_msgTypes[5]
+	mi := &file_credential_v1_credential_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -381,7 +253,7 @@ func (x *UpdateResponse) String() string {
 func (*UpdateResponse) ProtoMessage() {}
 
 func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[5]
+	mi := &file_credential_v1_credential_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -394,7 +266,7 @@ func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateResponse) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{5}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UpdateResponse) GetSuccess() bool {
@@ -415,7 +287,7 @@ type DeleteRequest struct {
 
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
-	mi := &file_credential_v1_credential_proto_msgTypes[6]
+	mi := &file_credential_v1_credential_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -427,7 +299,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[6]
+	mi := &file_credential_v1_credential_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -440,7 +312,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{6}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeleteRequest) GetId() string {
@@ -461,7 +333,7 @@ type DeleteResponse struct {
 
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
-	mi := &file_credential_v1_credential_proto_msgTypes[7]
+	mi := &file_credential_v1_credential_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -473,7 +345,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[7]
+	mi := &file_credential_v1_credential_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -486,7 +358,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{7}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DeleteResponse) GetSuccess() bool {
@@ -505,7 +377,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_credential_v1_credential_proto_msgTypes[8]
+	mi := &file_credential_v1_credential_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -517,7 +389,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[8]
+	mi := &file_credential_v1_credential_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,7 +402,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{8}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{6}
 }
 
 // ListResponse contains all credentials belonging to the authenticated user.
@@ -544,7 +416,7 @@ type ListResponse struct {
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_credential_v1_credential_proto_msgTypes[9]
+	mi := &file_credential_v1_credential_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +428,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[9]
+	mi := &file_credential_v1_credential_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +441,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{9}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListResponse) GetCredentials() []*ListResponse_ListItem {
@@ -598,7 +470,7 @@ type ListResponse_ListItem struct {
 
 func (x *ListResponse_ListItem) Reset() {
 	*x = ListResponse_ListItem{}
-	mi := &file_credential_v1_credential_proto_msgTypes[10]
+	mi := &file_credential_v1_credential_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -610,7 +482,7 @@ func (x *ListResponse_ListItem) String() string {
 func (*ListResponse_ListItem) ProtoMessage() {}
 
 func (x *ListResponse_ListItem) ProtoReflect() protoreflect.Message {
-	mi := &file_credential_v1_credential_proto_msgTypes[10]
+	mi := &file_credential_v1_credential_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -623,7 +495,7 @@ func (x *ListResponse_ListItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse_ListItem.ProtoReflect.Descriptor instead.
 func (*ListResponse_ListItem) Descriptor() ([]byte, []int) {
-	return file_credential_v1_credential_proto_rawDescGZIP(), []int{9, 0}
+	return file_credential_v1_credential_proto_rawDescGZIP(), []int{7, 0}
 }
 
 func (x *ListResponse_ListItem) GetId() string {
@@ -672,16 +544,7 @@ const file_credential_v1_credential_proto_rawDesc = "" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x14\n" +
 	"\x05notes\x18\x04 \x01(\tR\x05notes\" \n" +
 	"\x0eCreateResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x1c\n" +
-	"\n" +
-	"GetRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"y\n" +
-	"\vGetResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
-	"\x05login\x18\x03 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes\"{\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"{\n" +
 	"\rUpdateRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -702,13 +565,12 @@ const file_credential_v1_credential_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05login\x18\x03 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes2\xe7\x02\n" +
+	"\x05notes\x18\x05 \x01(\tR\x05notes2\xa9\x02\n" +
 	"\x11CredentialService\x12E\n" +
-	"\x06Create\x12\x1c.credential.v1.CreateRequest\x1a\x1d.credential.v1.CreateResponse\x12<\n" +
-	"\x03Get\x12\x19.credential.v1.GetRequest\x1a\x1a.credential.v1.GetResponse\x12E\n" +
+	"\x06Create\x12\x1c.credential.v1.CreateRequest\x1a\x1d.credential.v1.CreateResponse\x12?\n" +
+	"\x04List\x12\x1a.credential.v1.ListRequest\x1a\x1b.credential.v1.ListResponse\x12E\n" +
 	"\x06Update\x12\x1c.credential.v1.UpdateRequest\x1a\x1d.credential.v1.UpdateResponse\x12E\n" +
-	"\x06Delete\x12\x1c.credential.v1.DeleteRequest\x1a\x1d.credential.v1.DeleteResponse\x12?\n" +
-	"\x04List\x12\x1a.credential.v1.ListRequest\x1a\x1b.credential.v1.ListResponseB\xa1\x01\n" +
+	"\x06Delete\x12\x1c.credential.v1.DeleteRequest\x1a\x1d.credential.v1.DeleteResponseB\xa1\x01\n" +
 	"\x11com.credential.v1B\x0fCredentialProtoP\x01Z&github.com/aifedorov/gen/credential/v1\xa2\x02\x03CXX\xaa\x02\rCredential.V1\xca\x02\rCredential\\V1\xe2\x02\x19Credential\\V1\\GPBMetadata\xea\x02\x0eCredential::V1b\beditionsp\xe8\a"
 
 var (
@@ -723,37 +585,33 @@ func file_credential_v1_credential_proto_rawDescGZIP() []byte {
 	return file_credential_v1_credential_proto_rawDescData
 }
 
-var file_credential_v1_credential_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_credential_v1_credential_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_credential_v1_credential_proto_goTypes = []any{
 	(*CreateRequest)(nil),         // 0: credential.v1.CreateRequest
 	(*CreateResponse)(nil),        // 1: credential.v1.CreateResponse
-	(*GetRequest)(nil),            // 2: credential.v1.GetRequest
-	(*GetResponse)(nil),           // 3: credential.v1.GetResponse
-	(*UpdateRequest)(nil),         // 4: credential.v1.UpdateRequest
-	(*UpdateResponse)(nil),        // 5: credential.v1.UpdateResponse
-	(*DeleteRequest)(nil),         // 6: credential.v1.DeleteRequest
-	(*DeleteResponse)(nil),        // 7: credential.v1.DeleteResponse
-	(*ListRequest)(nil),           // 8: credential.v1.ListRequest
-	(*ListResponse)(nil),          // 9: credential.v1.ListResponse
-	(*ListResponse_ListItem)(nil), // 10: credential.v1.ListResponse.ListItem
+	(*UpdateRequest)(nil),         // 2: credential.v1.UpdateRequest
+	(*UpdateResponse)(nil),        // 3: credential.v1.UpdateResponse
+	(*DeleteRequest)(nil),         // 4: credential.v1.DeleteRequest
+	(*DeleteResponse)(nil),        // 5: credential.v1.DeleteResponse
+	(*ListRequest)(nil),           // 6: credential.v1.ListRequest
+	(*ListResponse)(nil),          // 7: credential.v1.ListResponse
+	(*ListResponse_ListItem)(nil), // 8: credential.v1.ListResponse.ListItem
 }
 var file_credential_v1_credential_proto_depIdxs = []int32{
-	10, // 0: credential.v1.ListResponse.credentials:type_name -> credential.v1.ListResponse.ListItem
-	0,  // 1: credential.v1.CredentialService.Create:input_type -> credential.v1.CreateRequest
-	2,  // 2: credential.v1.CredentialService.Get:input_type -> credential.v1.GetRequest
-	4,  // 3: credential.v1.CredentialService.Update:input_type -> credential.v1.UpdateRequest
-	6,  // 4: credential.v1.CredentialService.Delete:input_type -> credential.v1.DeleteRequest
-	8,  // 5: credential.v1.CredentialService.List:input_type -> credential.v1.ListRequest
-	1,  // 6: credential.v1.CredentialService.Create:output_type -> credential.v1.CreateResponse
-	3,  // 7: credential.v1.CredentialService.Get:output_type -> credential.v1.GetResponse
-	5,  // 8: credential.v1.CredentialService.Update:output_type -> credential.v1.UpdateResponse
-	7,  // 9: credential.v1.CredentialService.Delete:output_type -> credential.v1.DeleteResponse
-	9,  // 10: credential.v1.CredentialService.List:output_type -> credential.v1.ListResponse
-	6,  // [6:11] is the sub-list for method output_type
-	1,  // [1:6] is the sub-list for method input_type
-	1,  // [1:1] is the sub-list for extension type_name
-	1,  // [1:1] is the sub-list for extension extendee
-	0,  // [0:1] is the sub-list for field type_name
+	8, // 0: credential.v1.ListResponse.credentials:type_name -> credential.v1.ListResponse.ListItem
+	0, // 1: credential.v1.CredentialService.Create:input_type -> credential.v1.CreateRequest
+	6, // 2: credential.v1.CredentialService.List:input_type -> credential.v1.ListRequest
+	2, // 3: credential.v1.CredentialService.Update:input_type -> credential.v1.UpdateRequest
+	4, // 4: credential.v1.CredentialService.Delete:input_type -> credential.v1.DeleteRequest
+	1, // 5: credential.v1.CredentialService.Create:output_type -> credential.v1.CreateResponse
+	7, // 6: credential.v1.CredentialService.List:output_type -> credential.v1.ListResponse
+	3, // 7: credential.v1.CredentialService.Update:output_type -> credential.v1.UpdateResponse
+	5, // 8: credential.v1.CredentialService.Delete:output_type -> credential.v1.DeleteResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_credential_v1_credential_proto_init() }
@@ -767,7 +625,7 @@ func file_credential_v1_credential_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_credential_v1_credential_proto_rawDesc), len(file_credential_v1_credential_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

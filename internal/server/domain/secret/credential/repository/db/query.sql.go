@@ -66,36 +66,6 @@ func (q *Queries) DeleteCredential(ctx context.Context, arg DeleteCredentialPara
 	return err
 }
 
-const getCredential = `-- name: GetCredential :one
-SELECT id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
-FROM credentials
-WHERE id = $1
-  AND user_id = $2
-  AND deleted_at IS NULL
-`
-
-type GetCredentialParams struct {
-	ID     uuid.UUID
-	UserID uuid.UUID
-}
-
-func (q *Queries) GetCredential(ctx context.Context, arg GetCredentialParams) (Credential, error) {
-	row := q.db.QueryRow(ctx, getCredential, arg.ID, arg.UserID)
-	var i Credential
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Name,
-		&i.Encryptedlogin,
-		&i.Encryptedpassword,
-		&i.Encryptednotes,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const listCredentials = `-- name: ListCredentials :many
 SELECT id, user_id, name, encryptedlogin, encryptedpassword, encryptednotes, deleted_at, updated_at, created_at
 FROM credentials

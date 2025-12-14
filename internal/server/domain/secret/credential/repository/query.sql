@@ -1,10 +1,3 @@
--- name: GetCredential :one
-SELECT *
-FROM credentials
-WHERE id = $1
-  AND user_id = $2
-  AND deleted_at IS NULL;
-
 -- name: CreateCredential :one
 INSERT INTO credentials (user_id, name, encryptedLogin, encryptedPassword, encryptedNotes)
 VALUES ($1, $2, $3, $4, $5)
