@@ -48,7 +48,7 @@ func (q *Queries) CreateCredential(ctx context.Context, arg CreateCredentialPara
 	return i, err
 }
 
-const deleteCredential = `-- name: DeleteCredential :exec
+const deleteCredential = `-- name: DeleteCredential :execrows
 UPDATE credentials
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = $1
@@ -61,9 +61,12 @@ type DeleteCredentialParams struct {
 	UserID uuid.UUID
 }
 
-func (q *Queries) DeleteCredential(ctx context.Context, arg DeleteCredentialParams) error {
-	_, err := q.db.Exec(ctx, deleteCredential, arg.ID, arg.UserID)
-	return err
+func (q *Queries) DeleteCredential(ctx context.Context, arg DeleteCredentialParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteCredential, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const listCredentials = `-- name: ListCredentials :many

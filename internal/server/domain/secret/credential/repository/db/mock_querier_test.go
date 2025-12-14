@@ -57,11 +57,12 @@ func (mr *MockQuerierMockRecorder) CreateCredential(ctx, arg any) *gomock.Call {
 }
 
 // DeleteCredential mocks base method.
-func (m *MockQuerier) DeleteCredential(ctx context.Context, arg DeleteCredentialParams) error {
+func (m *MockQuerier) DeleteCredential(ctx context.Context, arg DeleteCredentialParams) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteCredential", ctx, arg)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeleteCredential indicates an expected call of DeleteCredential.

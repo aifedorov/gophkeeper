@@ -8,4 +8,5 @@ var (
 	ErrNameRequired     = errors.New("name can't be empty")
 	ErrLoginRequired    = errors.New("login can't be empty")
 	ErrPasswordRequired = errors.New("password can't be empty")
+	ErrIDRequired       = errors.New("id can't be empty")
 )

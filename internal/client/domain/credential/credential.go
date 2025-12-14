@@ -19,6 +19,9 @@ func NewCredential(id, name, login, password, notes string) (*Credential, error)
 }
 
 func (c *Credential) Validate() error {
+	if c.ID == "" {
+		return ErrIDRequired
+	}
 	if c.Name == "" {
 		return ErrNameRequired
 	}

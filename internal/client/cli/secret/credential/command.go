@@ -27,15 +27,25 @@ func NewCommand(credentialSrv domaincredential.Service) (*Command, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create create command: %w", err)
 	}
-
 	cmd.AddCommand(createCommand.GetCommand())
 
 	listCommand, err := NewListCommand(credentialSrv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create list command: %w", err)
 	}
-
 	cmd.AddCommand(listCommand.GetCommand())
+
+	updateCommand, err := NewUpdateCommand(credentialSrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create update command: %w", err)
+	}
+	cmd.AddCommand(updateCommand.GetCommand())
+
+	deleteCommand, err := NewDeleteCommand(credentialSrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create delete command: %w", err)
+	}
+	cmd.AddCommand(deleteCommand.GetCommand())
 
 	c.cmd = cmd
 

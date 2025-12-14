@@ -134,11 +134,11 @@ func (r *repository) DeleteCredential(ctx context.Context, userID, id string) er
 		return fmt.Errorf("repo: failed to parse credential id: %w", err)
 	}
 
-	err = r.queries.DeleteCredential(ctx, DeleteCredentialParams{
+	rows, err := r.queries.DeleteCredential(ctx, DeleteCredentialParams{
 		ID:     idUUID,
 		UserID: userUUID,
 	})
-	if notFoundError(err) {
+	if rows == 0 {
 		r.logger.Debug("repo: credential not found for deletion", zap.String("id", id))
 		return credentialDomain.ErrNotFound
 	}

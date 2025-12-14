@@ -13,6 +13,7 @@ import (
 
 // Test constants
 const (
+	testID       = "test-credential-id"
 	testName     = "test-credential"
 	testLogin    = "testuser"
 	testPassword = "testpassword"
@@ -97,7 +98,7 @@ func (s *testSetup) expectDecryptCredential() {
 }
 
 func newTestCredential() *Credential {
-	cred, _ := NewCredential(testName, testLogin, testPassword, testNotes)
+	cred, _ := NewCredential(testID, testName, testLogin, testPassword, testNotes)
 	return cred
 }
 

@@ -451,7 +451,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 				ID:     credID,
 				UserID: userID,
 			}).
-			Return(nil)
+			Return(int64(1), nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
 		err := repo.DeleteCredential(ctx, userID.String(), credID.String())
@@ -476,7 +476,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 				ID:     credID,
 				UserID: userID,
 			}).
-			Return(sql.ErrNoRows)
+			Return(int64(0), nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
 		err := repo.DeleteCredential(ctx, userID.String(), credID.String())
@@ -498,7 +498,7 @@ func TestRepository_DeleteCredential(t *testing.T) {
 		mockQuerier := NewMockQuerier(ctrl)
 		mockQuerier.EXPECT().
 			DeleteCredential(ctx, gomock.Any()).
-			Return(sql.ErrConnDone)
+			Return(int64(0), sql.ErrConnDone)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
 		err := repo.DeleteCredential(ctx, userID.String(), credID.String())

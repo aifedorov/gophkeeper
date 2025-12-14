@@ -21,7 +21,7 @@ WHERE id = $1
   AND deleted_at IS NULL
 RETURNING *;
 
--- name: DeleteCredential :exec
+-- name: DeleteCredential :execrows
 UPDATE credentials
 SET deleted_at = CURRENT_TIMESTAMP
 WHERE id = $1

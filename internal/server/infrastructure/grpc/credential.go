@@ -9,6 +9,7 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -50,7 +51,13 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
-	newCred, err := credential.NewCredential(req.GetName(), req.GetLogin(), req.GetPassword(), req.GetNotes())
+	newCred, err := credential.NewCredential(
+		uuid.NewString(),
+		req.GetName(),
+		req.GetLogin(),
+		req.GetPassword(),
+		req.GetNotes(),
+	)
 	if err != nil || newCred == nil {
 		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
@@ -114,6 +121,80 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 
 	return &pb.ListResponse{
 		Credentials: credentials,
+	}, nil
+}
+
+func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
+	s.logger.Debug("grpc: update credential request received")
+
+	userID, encryptionKey, err := s.authUser(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	updatedCred, err := credential.NewCredential(
+		req.GetId(),
+		req.GetName(),
+		req.GetLogin(),
+		req.GetPassword(),
+		req.GetNotes(),
+	)
+	if err != nil || updatedCred == nil {
+		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	res, err := s.credSrv.Update(ctx, userID, encryptionKey, *updatedCred)
+	if errors.Is(err, credential.ErrNameExists) {
+		s.logger.Debug("grpc: credential name already exists", zap.String("name", updatedCred.GetName()))
+		return nil, status.Error(codes.AlreadyExists, "credential name already exists")
+	}
+	if errors.Is(err, credential.ErrNotFound) {
+		s.logger.Debug("grpc: credential not found for update", zap.String("id", updatedCred.GetID()))
+		return nil, status.Error(codes.NotFound, "credential not found")
+	}
+	if err != nil {
+		s.logger.Error("grpc: failed to update credential", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	id := res.GetID()
+	s.logger.Debug("grpc: credential updated successfully", zap.String("id", id))
+
+	success := true
+	resp := pb.UpdateResponse{
+		Success: &success,
+	}
+	return &resp, nil
+}
+
+func (s *CredentialServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	s.logger.Debug("grpc: delete credential request received")
+
+	userID, _, err := s.authUser(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	s.logger.Debug("grpc: user_id extracted from token", zap.String("user_id", userID))
+
+	err = s.credSrv.Delete(ctx, userID, req.GetId())
+	if errors.Is(err, credential.ErrNotFound) {
+		s.logger.Debug("grpc: credential not found for update", zap.String("id", req.GetId()))
+		return nil, status.Error(codes.NotFound, "credential not found")
+	}
+	if err != nil {
+		s.logger.Error("grpc: failed to update credential", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	s.logger.Debug("grpc: credential deleted successfully", zap.String("id", req.GetId()))
+
+	success := true
+	return &pb.DeleteResponse{
+		Success: &success,
 	}, nil
 }
 

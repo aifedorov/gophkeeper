@@ -1,9 +1,5 @@
 package credential
 
-import (
-	"github.com/google/uuid"
-)
-
 type Credential struct {
 	id       string
 	userID   string
@@ -13,7 +9,10 @@ type Credential struct {
 	notes    string
 }
 
-func NewCredential(name, login, password, metadata string) (*Credential, error) {
+func NewCredential(id, name, login, password, metadata string) (*Credential, error) {
+	if id == "" {
+		return nil, ErrIDRequired
+	}
 	if name == "" {
 		return nil, ErrNameRequired
 	}
@@ -25,7 +24,7 @@ func NewCredential(name, login, password, metadata string) (*Credential, error) 
 	}
 
 	return &Credential{
-		id:       uuid.New().String(),
+		id:       id,
 		name:     name,
 		login:    login,
 		password: password,

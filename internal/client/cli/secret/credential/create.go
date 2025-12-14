@@ -34,16 +34,6 @@ func NewCreateCommand(credentialSrv credential.Service) (*CreateCommand, error) 
 	cmd.Flags().StringVarP(&cred.password, "password", "p", "", "password")
 	cmd.Flags().StringVarP(&cred.notes, "info", "i", "", "Info")
 
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		return nil, fmt.Errorf("cli: failed to mark name flag as required: %w", err)
-	}
-	if err := cmd.MarkFlagRequired("login"); err != nil {
-		return nil, fmt.Errorf("cli: failed to mark login flag as required: %w", err)
-	}
-	if err := cmd.MarkFlagRequired("password"); err != nil {
-		return nil, fmt.Errorf("cli: failed to mark password flag as required: %w", err)
-	}
-
 	c.cmd = cmd
 
 	return c, nil
@@ -58,6 +48,10 @@ func (c *CreateCommand) run(cmd *cobra.Command, cred inputCredentials) error {
 	newCred, err := credential.NewCredential(id, cred.name, cred.login, cred.password, cred.notes)
 	if err != nil || newCred == nil {
 		return fmt.Errorf("cli: failed to create credential: %w", err)
+	}
+
+	if err := newCred.Validate(); err != nil {
+		return fmt.Errorf("cli: failed to validate credentials: %w", err)
 	}
 
 	if err := c.credentialSrv.Create(cmd.Context(), *newCred); err != nil {
