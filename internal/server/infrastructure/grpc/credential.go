@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
@@ -45,7 +44,7 @@ func NewCredentialServer(cfg *config.Config, logger *zap.Logger, authSev auth.Se
 func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	s.logger.Debug("grpc: create credential request received", zap.String("name", req.GetName()))
 
-	userID, encryptionKey, err := s.authUser(ctx)
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
 	if err != nil {
 		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
@@ -70,7 +69,7 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 	}
 	if err != nil {
 		s.logger.Error("grpc: failed to create credential", zap.Error(err))
-		return nil, status.Error(codes.Internal, "internal server error")
+		return nil, status.Error(codes.Internal, "internal binary error")
 	}
 
 	id := res.GetID()
@@ -90,7 +89,7 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListResponse, error) {
 	s.logger.Debug("grpc: list credential request received")
 
-	userID, encryptionKey, err := s.authUser(ctx)
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
 	if err != nil {
 		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
@@ -99,7 +98,7 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 	creds, err := s.credSrv.List(ctx, userID, encryptionKey)
 	if err != nil {
 		s.logger.Error("grpc: failed to get list of credentials", zap.Error(err))
-		return nil, status.Error(codes.Internal, "internal server error")
+		return nil, status.Error(codes.Internal, "internal binary error")
 	}
 
 	credentials := make([]*pb.ListResponse_ListItem, len(creds))
@@ -127,7 +126,7 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
 	s.logger.Debug("grpc: update credential request received")
 
-	userID, encryptionKey, err := s.authUser(ctx)
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
 	if err != nil {
 		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
@@ -156,7 +155,7 @@ func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*
 	}
 	if err != nil {
 		s.logger.Error("grpc: failed to update credential", zap.Error(err))
-		return nil, status.Error(codes.Internal, "internal server error")
+		return nil, status.Error(codes.Internal, "internal binary error")
 	}
 
 	id := res.GetID()
@@ -172,7 +171,7 @@ func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*
 func (s *CredentialServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	s.logger.Debug("grpc: delete credential request received")
 
-	userID, _, err := s.authUser(ctx)
+	userID, _, err := s.authSev.GetUserDataFromContext(ctx)
 	if err != nil {
 		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid token")
@@ -187,7 +186,7 @@ func (s *CredentialServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*
 	}
 	if err != nil {
 		s.logger.Error("grpc: failed to update credential", zap.Error(err))
-		return nil, status.Error(codes.Internal, "internal server error")
+		return nil, status.Error(codes.Internal, "internal binary error")
 	}
 
 	s.logger.Debug("grpc: credential deleted successfully", zap.String("id", req.GetId()))
@@ -196,18 +195,4 @@ func (s *CredentialServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*
 	return &pb.DeleteResponse{
 		Success: &success,
 	}, nil
-}
-
-func (s *CredentialServer) authUser(ctx context.Context) (userID string, encryptionKey string, err error) {
-	userID, err = s.authSev.GetUserIDFromContext(ctx)
-	if err != nil {
-		return "", "", fmt.Errorf("grpc: failed to get userID: %w", err)
-	}
-
-	encryptionKey, err = s.authSev.GetEncryptionKeyFromContext(ctx)
-	if err != nil {
-		return "", "", fmt.Errorf("grpc: failed to get encryption key: %w", err)
-	}
-
-	return userID, encryptionKey, nil
 }

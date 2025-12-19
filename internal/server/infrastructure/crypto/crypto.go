@@ -1,11 +1,8 @@
 package crypto
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
-	"io"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/argon2"
@@ -87,22 +84,10 @@ func (s *Service) Encrypt(plaintext string, key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("key must be %d bytes for AES-256", aes256KeySize)
 	}
 
-	block, err := aes.NewCipher(key)
+	gcm, nonce, err := NewEncrypt(key)
 	if err != nil {
-		s.logger.Error("crypto: failed to create cipher", zap.Error(err))
-		return nil, fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		s.logger.Error("crypto: failed to create GCM", zap.Error(err))
-		return nil, fmt.Errorf("failed to create GCM: %w", err)
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		s.logger.Error("crypto: failed to generate nonce", zap.Error(err))
-		return nil, fmt.Errorf("failed to generate nonce: %w", err)
+		s.logger.Error("crypto: failed to create encrypt data", zap.Error(err))
+		return nil, fmt.Errorf("failed to create encrypt data: %w", err)
 	}
 
 	ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
@@ -118,16 +103,10 @@ func (s *Service) Decrypt(ciphertext []byte, key []byte) (string, error) {
 		return "", fmt.Errorf("key must be %d bytes for AES-256", aes256KeySize)
 	}
 
-	block, err := aes.NewCipher(key)
+	gcm, err := NewDecrypt(key)
 	if err != nil {
-		s.logger.Error("crypto: failed to create cipher", zap.Error(err))
-		return "", fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		s.logger.Error("crypto: failed to create GCM", zap.Error(err))
-		return "", fmt.Errorf("failed to create GCM: %w", err)
+		s.logger.Error("crypto: failed to create decrypt data", zap.Error(err))
+		return "", fmt.Errorf("failed to create decrypt data: %w", err)
 	}
 
 	nonceSize := gcm.NonceSize()

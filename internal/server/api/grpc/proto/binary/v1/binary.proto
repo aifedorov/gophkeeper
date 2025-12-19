@@ -1,0 +1,27 @@
+edition = "2023";
+
+package binary.v1;
+
+option go_package = "github.com/aifedorov/gen/binary/v1";
+
+service BinaryService {
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+}
+
+message UploadRequest {
+
+  message FileMetadata {
+    string name = 1;
+    int64 size = 2;
+    string mime_type = 3;
+  }
+
+  oneof data {
+    FileMetadata file = 1;
+    bytes chunk = 2;
+  }
+}
+
+message UploadResponse {
+  string file_id = 1;
+}

@@ -11,7 +11,7 @@ lint:
   use:
     - STANDARD
 
-# Breaking change detection - checks for breaking changes at file level
+# Breaking change detection - checks for breaking changes at binary level
 breaking:
   use:
     - FILE

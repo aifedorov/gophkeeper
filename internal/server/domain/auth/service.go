@@ -32,6 +32,7 @@ type Service interface {
 	SetEncryptionKeyEncoded(ctx context.Context, encryptionKey string) context.Context
 	// GetEncryptionKeyFromContext List an encryption key in base64 from context.
 	GetEncryptionKeyFromContext(ctx context.Context) (string, error)
+	GetUserDataFromContext(ctx context.Context) (userID, encryptionKey string, err error)
 }
 
 type service struct {
@@ -168,4 +169,18 @@ func (s *service) SetUserID(ctx context.Context, userID string) context.Context 
 
 func (s *service) SetEncryptionKeyEncoded(ctx context.Context, encryptionKey string) context.Context {
 	return context.WithValue(ctx, encryptionKeyKey, encryptionKey)
+}
+
+func (s *service) GetUserDataFromContext(ctx context.Context) (userID, encryptionKey string, err error) {
+	userID, err = s.GetUserIDFromContext(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("grpc: failed to get userID: %w", err)
+	}
+
+	encryptionKey, err = s.GetEncryptionKeyFromContext(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("grpc: failed to get encryption key: %w", err)
+	}
+
+	return userID, encryptionKey, nil
 }

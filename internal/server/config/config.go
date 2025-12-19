@@ -7,12 +7,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const dotEnvFile = ".env.server"
+const dotEnvFile = ".env.binary"
 
 type Config struct {
 	// Log level: debug, info, warn, error, fatal.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
-	// gRPC server address.
+	// gRPC binary address.
 	GRPCAddr string `env:"GRPC_ADDRESS,required,notEmpty"`
 	// Database connection string.
 	StorageDSN string `env:"DATABASE_URI,required,notEmpty"`

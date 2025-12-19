@@ -7,10 +7,14 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
 	authrepository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary"
+	binaryrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
 	credrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
+	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/filestorage"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
+	binarygrpc "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/binary"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
 	"go.uber.org/zap"
@@ -52,9 +56,14 @@ func (a *App) Run() error {
 	credRepo := credrepository.NewRepository(db.DBPool(), a.logger)
 	credSrv := credential.NewService(credRepo, cryptoSrv, a.logger)
 
+	binaryFileStore := filestorage.NewFileStorage(a.logger)
+	binaryRepo := binaryrepository.NewRepository(db.DBPool(), a.logger)
+	binarySrv := binary.NewService(binaryRepo, binaryFileStore, a.logger)
+
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
 	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)
-	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, jwtSrv, authSrv)
+	binaryServer := binarygrpc.NewBinaryServer(a.cfg, a.logger, authSrv, binarySrv)
+	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, binaryServer, jwtSrv, authSrv)
 
 	if err := grpcServer.Run(ctx); err != nil {
 		return err

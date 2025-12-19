@@ -15,4 +15,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS credentials_unique_name
     ON credentials (name, user_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON credentials (user_id);
+CREATE INDEX IF NOT EXISTS name_credentials ON credentials (name);

@@ -1,4 +1,4 @@
-// Package api provides the API layer for the GophKeeper server.
+// Package api provides the API layer for the GophKeeper binary.
 //
 // This package contains the gRPC service definitions and generated code
 // for handling client requests. It includes:
@@ -35,7 +35,7 @@
 //
 // The gRPC code is generated using buf:
 //
-//	cd internal/server/api/grpc
+//	cd internal/binary/api/grpc
 //	buf generate
 //
 // Or use the Makefile:
@@ -63,13 +63,13 @@
 //   - Unauthenticated: Missing or invalid JWT token
 //   - AlreadyExists: Resource already exists (e.g., duplicate login)
 //   - NotFound: Resource not found
-//   - Internal: Unexpected server error
+//   - Internal: Unexpected binary error
 //
 // # Example Usage
 //
 // Client code example:
 //
-//	// Connect to server
+//	// Connect to binary
 //	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(...))
 //	if err != nil {
 //	    log.Fatal(err)

@@ -31,7 +31,7 @@ func (s *Storage) Save(session Session) error {
 
 	err = os.WriteFile(filename, jsonData, fileMode)
 	if err != nil {
-		return fmt.Errorf("storage: failed to write file: %w", err)
+		return fmt.Errorf("storage: failed to write binary: %w", err)
 	}
 
 	return nil
@@ -43,7 +43,7 @@ func (s *Storage) Load() (Session, error) {
 
 	jsonData, err := os.ReadFile(filename)
 	if err != nil {
-		return Session{}, fmt.Errorf("storage: failed to read file: %w", err)
+		return Session{}, fmt.Errorf("storage: failed to read binary: %w", err)
 	}
 
 	var session Session
@@ -61,7 +61,7 @@ func (s *Storage) Delete() error {
 
 	err := os.Remove(filename)
 	if err != nil {
-		return fmt.Errorf("storage: failed to remove file: %w", err)
+		return fmt.Errorf("storage: failed to remove binary: %w", err)
 	}
 
 	return nil

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net"
 
-	authv1 "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/auth/v1"
-	credv1 "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
+	authvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/auth/v1"
+	binarypb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/binary/v1"
+	credvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	binarygrpc "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/binary"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/interseptors"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"go.uber.org/zap"
@@ -25,13 +27,14 @@ type GRPCServer interface {
 }
 
 type grpcServer struct {
-	cfg        *config.Config
-	logger     *zap.Logger
-	grpc       *grpc.Server
-	authServer *AuthServer
-	credSrv    *CredentialServer
-	jwtSrv     jwt.Service
-	authSrv    auth.Service
+	cfg          *config.Config
+	logger       *zap.Logger
+	grpc         *grpc.Server
+	authServer   *AuthServer
+	credServer   *CredentialServer
+	binaryServer *binarygrpc.Server
+	jwtSrv       jwt.Service
+	authSrv      auth.Service
 }
 
 // NewGRRPCServer creates a new instance of GRPCServer with the provided dependencies.
@@ -41,18 +44,20 @@ func NewGRRPCServer(
 	logger *zap.Logger,
 	grpc *grpc.Server,
 	authServer *AuthServer,
-	credSrv *CredentialServer,
+	credServer *CredentialServer,
+	binaryServer *binarygrpc.Server,
 	jwtSrv jwt.Service,
 	authSrv auth.Service,
 ) GRPCServer {
 	return &grpcServer{
-		cfg:        cfg,
-		logger:     logger,
-		grpc:       grpc,
-		authServer: authServer,
-		credSrv:    credSrv,
-		jwtSrv:     jwtSrv,
-		authSrv:    authSrv,
+		cfg:          cfg,
+		logger:       logger,
+		grpc:         grpc,
+		authServer:   authServer,
+		credServer:   credServer,
+		binaryServer: binaryServer,
+		jwtSrv:       jwtSrv,
+		authSrv:      authSrv,
 	}
 }
 
@@ -82,8 +87,9 @@ func (s *grpcServer) Run(ctx context.Context) error {
 		grpc.Creds(creds),
 		grpc.ChainUnaryInterceptor(authInterceptor.UnaryAuthInterceptor),
 	)
-	authv1.RegisterAuthServiceServer(s.grpc, s.authServer)
-	credv1.RegisterCredentialServiceServer(s.grpc, s.credSrv)
+	authvpb.RegisterAuthServiceServer(s.grpc, s.authServer)
+	credvpb.RegisterCredentialServiceServer(s.grpc, s.credServer)
+	binarypb.RegisterBinaryServiceServer(s.grpc, s.binaryServer)
 
 	reflection.Register(s.grpc)
 

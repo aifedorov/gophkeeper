@@ -10,7 +10,7 @@ const dotEnvFile = ".env.client"
 type Config struct {
 	// Log level: debug, info, warn, error, fatal.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
-	// gRPC server address.
+	// gRPC binary address.
 	ServerAddr string `env:"SERVER_ADDRESS,required,notEmpty"`
 }
 
