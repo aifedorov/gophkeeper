@@ -13,28 +13,28 @@ import (
 )
 
 const createFile = `-- name: CreateFile :exec
-INSERT INTO files (id, user_id, filename, file_path, file_size, mime_type, uploaded_at)
+INSERT INTO files (id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, uploaded_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateFileParams struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	Filename   string
-	FilePath   string
-	FileSize   int64
-	MimeType   string
-	UploadedAt time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	EncryptedPath  []byte
+	EncryptedSize  []byte
+	EncryptedNotes []byte
+	UploadedAt     time.Time
 }
 
 func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) error {
 	_, err := q.db.Exec(ctx, createFile,
 		arg.ID,
 		arg.UserID,
-		arg.Filename,
-		arg.FilePath,
-		arg.FileSize,
-		arg.MimeType,
+		arg.Name,
+		arg.EncryptedPath,
+		arg.EncryptedSize,
+		arg.EncryptedNotes,
 		arg.UploadedAt,
 	)
 	return err
@@ -61,7 +61,7 @@ func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, 
 }
 
 const listFiles = `-- name: ListFiles :many
-SELECT id, user_id, filename, file_path, file_size, mime_type, uploaded_at
+SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, uploaded_at
 FROM files
 WHERE user_id = $1
 ORDER BY uploaded_at DESC
@@ -79,10 +79,10 @@ func (q *Queries) ListFiles(ctx context.Context, userID uuid.UUID) ([]File, erro
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.Filename,
-			&i.FilePath,
-			&i.FileSize,
-			&i.MimeType,
+			&i.Name,
+			&i.EncryptedPath,
+			&i.EncryptedSize,
+			&i.EncryptedNotes,
 			&i.UploadedAt,
 		); err != nil {
 			return nil, err

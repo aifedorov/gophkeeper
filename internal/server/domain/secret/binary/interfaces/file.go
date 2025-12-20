@@ -11,14 +11,14 @@ type File struct {
 	id         string
 	name       string
 	size       int64
-	mimeType   string
+	notes      string
 	uploadedAt time.Time
 }
 
 func NewFile(
 	id, name string,
 	size int64,
-	mimeType string,
+	notes string,
 	uploadedAt time.Time,
 ) (*File, error) {
 	if id == "" {
@@ -33,15 +33,12 @@ func NewFile(
 	if size > maxFileSize {
 		return nil, fmt.Errorf("file size exceeds maximum allowed size: %d", maxFileSize)
 	}
-	if mimeType == "" {
-		return nil, fmt.Errorf("file mime type is required")
-	}
 
 	return &File{
 		id:         id,
 		name:       name,
 		size:       size,
-		mimeType:   mimeType,
+		notes:      notes,
 		uploadedAt: uploadedAt,
 	}, nil
 }
@@ -58,8 +55,8 @@ func (f *File) GetSize() int64 {
 	return f.size
 }
 
-func (f *File) GetMimeType() string {
-	return f.mimeType
+func (f *File) GetNotes() string {
+	return f.notes
 }
 
 func (f *File) GetUploadedAt() time.Time {

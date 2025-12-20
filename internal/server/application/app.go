@@ -57,7 +57,7 @@ func (a *App) Run() error {
 
 	binaryFileStore := filestorage.NewFileStorage(a.logger)
 	binaryRepo := binaryrepository.NewRepository(db.DBPool(), a.logger)
-	binarySrv := binary.NewService(binaryRepo, binaryFileStore, a.logger)
+	binarySrv := binary.NewService(binaryRepo, binaryFileStore, cryptoSrv, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
 	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)

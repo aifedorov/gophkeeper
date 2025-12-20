@@ -2,10 +2,10 @@ CREATE TABLE IF NOT EXISTS files
 (
     id          UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
     user_id     UUID         NOT NULL REFERENCES users (id),
-    filename    VARCHAR(255) NOT NULL,
-    file_path   TEXT         NOT NULL,
-    file_size   BIGINT       NOT NULL,
-    mime_type   VARCHAR(255) NOT NULL,
+    name            VARCHAR(255) NOT NULL,
+    encrypted_path  BYTEA        NOT NULL,
+    encrypted_size  BYTEA        NOT NULL,
+    encrypted_notes BYTEA,
     uploaded_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

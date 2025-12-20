@@ -21,7 +21,7 @@ func NewCreateCommand(credentialSrv credential.Service) (*CreateCommand, error) 
 	cred := inputCredentials{}
 
 	cmd := &cobra.Command{
-		Use:   "create -n <name> -l <login> -p <password> -i <info>",
+		Use:   "create -n <name> -l <login> -p <password> [-i <info>]",
 		Short: "Create a new credential",
 		Long:  `Create a new credential with the given name, login, password and optional notes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {

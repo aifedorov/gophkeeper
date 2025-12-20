@@ -19,18 +19,24 @@ func NewUploadCommand(binarySrv binary.Service) (*UploadCommand, error) {
 	}
 
 	var filePath string
+	var notes string
 
 	cmd := &cobra.Command{
-		Use:   "upload -f <file>",
+		Use:   "upload -f <file> [-n <notes>]",
 		Short: "Upload a file",
 		Long:  `Upload a file to the server for secure storage.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return c.run(cmd, filePath)
+			return c.run(cmd, filePath, notes)
 		},
 	}
 
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to file to upload (required)")
-	_ = cmd.MarkFlagRequired("file")
+	err := cmd.MarkFlagRequired("file")
+	if err != nil {
+		return nil, fmt.Errorf("`file` flag as required: %w", err)
+	}
+
+	cmd.Flags().StringVarP(&notes, "notes", "n", "", "Optional notes about the file")
 
 	c.cmd = cmd
 
@@ -41,7 +47,7 @@ func (c *UploadCommand) GetCommand() *cobra.Command {
 	return c.cmd
 }
 
-func (c *UploadCommand) run(cmd *cobra.Command, filePath string) error {
+func (c *UploadCommand) run(cmd *cobra.Command, filePath string, notes string) error {
 	if filePath == "" {
 		return fmt.Errorf("cli: file path is required")
 	}
@@ -54,7 +60,7 @@ func (c *UploadCommand) run(cmd *cobra.Command, filePath string) error {
 	}
 
 	fmt.Printf("Uploading file: %s with size: %d bytes...\n", stat.Name(), stat.Size())
-	if err := c.binarySrv.Upload(cmd.Context(), filePath); err != nil {
+	if err := c.binarySrv.Upload(cmd.Context(), filePath, notes); err != nil {
 		return fmt.Errorf("cli: failed to upload file: %w", err)
 	}
 

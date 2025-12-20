@@ -22,12 +22,10 @@ func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
 	}
 }
 
-func (r *repository) CreateFile(ctx context.Context, userID string, file interfaces.RepositoryFile) error {
+func (r *repository) Create(ctx context.Context, userID string, file interfaces.RepositoryFile) error {
 	r.logger.Debug("repo: creating binary",
 		zap.String("user_id", userID),
 		zap.String("filename", file.Name),
-		zap.Int64("fileSize", file.Size),
-		zap.String("mimetype", file.MimeType),
 	)
 
 	userUUID, err := uuid.Parse(userID)
@@ -48,13 +46,13 @@ func (r *repository) CreateFile(ctx context.Context, userID string, file interfa
 	)
 
 	err = r.queries.CreateFile(ctx, CreateFileParams{
-		ID:         fileUUID,
-		UserID:     userUUID,
-		Filename:   file.Name,
-		FilePath:   file.Path,
-		FileSize:   file.Size,
-		MimeType:   file.MimeType,
-		UploadedAt: file.UploadedAt,
+		ID:             fileUUID,
+		UserID:         userUUID,
+		Name:           file.Name,
+		EncryptedPath:  file.EncryptedPath,
+		EncryptedSize:  file.EncryptedSize,
+		EncryptedNotes: file.EncryptedNotes,
+		UploadedAt:     file.UploadedAt,
 	})
 	if err != nil {
 		r.logger.Error("repo: failed to create binary", zap.Error(err))
@@ -65,7 +63,12 @@ func (r *repository) CreateFile(ctx context.Context, userID string, file interfa
 	return nil
 }
 
-func (r *repository) ListFiles(ctx context.Context, userID string) ([]interfaces.RepositoryFile, error) {
+func (r *repository) Get(ctx context.Context, userID, id string) (interfaces.RepositoryFile, error) {
+	// TODO: implement
+	panic("implement me")
+}
+
+func (r *repository) List(ctx context.Context, userID string) ([]interfaces.RepositoryFile, error) {
 	r.logger.Debug("repo: listing files", zap.String("user_id", userID))
 
 	userUUID, err := uuid.Parse(userID)
@@ -83,18 +86,19 @@ func (r *repository) ListFiles(ctx context.Context, userID string) ([]interfaces
 	files := make([]interfaces.RepositoryFile, len(dbFiles))
 	for i, f := range dbFiles {
 		files[i] = interfaces.RepositoryFile{
-			ID:       f.ID.String(),
-			UserID:   f.UserID.String(),
-			Name:     f.Filename,
-			Path:     f.FilePath,
-			Size:     f.FileSize,
-			MimeType: f.MimeType,
+			ID:             f.ID.String(),
+			UserID:         f.UserID.String(),
+			Name:           f.Name,
+			EncryptedPath:  f.EncryptedPath,
+			EncryptedSize:  f.EncryptedSize,
+			EncryptedNotes: f.EncryptedNotes,
+			UploadedAt:     f.UploadedAt,
 		}
 	}
 	return files, nil
 }
 
-func (r *repository) DeleteFile(ctx context.Context, userID, id string) error {
+func (r *repository) Delete(ctx context.Context, userID, id string) error {
 	r.logger.Debug("repo: deleting binary", zap.String("user_id", userID), zap.String("id", id))
 
 	userUUID, err := uuid.Parse(userID)

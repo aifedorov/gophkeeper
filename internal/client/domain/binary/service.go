@@ -7,7 +7,8 @@ import (
 )
 
 type Service interface {
-	Upload(ctx context.Context, filePath string) error
+	Upload(ctx context.Context, filePath string, notes string) error
+	List(ctx context.Context) ([]File, error)
 }
 
 type service struct {
@@ -20,7 +21,7 @@ func NewService(client Client) Service {
 	}
 }
 
-func (s *service) Upload(ctx context.Context, filePath string) error {
+func (s *service) Upload(ctx context.Context, filePath string, notes string) error {
 	// #nosec G304
 	f, err := os.Open(filePath)
 	if err != nil && os.IsNotExist(err) {
@@ -33,10 +34,14 @@ func (s *service) Upload(ctx context.Context, filePath string) error {
 		_ = f.Close()
 	}()
 
-	fileInfo, err := NewFileInfo(f)
+	fileInfo, err := NewFileMeta(f, notes)
 	if err != nil {
 		return fmt.Errorf("failed to create file info: %w", err)
 	}
 
 	return s.client.Upload(ctx, fileInfo, f)
+}
+
+func (s *service) List(ctx context.Context) ([]File, error) {
+	return s.client.List(ctx)
 }

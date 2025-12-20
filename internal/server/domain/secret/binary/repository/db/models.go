@@ -11,11 +11,11 @@ import (
 )
 
 type File struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	Filename   string
-	FilePath   string
-	FileSize   int64
-	MimeType   string
-	UploadedAt time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Name           string
+	EncryptedPath  []byte
+	EncryptedSize  []byte
+	EncryptedNotes []byte
+	UploadedAt     time.Time
 }
