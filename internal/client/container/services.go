@@ -6,21 +6,21 @@ import (
 
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
-	client "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
+	authinterfaces "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/repository"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/binary"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
-	auth2 "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
-	grpc "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/credential"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage"
 )
 
 type Services struct {
 	AuthSrv       auth.Service
 	CredsSrv      credential.Service
-	TokenProvider client.SessionProvider
-
-	grpcConn grpcClient.GRPCConnection
+	BinarySrv     binary.Service
+	TokenProvider authinterfaces.SessionProvider
+	grpcConn      grpcClient.GRPCConnection
 }
 
 func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
@@ -31,18 +31,22 @@ func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 		return nil, fmt.Errorf("container: failed to create grpc connection: %w", err)
 	}
 
-	authClient := auth2.NewAuthClient(conn.Conn())
+	authClient := client.NewAuthClient(conn.Conn())
 	store := storage.NewStorage()
 	repo := repository.NewRepository(ctx, store)
 	authService := auth.NewService(authClient, repo)
 
-	credClient := grpc.NewCredentialClient(conn.Conn())
+	credClient := client.NewCredentialClient(conn.Conn())
 	credService := credential.NewService(credClient)
 
+	binaryClient := client.NewBinaryClient(conn.Conn())
+	binaryService := binary.NewService(binaryClient)
+
 	return &Services{
-		AuthSrv:  authService,
-		CredsSrv: credService,
-		grpcConn: conn,
+		AuthSrv:   authService,
+		CredsSrv:  credService,
+		BinarySrv: binaryService,
+		grpcConn:  conn,
 	}, nil
 }
 

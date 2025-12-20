@@ -13,7 +13,7 @@ type credentialClient struct {
 	client pb.CredentialServiceClient
 }
 
-func NewCredentialClient(conn *grpc.ClientConn) credential.CredentialClient {
+func NewCredentialClient(conn *grpc.ClientConn) credential.Client {
 	return &credentialClient{
 		client: pb.NewCredentialServiceClient(conn),
 	}

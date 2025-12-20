@@ -10,7 +10,6 @@ import (
 	credvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
-	binarygrpc "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/binary"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/interseptors"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ type grpcServer struct {
 	grpc         *grpc.Server
 	authServer   *AuthServer
 	credServer   *CredentialServer
-	binaryServer *binarygrpc.Server
+	binaryServer *BinaryServer
 	jwtSrv       jwt.Service
 	authSrv      auth.Service
 }
@@ -45,7 +44,7 @@ func NewGRRPCServer(
 	grpc *grpc.Server,
 	authServer *AuthServer,
 	credServer *CredentialServer,
-	binaryServer *binarygrpc.Server,
+	binaryServer *BinaryServer,
 	jwtSrv jwt.Service,
 	authSrv auth.Service,
 ) GRPCServer {
@@ -85,7 +84,8 @@ func (s *grpcServer) Run(ctx context.Context) error {
 
 	s.grpc = grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.ChainUnaryInterceptor(authInterceptor.UnaryAuthInterceptor),
+		grpc.UnaryInterceptor(authInterceptor.UnaryAuthInterceptor),
+		grpc.StreamInterceptor(authInterceptor.StreamAuthInterceptor),
 	)
 	authvpb.RegisterAuthServiceServer(s.grpc, s.authServer)
 	credvpb.RegisterCredentialServiceServer(s.grpc, s.credServer)

@@ -58,39 +58,94 @@ func (i *AuthInterceptor) UnaryAuthInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
-	i.logger.Debug("interseptors: auth interceptor called", zap.String("method", info.FullMethod))
+	i.logger.Debug("interceptor: auth interceptor called", zap.String("method", info.FullMethod))
 
-	if publicMethods[info.FullMethod] {
+	if _, ok := publicMethods[info.FullMethod]; ok {
 		return handler(ctx, req)
 	}
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		i.logger.Debug("interseptors: no metadata in request")
+		i.logger.Debug("interceptor: no metadata in request")
 		return nil, status.Errorf(codes.Unauthenticated, "no metadata")
 	}
 
 	accessToken := md.Get(string(accessTokenKey))
 	if len(accessToken) == 0 {
-		i.logger.Debug("interseptors: jwt accessToken not found in metadata")
+		i.logger.Debug("interceptor: jwt accessToken not found in metadata")
 		return nil, status.Errorf(codes.Unauthenticated, "jwt accessToken not found")
 	}
 
 	encryptionKeyEncoded := md.Get(string(encryptionKeyKey))
 	if len(encryptionKeyEncoded) == 0 {
-		i.logger.Debug("interseptors: encryption key not found in metadata")
+		i.logger.Debug("interceptor: encryption key not found in metadata")
 		return nil, status.Errorf(codes.Unauthenticated, "encryption key not found")
 	}
 
 	userID, err := i.jwtSrv.ExtractUserID(accessToken[0])
 	if err != nil {
-		i.logger.Debug("interseptors: failed to extract user id from accessToken", zap.Error(err))
+		i.logger.Debug("interceptor: failed to extract user id from accessToken", zap.Error(err))
 		return nil, status.Errorf(codes.Unauthenticated, "invalid accessToken")
 	}
-	i.logger.Debug("interseptors: user authenticated", zap.String("user_id", userID))
+	i.logger.Debug("interceptor: user authenticated", zap.String("user_id", userID))
 
 	ctx = i.authSrv.SetEncryptionKeyEncoded(ctx, encryptionKeyEncoded[0])
 	ctx = i.authSrv.SetUserID(ctx, userID)
 
 	return handler(ctx, req)
+}
+
+// wrappedServerStream is a wrapper for grpc.ServerStream that allows to access the context.
+type wrappedServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *wrappedServerStream) Context() context.Context {
+	return w.ctx
+}
+
+func (i *AuthInterceptor) StreamAuthInterceptor(
+	srv interface{},
+	ss grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler,
+) error {
+	i.logger.Debug("stream interceptor: auth stream interceptor called", zap.String("method", info.FullMethod))
+
+	if _, ok := publicMethods[info.FullMethod]; ok {
+		return handler(srv, ss)
+	}
+
+	md, ok := metadata.FromIncomingContext(ss.Context())
+	if !ok {
+		i.logger.Debug("stream interceptor: no metadata in request")
+		return status.Errorf(codes.Unauthenticated, "no metadata")
+	}
+
+	accessToken := md.Get(string(accessTokenKey))
+	if len(accessToken) == 0 {
+		i.logger.Debug("interceptor: jwt accessToken not found in metadata")
+		return status.Errorf(codes.Unauthenticated, "jwt accessToken not found")
+	}
+
+	encryptionKeyEncoded := md.Get(string(encryptionKeyKey))
+	if len(encryptionKeyEncoded) == 0 {
+		i.logger.Debug("stream interceptor: encryption key not found in metadata")
+		return status.Errorf(codes.Unauthenticated, "encryption key not found")
+	}
+
+	userID, err := i.jwtSrv.ExtractUserID(accessToken[0])
+	if err != nil {
+		i.logger.Debug("stream interceptor: failed to extract user id from accessToken", zap.Error(err))
+		return status.Errorf(codes.Unauthenticated, "invalid accessToken")
+	}
+	i.logger.Debug("stream interceptor: user authenticated", zap.String("user_id", userID))
+
+	ctx := ss.Context()
+	ctx = i.authSrv.SetEncryptionKeyEncoded(ctx, encryptionKeyEncoded[0])
+	ctx = i.authSrv.SetUserID(ctx, userID)
+
+	ss = &wrappedServerStream{ServerStream: ss, ctx: ctx}
+	return handler(srv, ss)
 }

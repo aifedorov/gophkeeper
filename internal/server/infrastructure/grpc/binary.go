@@ -1,4 +1,4 @@
-package binary
+package server
 
 import (
 	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/binary/v1"
@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Server struct {
+type BinaryServer struct {
 	pb.UnimplementedBinaryServiceServer
 	cfg       *config.Config
 	logger    *zap.Logger
@@ -20,8 +20,8 @@ type Server struct {
 	binarySrv binary.Service
 }
 
-func NewBinaryServer(cfg *config.Config, logger *zap.Logger, authSrv auth.Service, binarySrv binary.Service) *Server {
-	return &Server{
+func NewBinaryServer(cfg *config.Config, logger *zap.Logger, authSrv auth.Service, binarySrv binary.Service) *BinaryServer {
+	return &BinaryServer{
 		cfg:       cfg,
 		logger:    logger,
 		authScr:   authSrv,
@@ -29,7 +29,7 @@ func NewBinaryServer(cfg *config.Config, logger *zap.Logger, authSrv auth.Servic
 	}
 }
 
-func (s *Server) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]) error {
+func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]) error {
 	s.logger.Debug("grpc: upload binary request received")
 	ctx := stream.Context()
 

@@ -9,7 +9,4 @@ CREATE TABLE IF NOT EXISTS files
     uploaded_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS files_unique_name
-    ON files (filename, user_id);
-
 CREATE INDEX IF NOT EXISTS idx_files_user_id ON files (user_id, uploaded_at DESC);

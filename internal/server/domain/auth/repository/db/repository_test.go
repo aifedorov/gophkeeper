@@ -61,6 +61,7 @@ func TestRepository_CreateUser(t *testing.T) {
 		mockQuerier := NewMockQuerier(ctrl)
 		mockQuerier.EXPECT().
 			CreateUser(ctx, CreateUserParams{
+				ID:           userID,
 				Login:        login,
 				PasswordHash: passwordHash,
 				Salt:         []byte{},
@@ -68,7 +69,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(expectedUser, nil)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		usr := interfaces.RepositoryUser{Login: login, PasswordHash: passwordHash}
+		usr := interfaces.RepositoryUser{ID: userID.String(), Login: login, PasswordHash: passwordHash}
 		user, err := repo.CreateUser(ctx, usr, passwordHash)
 
 		require.NoError(t, err)
@@ -90,9 +91,11 @@ func TestRepository_CreateUser(t *testing.T) {
 			Code: pgerrcode.UniqueViolation,
 		}
 
+		userID := uuid.New()
 		mockQuerier := NewMockQuerier(ctrl)
 		mockQuerier.EXPECT().
 			CreateUser(ctx, CreateUserParams{
+				ID:           userID,
 				Login:        "existinguser",
 				PasswordHash: "password",
 				Salt:         []byte{},
@@ -100,7 +103,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(User{}, pgErr)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{Login: "existinguser"}, "password")
+		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{ID: userID.String(), Login: "existinguser"}, "password")
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, auth.ErrLoginExists)
@@ -116,10 +119,12 @@ func TestRepository_CreateUser(t *testing.T) {
 		defer ctrl.Finish()
 
 		dbErr := errors.New("database connection failed")
+		userID := uuid.New()
 
 		mockQuerier := NewMockQuerier(ctrl)
 		mockQuerier.EXPECT().
 			CreateUser(ctx, CreateUserParams{
+				ID:           userID,
 				Login:        "testuser",
 				PasswordHash: "password",
 				Salt:         []byte{},
@@ -127,7 +132,7 @@ func TestRepository_CreateUser(t *testing.T) {
 			Return(User{}, dbErr)
 
 		repo := NewRepositoryWithQuerier(mockQuerier, logger)
-		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{Login: "testuser"}, "password")
+		user, err := repo.CreateUser(ctx, interfaces.RepositoryUser{ID: userID.String(), Login: "testuser"}, "password")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to create user")

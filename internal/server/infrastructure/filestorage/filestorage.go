@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	rootPath = "./storage/files/"
+	rootPath = "storage/files/"
+	dirMode  = 0700
 )
 
 type fileStorage struct {
@@ -31,22 +32,20 @@ func (f *fileStorage) Upload(_ context.Context, userID, fileID string, reader io
 		zap.String("file_id", fileID),
 	)
 
-	dir := filepath.Join(rootPath, userID, fileID)
+	dir := filepath.Join(rootPath, userID)
 	path = filepath.Join(dir, fileID)
 
-	if err := os.Mkdir(dir, 0750); err != nil {
+	if err := os.MkdirAll(dir, dirMode); err != nil {
 		f.logger.Error("filestorage: failed to create directory", zap.Error(err))
 		return "", fmt.Errorf("filestorage: failed to create directory: %w", err)
 	}
 
 	tmpFile, err := os.CreateTemp(dir, "upload-*.tmp")
 	defer func() {
-		if tmpFile == nil {
-			f.logger.Error("filestorage: temp file is nil")
-			return
+		if err != nil && tmpFile != nil {
+			_ = tmpFile.Close()
+			_ = os.Remove(tmpFile.Name())
 		}
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpFile.Name())
 	}()
 	if err != nil {
 		f.logger.Error("filestorage: failed to create temp file", zap.Error(err))
@@ -58,6 +57,7 @@ func (f *fileStorage) Upload(_ context.Context, userID, fileID string, reader io
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
 		f.logger.Error("filestorage: failed to upload file", zap.Error(err))
+		_ = os.Remove(tmpFile.Name())
 		return "", fmt.Errorf("filestorage: failed to upload file: %w", err)
 	}
 
@@ -77,4 +77,12 @@ func (f *fileStorage) Upload(_ context.Context, userID, fileID string, reader io
 
 	f.logger.Debug("filestorage: file uploaded successfully", zap.String("path", path))
 	return path, nil
+}
+
+func (f *fileStorage) Delete(_ context.Context, userID, fileID string) error {
+	f.logger.Debug("filestorage: deleting file",
+		zap.String("user_id", userID),
+		zap.String("file_id", fileID),
+	)
+	return os.Remove(filepath.Join(rootPath, userID, fileID))
 }

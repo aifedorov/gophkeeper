@@ -14,7 +14,6 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/filestorage"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
-	binarygrpc "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/binary"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
 	"go.uber.org/zap"
@@ -62,7 +61,7 @@ func (a *App) Run() error {
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
 	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)
-	binaryServer := binarygrpc.NewBinaryServer(a.cfg, a.logger, authSrv, binarySrv)
+	binaryServer := server.NewBinaryServer(a.cfg, a.logger, authSrv, binarySrv)
 	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, binaryServer, jwtSrv, authSrv)
 
 	if err := grpcServer.Run(ctx); err != nil {

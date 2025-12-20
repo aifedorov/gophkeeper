@@ -13,10 +13,10 @@ type Service interface {
 }
 
 type service struct {
-	client CredentialClient
+	client Client
 }
 
-func NewService(client CredentialClient) Service {
+func NewService(client Client) Service {
 	return &service{
 		client: client,
 	}

@@ -35,6 +35,7 @@ func NewGRPCConnection(serverAddr string, tokenProvider client.SessionProvider) 
 
 	opts := []grpc.DialOption{
 		grpc.WithUnaryInterceptor(ai.Interceptor()),
+		grpc.WithStreamInterceptor(ai.StreamInterceptor()),
 		grpc.WithTransportCredentials(creds),
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth/interfaces"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +34,14 @@ func NewRepositoryWithQuerier(querier Querier, logger *zap.Logger) interfaces.Re
 func (s *repository) CreateUser(ctx context.Context, user interfaces.RepositoryUser, passwordHash string) (interfaces.RepositoryUser, error) {
 	s.logger.Debug("repo: creating user", zap.String("login", user.Login))
 
+	userIDUUID, err := uuid.Parse(user.ID)
+	if err != nil {
+		s.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return interfaces.RepositoryUser{}, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
 	dbUser, err := s.queries.CreateUser(ctx, CreateUserParams{
+		ID:           userIDUUID,
 		Login:        user.Login,
 		PasswordHash: passwordHash,
 		Salt:         []byte(user.Salt),

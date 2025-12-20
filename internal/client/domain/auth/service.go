@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	client "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 )
 
 type Service interface {

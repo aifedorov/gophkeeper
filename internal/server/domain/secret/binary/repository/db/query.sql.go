@@ -41,8 +41,10 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) error {
 }
 
 const deleteFile = `-- name: DeleteFile :execrows
-DELETE FROM files
-WHERE id = $1 AND user_id = $2
+DELETE
+FROM files
+WHERE id = $1
+  AND user_id = $2
 `
 
 type DeleteFileParams struct {

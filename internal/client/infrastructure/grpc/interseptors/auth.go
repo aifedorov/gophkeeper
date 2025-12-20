@@ -58,3 +58,30 @@ func (i *AuthInterceptor) Interceptor() grpc.UnaryClientInterceptor {
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
+
+func (i *AuthInterceptor) StreamInterceptor() grpc.StreamClientInterceptor {
+	return func(
+		ctx context.Context,
+		desc *grpc.StreamDesc,
+		cc *grpc.ClientConn,
+		method string,
+		streamer grpc.Streamer,
+		opts ...grpc.CallOption,
+	) (grpc.ClientStream, error) {
+		if publicMethods[method] {
+			return streamer(ctx, desc, cc, method, opts...)
+		}
+
+		session, err := i.sessionProvider.GetSession(ctx)
+		if err != nil {
+			fmt.Printf("method: %s, err: %v\n", method, err.Error())
+			return nil, fmt.Errorf("authInterseptor: failed to load session: %w", err)
+		}
+
+		ctx = metadata.AppendToOutgoingContext(ctx,
+			string(accessTokenKey), session.GetAccessToken(),
+			string(encryptionKeyKey), session.GetEncryptionKey(),
+		)
+		return streamer(ctx, desc, cc, method, opts...)
+	}
+}

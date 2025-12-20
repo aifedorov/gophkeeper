@@ -1,4 +1,4 @@
-package binary
+package server
 
 import (
 	"errors"

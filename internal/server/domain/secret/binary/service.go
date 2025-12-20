@@ -67,6 +67,7 @@ func (s *service) UploadFile(ctx context.Context, userID, encryptionKey string, 
 	err = s.repo.CreateFile(ctx, userID, repoFile)
 	if err != nil {
 		s.logger.Error("binary: failed to create file in repository", zap.Error(err))
+		_ = s.fileStore.Delete(ctx, userID, file.GetID())
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 

@@ -42,6 +42,11 @@ func (r *repository) CreateFile(ctx context.Context, userID string, file interfa
 		return fmt.Errorf("repo: failed to parse binary id: %w", err)
 	}
 
+	r.logger.Debug("repo: IDs parsed successfully",
+		zap.String("user_id", userID),
+		zap.String("id", file.ID),
+	)
+
 	err = r.queries.CreateFile(ctx, CreateFileParams{
 		ID:         fileUUID,
 		UserID:     userUUID,

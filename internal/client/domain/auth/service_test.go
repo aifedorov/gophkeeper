@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/auth"
+	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"

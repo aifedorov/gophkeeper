@@ -7,8 +7,10 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/cli/auth/login"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/auth/register"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/commands"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/binary"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/credential"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
+	domainbinary "github.com/aifedorov/gophkeeper/internal/client/domain/binary"
 	domaincredential "github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	clientversion "github.com/aifedorov/gophkeeper/internal/client/version"
 	"github.com/spf13/cobra"
@@ -18,7 +20,7 @@ type Command struct {
 	cmd *cobra.Command
 }
 
-func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service) (*Command, error) {
+func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service, binarySrv domainbinary.Service) (*Command, error) {
 	cmd := &cobra.Command{
 		Use:     "gophkeeper",
 		Short:   "GophKeeper is a secure password manager",
@@ -47,6 +49,12 @@ func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service) (*
 		return nil, fmt.Errorf("failed to create credential command: %w", err)
 	}
 	cmd.AddCommand(credentialCmd.GetCommand())
+
+	binaryCmd, err := binary.NewCommand(binarySrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file command: %w", err)
+	}
+	cmd.AddCommand(binaryCmd.GetCommand())
 
 	return &Command{
 		cmd: cmd,
