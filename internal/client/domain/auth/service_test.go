@@ -16,6 +16,7 @@ const (
 	testLogin    = "testuser"
 	testPassword = "testpass"
 	testToken    = "token-xyz-456"
+	testUserID   = "user-id-123"
 )
 
 func TestService_Login(t *testing.T) {
@@ -32,9 +33,10 @@ func TestService_Login(t *testing.T) {
 			name:  "successful login",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
+				session := interfaces.NewSession(testToken, testToken, testUserID)
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return(testToken, []byte(testToken), nil)
+					Return(session, nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -48,7 +50,7 @@ func TestService_Login(t *testing.T) {
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return("", nil, ErrInvalidCredentials)
+					Return(interfaces.Session{}, ErrInvalidCredentials)
 			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
@@ -59,9 +61,10 @@ func TestService_Login(t *testing.T) {
 			name:  "login succeeds but save fails",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
+				session := interfaces.NewSession(testToken, testToken, testUserID)
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
-					Return(testToken, []byte(testToken), nil)
+					Return(session, nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -112,9 +115,10 @@ func TestService_Register(t *testing.T) {
 			name:  "successful registration",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
+				session := interfaces.NewSession(testToken, testToken, testUserID)
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return(testToken, []byte(testToken), nil)
+					Return(session, nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -128,7 +132,7 @@ func TestService_Register(t *testing.T) {
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return("", nil, ErrUserAlreadyExists)
+					Return(interfaces.Session{}, ErrUserAlreadyExists)
 			},
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
@@ -139,9 +143,10 @@ func TestService_Register(t *testing.T) {
 			name:  "registration succeeds but save fails",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
+				session := interfaces.NewSession(testToken, testToken, testUserID)
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
-					Return(testToken, []byte(testToken), nil)
+					Return(session, nil)
 
 				repo.EXPECT().
 					Save(gomock.Any()).
@@ -245,9 +250,9 @@ func TestService_GetCurrentSession(t *testing.T) {
 			setupMock: func(repo *MockRepository) {
 				repo.EXPECT().
 					Load().
-					Return(interfaces.NewSession(testToken, testToken), nil)
+					Return(interfaces.NewSession(testToken, testToken, testUserID), nil)
 			},
-			wantSession: interfaces.NewSession(testToken, testToken),
+			wantSession: interfaces.NewSession(testToken, testToken, testUserID),
 			wantErr:     false,
 		},
 		{

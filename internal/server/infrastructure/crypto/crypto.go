@@ -16,6 +16,7 @@ const (
 	argonKeyLen   = 32 // AES-256
 	saltLen       = 32
 	aes256KeySize = 32
+	chunkSize     = 64 * 1024
 )
 
 type Service struct {

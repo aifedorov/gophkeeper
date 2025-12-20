@@ -68,9 +68,11 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 
 	a.logger.Debug("grpc: token and encryption key issued successfully", zap.String("user_id", user.GetUserID()))
 
+	userID := user.GetUserID()
 	return &pb.RegisterResponse{
 		AccessToken:   &token,
 		EncryptionKey: encryptionKey,
+		UserId:        &userID,
 	}, nil
 }
 
@@ -104,6 +106,7 @@ func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 	return &pb.LoginResponse{
 		AccessToken:   &token,
 		EncryptionKey: encryptionKey,
+		UserId:        &userID,
 	}, nil
 }
 

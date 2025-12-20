@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary"
@@ -64,8 +66,43 @@ func (r *repository) Create(ctx context.Context, userID string, file interfaces.
 }
 
 func (r *repository) Get(ctx context.Context, userID, id string) (interfaces.RepositoryFile, error) {
-	// TODO: implement
-	panic("implement me")
+	r.logger.Debug("repo: getting file", zap.String("user_id", userID), zap.String("id", id))
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return interfaces.RepositoryFile{}, fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
+	idUUID, err := uuid.Parse(id)
+	if err != nil {
+		r.logger.Error("repo: failed to parse file id", zap.Error(err))
+		return interfaces.RepositoryFile{}, fmt.Errorf("repo: failed to parse file id: %w", err)
+	}
+
+	dbFile, err := r.queries.GetFile(ctx, GetFileParams{
+		ID:     idUUID,
+		UserID: userUUID,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		r.logger.Debug("repo: file not found")
+		return interfaces.RepositoryFile{}, binary.ErrFileNotFound
+	}
+	if err != nil {
+		r.logger.Error("repo: failed to get file", zap.Error(err))
+		return interfaces.RepositoryFile{}, fmt.Errorf("repo: failed to get file: %w", err)
+	}
+
+	r.logger.Debug("repo: file retrieved successfully", zap.String("id", id))
+	return interfaces.RepositoryFile{
+		ID:             dbFile.ID.String(),
+		UserID:         dbFile.UserID.String(),
+		Name:           dbFile.Name,
+		EncryptedPath:  dbFile.EncryptedPath,
+		EncryptedSize:  dbFile.EncryptedSize,
+		EncryptedNotes: dbFile.EncryptedNotes,
+		UploadedAt:     dbFile.UploadedAt,
+	}, nil
 }
 
 func (r *repository) List(ctx context.Context, userID string) ([]interfaces.RepositoryFile, error) {

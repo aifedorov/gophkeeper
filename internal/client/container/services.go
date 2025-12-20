@@ -13,6 +13,8 @@ import (
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage"
+	"github.com/aifedorov/gophkeeper/pkg/filestorage"
+	"go.uber.org/zap"
 )
 
 type Services struct {
@@ -25,6 +27,7 @@ type Services struct {
 
 func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 	sessionStore := storage.NewStorage()
+	fileStore := filestorage.NewFileStorage(zap.NewNop())
 	tokenProvider := auth.NewSessionProvider(sessionStore)
 	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr, tokenProvider)
 	if err != nil {
@@ -40,13 +43,14 @@ func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 	credService := credential.NewService(credClient)
 
 	binaryClient := client.NewBinaryClient(conn.Conn())
-	binaryService := binary.NewService(binaryClient)
+	binaryService := binary.NewService(binaryClient, fileStore, tokenProvider)
 
 	return &Services{
-		AuthSrv:   authService,
-		CredsSrv:  credService,
-		BinarySrv: binaryService,
-		grpcConn:  conn,
+		AuthSrv:       authService,
+		CredsSrv:      credService,
+		BinarySrv:     binaryService,
+		TokenProvider: tokenProvider,
+		grpcConn:      conn,
 	}, nil
 }
 

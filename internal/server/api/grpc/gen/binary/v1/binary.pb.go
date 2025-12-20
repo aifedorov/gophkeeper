@@ -22,74 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type MetadataRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          *string                `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Size          *int64                 `protobuf:"varint,2,opt,name=size" json:"size,omitempty"`
-	MimeType      *string                `protobuf:"bytes,3,opt,name=mime_type,json=mimeType" json:"mime_type,omitempty"`
-	Notes         *string                `protobuf:"bytes,4,opt,name=notes" json:"notes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MetadataRequest) Reset() {
-	*x = MetadataRequest{}
-	mi := &file_binary_v1_binary_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MetadataRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MetadataRequest) ProtoMessage() {}
-
-func (x *MetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MetadataRequest.ProtoReflect.Descriptor instead.
-func (*MetadataRequest) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *MetadataRequest) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
-	}
-	return ""
-}
-
-func (x *MetadataRequest) GetSize() int64 {
-	if x != nil && x.Size != nil {
-		return *x.Size
-	}
-	return 0
-}
-
-func (x *MetadataRequest) GetMimeType() string {
-	if x != nil && x.MimeType != nil {
-		return *x.MimeType
-	}
-	return ""
-}
-
-func (x *MetadataRequest) GetNotes() string {
-	if x != nil && x.Notes != nil {
-		return *x.Notes
-	}
-	return ""
-}
-
 type UploadRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Data:
@@ -103,7 +35,7 @@ type UploadRequest struct {
 
 func (x *UploadRequest) Reset() {
 	*x = UploadRequest{}
-	mi := &file_binary_v1_binary_proto_msgTypes[1]
+	mi := &file_binary_v1_binary_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -115,7 +47,7 @@ func (x *UploadRequest) String() string {
 func (*UploadRequest) ProtoMessage() {}
 
 func (x *UploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[1]
+	mi := &file_binary_v1_binary_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -128,7 +60,7 @@ func (x *UploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadRequest.ProtoReflect.Descriptor instead.
 func (*UploadRequest) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{1}
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *UploadRequest) GetData() isUploadRequest_Data {
@@ -138,7 +70,7 @@ func (x *UploadRequest) GetData() isUploadRequest_Data {
 	return nil
 }
 
-func (x *UploadRequest) GetFile() *MetadataRequest {
+func (x *UploadRequest) GetFile() *UploadRequest_Metadata {
 	if x != nil {
 		if x, ok := x.Data.(*UploadRequest_File); ok {
 			return x.File
@@ -161,7 +93,7 @@ type isUploadRequest_Data interface {
 }
 
 type UploadRequest_File struct {
-	File *MetadataRequest `protobuf:"bytes,1,opt,name=file,oneof"`
+	File *UploadRequest_Metadata `protobuf:"bytes,1,opt,name=file,oneof"`
 }
 
 type UploadRequest_Chunk struct {
@@ -181,7 +113,7 @@ type UploadResponse struct {
 
 func (x *UploadResponse) Reset() {
 	*x = UploadResponse{}
-	mi := &file_binary_v1_binary_proto_msgTypes[2]
+	mi := &file_binary_v1_binary_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +125,7 @@ func (x *UploadResponse) String() string {
 func (*UploadResponse) ProtoMessage() {}
 
 func (x *UploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[2]
+	mi := &file_binary_v1_binary_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +138,7 @@ func (x *UploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadResponse.ProtoReflect.Descriptor instead.
 func (*UploadResponse) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{2}
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UploadResponse) GetFileId() string {
@@ -229,7 +161,7 @@ type MetadataResponse struct {
 
 func (x *MetadataResponse) Reset() {
 	*x = MetadataResponse{}
-	mi := &file_binary_v1_binary_proto_msgTypes[3]
+	mi := &file_binary_v1_binary_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -241,7 +173,7 @@ func (x *MetadataResponse) String() string {
 func (*MetadataResponse) ProtoMessage() {}
 
 func (x *MetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[3]
+	mi := &file_binary_v1_binary_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -254,7 +186,7 @@ func (x *MetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetadataResponse.ProtoReflect.Descriptor instead.
 func (*MetadataResponse) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{3}
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *MetadataResponse) GetId() string {
@@ -300,7 +232,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_binary_v1_binary_proto_msgTypes[4]
+	mi := &file_binary_v1_binary_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -312,7 +244,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[4]
+	mi := &file_binary_v1_binary_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -325,7 +257,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{4}
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{3}
 }
 
 type ListResponse struct {
@@ -337,7 +269,7 @@ type ListResponse struct {
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_binary_v1_binary_proto_msgTypes[5]
+	mi := &file_binary_v1_binary_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +281,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_binary_v1_binary_proto_msgTypes[5]
+	mi := &file_binary_v1_binary_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +294,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_binary_v1_binary_proto_rawDescGZIP(), []int{5}
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListResponse) GetFiles() []*MetadataResponse {
@@ -372,19 +304,344 @@ func (x *ListResponse) GetFiles() []*MetadataResponse {
 	return nil
 }
 
+type DownloadRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        *string                `protobuf:"bytes,1,opt,name=file_id,json=fileId" json:"file_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadRequest) Reset() {
+	*x = DownloadRequest{}
+	mi := &file_binary_v1_binary_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadRequest) ProtoMessage() {}
+
+func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
+func (*DownloadRequest) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DownloadRequest) GetFileId() string {
+	if x != nil && x.FileId != nil {
+		return *x.FileId
+	}
+	return ""
+}
+
+type DownloadResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Data:
+	//
+	//	*DownloadResponse_File
+	//	*DownloadResponse_Chunk
+	Data          isDownloadResponse_Data `protobuf_oneof:"data"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadResponse) Reset() {
+	*x = DownloadResponse{}
+	mi := &file_binary_v1_binary_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadResponse) ProtoMessage() {}
+
+func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
+func (*DownloadResponse) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DownloadResponse) GetData() isDownloadResponse_Data {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *DownloadResponse) GetFile() *DownloadResponse_Metadata {
+	if x != nil {
+		if x, ok := x.Data.(*DownloadResponse_File); ok {
+			return x.File
+		}
+	}
+	return nil
+}
+
+func (x *DownloadResponse) GetChunk() []byte {
+	if x != nil {
+		if x, ok := x.Data.(*DownloadResponse_Chunk); ok {
+			return x.Chunk
+		}
+	}
+	return nil
+}
+
+type isDownloadResponse_Data interface {
+	isDownloadResponse_Data()
+}
+
+type DownloadResponse_File struct {
+	File *DownloadResponse_Metadata `protobuf:"bytes,1,opt,name=file,oneof"`
+}
+
+type DownloadResponse_Chunk struct {
+	Chunk []byte `protobuf:"bytes,2,opt,name=chunk,oneof"`
+}
+
+func (*DownloadResponse_File) isDownloadResponse_Data() {}
+
+func (*DownloadResponse_Chunk) isDownloadResponse_Data() {}
+
+type DeleteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        *string                `protobuf:"bytes,1,opt,name=file_id,json=fileId" json:"file_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteRequest) Reset() {
+	*x = DeleteRequest{}
+	mi := &file_binary_v1_binary_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteRequest) ProtoMessage() {}
+
+func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
+func (*DeleteRequest) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DeleteRequest) GetFileId() string {
+	if x != nil && x.FileId != nil {
+		return *x.FileId
+	}
+	return ""
+}
+
+type DeleteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteResponse) Reset() {
+	*x = DeleteResponse{}
+	mi := &file_binary_v1_binary_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteResponse) ProtoMessage() {}
+
+func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
+func (*DeleteResponse) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{8}
+}
+
+type UploadRequest_Metadata struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          *string                `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Size          *int64                 `protobuf:"varint,2,opt,name=size" json:"size,omitempty"`
+	Notes         *string                `protobuf:"bytes,3,opt,name=notes" json:"notes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadRequest_Metadata) Reset() {
+	*x = UploadRequest_Metadata{}
+	mi := &file_binary_v1_binary_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadRequest_Metadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadRequest_Metadata) ProtoMessage() {}
+
+func (x *UploadRequest_Metadata) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadRequest_Metadata.ProtoReflect.Descriptor instead.
+func (*UploadRequest_Metadata) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{0, 0}
+}
+
+func (x *UploadRequest_Metadata) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *UploadRequest_Metadata) GetSize() int64 {
+	if x != nil && x.Size != nil {
+		return *x.Size
+	}
+	return 0
+}
+
+func (x *UploadRequest_Metadata) GetNotes() string {
+	if x != nil && x.Notes != nil {
+		return *x.Notes
+	}
+	return ""
+}
+
+type DownloadResponse_Metadata struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          *string                `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Size          *int64                 `protobuf:"varint,2,opt,name=size" json:"size,omitempty"`
+	Notes         *string                `protobuf:"bytes,3,opt,name=notes" json:"notes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadResponse_Metadata) Reset() {
+	*x = DownloadResponse_Metadata{}
+	mi := &file_binary_v1_binary_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadResponse_Metadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadResponse_Metadata) ProtoMessage() {}
+
+func (x *DownloadResponse_Metadata) ProtoReflect() protoreflect.Message {
+	mi := &file_binary_v1_binary_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadResponse_Metadata.ProtoReflect.Descriptor instead.
+func (*DownloadResponse_Metadata) Descriptor() ([]byte, []int) {
+	return file_binary_v1_binary_proto_rawDescGZIP(), []int{6, 0}
+}
+
+func (x *DownloadResponse_Metadata) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *DownloadResponse_Metadata) GetSize() int64 {
+	if x != nil && x.Size != nil {
+		return *x.Size
+	}
+	return 0
+}
+
+func (x *DownloadResponse_Metadata) GetNotes() string {
+	if x != nil && x.Notes != nil {
+		return *x.Notes
+	}
+	return ""
+}
+
 var File_binary_v1_binary_proto protoreflect.FileDescriptor
 
 const file_binary_v1_binary_proto_rawDesc = "" +
 	"\n" +
-	"\x16binary/v1/binary.proto\x12\tbinary.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"l\n" +
-	"\x0fMetadataRequest\x12\x12\n" +
+	"\x16binary/v1/binary.proto\x12\tbinary.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb2\x01\n" +
+	"\rUploadRequest\x127\n" +
+	"\x04file\x18\x01 \x01(\v2!.binary.v1.UploadRequest.MetadataH\x00R\x04file\x12\x16\n" +
+	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunk\x1aH\n" +
+	"\bMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x03R\x04size\x12\x1b\n" +
-	"\tmime_type\x18\x03 \x01(\tR\bmimeType\x12\x14\n" +
-	"\x05notes\x18\x04 \x01(\tR\x05notes\"a\n" +
-	"\rUploadRequest\x120\n" +
-	"\x04file\x18\x01 \x01(\v2\x1a.binary.v1.MetadataRequestH\x00R\x04file\x12\x16\n" +
-	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunkB\x06\n" +
+	"\x04size\x18\x02 \x01(\x03R\x04size\x12\x14\n" +
+	"\x05notes\x18\x03 \x01(\tR\x05notesB\x06\n" +
 	"\x04data\")\n" +
 	"\x0eUploadResponse\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x9d\x01\n" +
@@ -397,10 +654,25 @@ const file_binary_v1_binary_proto_rawDesc = "" +
 	"uploadedAt\"\r\n" +
 	"\vListRequest\"A\n" +
 	"\fListResponse\x121\n" +
-	"\x05files\x18\x01 \x03(\v2\x1b.binary.v1.MetadataResponseR\x05files2\x89\x01\n" +
+	"\x05files\x18\x01 \x03(\v2\x1b.binary.v1.MetadataResponseR\x05files\"*\n" +
+	"\x0fDownloadRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\xb8\x01\n" +
+	"\x10DownloadResponse\x12:\n" +
+	"\x04file\x18\x01 \x01(\v2$.binary.v1.DownloadResponse.MetadataH\x00R\x04file\x12\x16\n" +
+	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunk\x1aH\n" +
+	"\bMetadata\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x03R\x04size\x12\x14\n" +
+	"\x05notes\x18\x03 \x01(\tR\x05notesB\x06\n" +
+	"\x04data\"(\n" +
+	"\rDeleteRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\tR\x06fileId\"\x10\n" +
+	"\x0eDeleteResponse2\x8f\x02\n" +
 	"\rBinaryService\x12?\n" +
 	"\x06Upload\x12\x18.binary.v1.UploadRequest\x1a\x19.binary.v1.UploadResponse(\x01\x127\n" +
-	"\x04List\x12\x16.binary.v1.ListRequest\x1a\x17.binary.v1.ListResponseB\x85\x01\n" +
+	"\x04List\x12\x16.binary.v1.ListRequest\x1a\x17.binary.v1.ListResponse\x12E\n" +
+	"\bDownload\x12\x1a.binary.v1.DownloadRequest\x1a\x1b.binary.v1.DownloadResponse0\x01\x12=\n" +
+	"\x06Delete\x12\x18.binary.v1.DeleteRequest\x1a\x19.binary.v1.DeleteResponseB\x85\x01\n" +
 	"\rcom.binary.v1B\vBinaryProtoP\x01Z\"github.com/aifedorov/gen/binary/v1\xa2\x02\x03BXX\xaa\x02\tBinary.V1\xca\x02\tBinary\\V1\xe2\x02\x15Binary\\V1\\GPBMetadata\xea\x02\n" +
 	"Binary::V1b\beditionsp\xe8\a"
 
@@ -416,29 +688,39 @@ func file_binary_v1_binary_proto_rawDescGZIP() []byte {
 	return file_binary_v1_binary_proto_rawDescData
 }
 
-var file_binary_v1_binary_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_binary_v1_binary_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_binary_v1_binary_proto_goTypes = []any{
-	(*MetadataRequest)(nil),       // 0: binary.v1.MetadataRequest
-	(*UploadRequest)(nil),         // 1: binary.v1.UploadRequest
-	(*UploadResponse)(nil),        // 2: binary.v1.UploadResponse
-	(*MetadataResponse)(nil),      // 3: binary.v1.MetadataResponse
-	(*ListRequest)(nil),           // 4: binary.v1.ListRequest
-	(*ListResponse)(nil),          // 5: binary.v1.ListResponse
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*UploadRequest)(nil),             // 0: binary.v1.UploadRequest
+	(*UploadResponse)(nil),            // 1: binary.v1.UploadResponse
+	(*MetadataResponse)(nil),          // 2: binary.v1.MetadataResponse
+	(*ListRequest)(nil),               // 3: binary.v1.ListRequest
+	(*ListResponse)(nil),              // 4: binary.v1.ListResponse
+	(*DownloadRequest)(nil),           // 5: binary.v1.DownloadRequest
+	(*DownloadResponse)(nil),          // 6: binary.v1.DownloadResponse
+	(*DeleteRequest)(nil),             // 7: binary.v1.DeleteRequest
+	(*DeleteResponse)(nil),            // 8: binary.v1.DeleteResponse
+	(*UploadRequest_Metadata)(nil),    // 9: binary.v1.UploadRequest.Metadata
+	(*DownloadResponse_Metadata)(nil), // 10: binary.v1.DownloadResponse.Metadata
+	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
 }
 var file_binary_v1_binary_proto_depIdxs = []int32{
-	0, // 0: binary.v1.UploadRequest.file:type_name -> binary.v1.MetadataRequest
-	6, // 1: binary.v1.MetadataResponse.uploaded_at:type_name -> google.protobuf.Timestamp
-	3, // 2: binary.v1.ListResponse.files:type_name -> binary.v1.MetadataResponse
-	1, // 3: binary.v1.BinaryService.Upload:input_type -> binary.v1.UploadRequest
-	4, // 4: binary.v1.BinaryService.List:input_type -> binary.v1.ListRequest
-	2, // 5: binary.v1.BinaryService.Upload:output_type -> binary.v1.UploadResponse
-	5, // 6: binary.v1.BinaryService.List:output_type -> binary.v1.ListResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	9,  // 0: binary.v1.UploadRequest.file:type_name -> binary.v1.UploadRequest.Metadata
+	11, // 1: binary.v1.MetadataResponse.uploaded_at:type_name -> google.protobuf.Timestamp
+	2,  // 2: binary.v1.ListResponse.files:type_name -> binary.v1.MetadataResponse
+	10, // 3: binary.v1.DownloadResponse.file:type_name -> binary.v1.DownloadResponse.Metadata
+	0,  // 4: binary.v1.BinaryService.Upload:input_type -> binary.v1.UploadRequest
+	3,  // 5: binary.v1.BinaryService.List:input_type -> binary.v1.ListRequest
+	5,  // 6: binary.v1.BinaryService.Download:input_type -> binary.v1.DownloadRequest
+	7,  // 7: binary.v1.BinaryService.Delete:input_type -> binary.v1.DeleteRequest
+	1,  // 8: binary.v1.BinaryService.Upload:output_type -> binary.v1.UploadResponse
+	4,  // 9: binary.v1.BinaryService.List:output_type -> binary.v1.ListResponse
+	6,  // 10: binary.v1.BinaryService.Download:output_type -> binary.v1.DownloadResponse
+	8,  // 11: binary.v1.BinaryService.Delete:output_type -> binary.v1.DeleteResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_binary_v1_binary_proto_init() }
@@ -446,9 +728,13 @@ func file_binary_v1_binary_proto_init() {
 	if File_binary_v1_binary_proto != nil {
 		return
 	}
-	file_binary_v1_binary_proto_msgTypes[1].OneofWrappers = []any{
+	file_binary_v1_binary_proto_msgTypes[0].OneofWrappers = []any{
 		(*UploadRequest_File)(nil),
 		(*UploadRequest_Chunk)(nil),
+	}
+	file_binary_v1_binary_proto_msgTypes[6].OneofWrappers = []any{
+		(*DownloadResponse_File)(nil),
+		(*DownloadResponse_Chunk)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -456,7 +742,7 @@ func file_binary_v1_binary_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_binary_v1_binary_proto_rawDesc), len(file_binary_v1_binary_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

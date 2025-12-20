@@ -1,4 +1,4 @@
-package server
+package client
 
 import (
 	"errors"
@@ -10,11 +10,11 @@ import (
 )
 
 type gRPCStreamReader struct {
-	stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]
+	stream grpc.ServerStreamingClient[pb.DownloadResponse]
 	buffer []byte
 }
 
-func newGRPCStreamReader(stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]) *gRPCStreamReader {
+func newGRPCStreamReader(stream grpc.ServerStreamingClient[pb.DownloadResponse]) *gRPCStreamReader {
 	return &gRPCStreamReader{
 		stream: stream,
 		buffer: nil,
@@ -44,4 +44,8 @@ func (r *gRPCStreamReader) Read(p []byte) (n int, err error) {
 	}
 
 	return n, nil
+}
+
+func (r *gRPCStreamReader) Close() error {
+	return nil
 }

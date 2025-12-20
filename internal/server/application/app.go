@@ -12,10 +12,10 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
 	credrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
-	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/filestorage"
 	server "github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/posgres"
+	"github.com/aifedorov/gophkeeper/pkg/filestorage"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )

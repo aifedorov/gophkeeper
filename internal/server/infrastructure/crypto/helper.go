@@ -38,3 +38,12 @@ func NewDecrypt(key []byte) (gcm cipher.AEAD, err error) {
 	}
 	return gcm, nil
 }
+
+func incrementNonce(nonce []byte) {
+	for i := len(nonce) - 1; i >= 0; i-- {
+		nonce[i]++
+		if nonce[i] != 0 {
+			break
+		}
+	}
+}

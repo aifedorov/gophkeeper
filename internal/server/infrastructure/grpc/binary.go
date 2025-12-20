@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"errors"
+	"io"
 
 	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/binary/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
@@ -14,6 +16,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const bufferSize = 1024 * 1024
 
 type BinaryServer struct {
 	pb.UnimplementedBinaryServiceServer
@@ -115,4 +119,85 @@ func (s *BinaryServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRes
 		Files: resFiles,
 	}
 	return res, nil
+}
+
+func (s *BinaryServer) Download(req *pb.DownloadRequest, stream grpc.ServerStreamingServer[pb.DownloadResponse]) error {
+	s.logger.Debug("grpc: download binary request received")
+	ctx := stream.Context()
+
+	s.logger.Debug("grpc: extracting user ID and encryption key from token")
+	userID, encryptionKey, err := s.authScr.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	s.logger.Debug("grpc: downloading binary")
+	fieldID := req.GetFileId()
+	if fieldID == "" {
+		return status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	reader, meta, err := s.binarySrv.Download(ctx, userID, encryptionKey, fieldID)
+	if err != nil {
+		s.logger.Error("grpc: failed to download file", zap.Error(err))
+		return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+	}
+
+	err = stream.Send(&pb.DownloadResponse{
+		Data: &pb.DownloadResponse_File{
+			File: &pb.DownloadResponse_Metadata{
+				Name: &meta.Name,
+				Size: &meta.Size,
+			},
+		},
+	})
+	if err != nil {
+		return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+	}
+
+	buf := make([]byte, bufferSize)
+	for {
+		n, err := reader.Read(buf)
+		if n > 0 {
+			err = stream.Send(&pb.DownloadResponse{
+				Data: &pb.DownloadResponse_Chunk{
+					Chunk: buf[:n],
+				},
+			})
+			if err != nil {
+				return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+		}
+	}
+	return nil
+}
+
+func (s *BinaryServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	s.logger.Debug("grpc: delete binary request received")
+
+	userID, _, err := s.authScr.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	fileID := req.GetFileId()
+	if fileID == "" {
+		return nil, status.Error(codes.InvalidArgument, "file_id is required")
+	}
+
+	err = s.binarySrv.Delete(ctx, userID, fileID)
+	if err != nil {
+		s.logger.Error("grpc: failed to delete file", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+	}
+
+	return &pb.DeleteResponse{}, nil
 }

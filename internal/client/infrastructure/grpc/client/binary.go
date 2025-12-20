@@ -23,7 +23,7 @@ func NewBinaryClient(conn *grpc.ClientConn) binary.Client {
 	}
 }
 
-func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileMeta, reader io.Reader) error {
+func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileInfo, reader io.Reader) error {
 	clientStream, err := c.client.Upload(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create upload stream: %w", err)
@@ -31,15 +31,13 @@ func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileMeta, re
 
 	name := fileInfo.Name()
 	size := fileInfo.Size()
-	mimeType := fileInfo.MimeType()
 	notes := fileInfo.Notes()
 	req := pb.UploadRequest{
 		Data: &pb.UploadRequest_File{
-			File: &pb.MetadataRequest{
-				Name:     &name,
-				Size:     &size,
-				MimeType: &mimeType,
-				Notes:    &notes,
+			File: &pb.UploadRequest_Metadata{
+				Name:  &name,
+				Size:  &size,
+				Notes: &notes,
 			},
 		},
 	}
@@ -92,4 +90,36 @@ func (c *binaryClient) List(ctx context.Context) ([]binary.File, error) {
 		files[i] = *domainFile
 	}
 	return files, nil
+}
+
+func (c *binaryClient) Download(ctx context.Context, id string) (io.ReadCloser, *binary.FileMeta, error) {
+	req := pb.DownloadRequest{
+		FileId: &id,
+	}
+	stream, err := c.client.Download(ctx, &req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to download file: %w", err)
+	}
+
+	firstMsg, err := stream.Recv()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to receive file metadata: %w", err)
+	}
+	meta := firstMsg.GetFile()
+	fileMeta, err := binary.NewFileMeta(meta.GetName(), meta.GetSize(), meta.GetNotes())
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create file metadata: %w", err)
+	}
+	return newGRPCStreamReader(stream), fileMeta, nil
+}
+
+func (c *binaryClient) Delete(ctx context.Context, id string) error {
+	req := pb.DeleteRequest{
+		FileId: &id,
+	}
+	_, err := c.client.Delete(ctx, &req)
+	if err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+	return nil
 }

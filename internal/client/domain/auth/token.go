@@ -20,5 +20,9 @@ func (p *sessionProvider) GetSession(_ context.Context) (interfaces.Session, err
 	if err != nil {
 		return interfaces.Session{}, ErrSessionNotFound
 	}
-	return interfaces.NewSession(session.GetAccessToken(), session.GetEncryptionKey()), nil
+	return interfaces.NewSession(
+		session.GetAccessToken(),
+		session.GetEncryptionKey(),
+		session.GetUserID(),
+	), nil
 }

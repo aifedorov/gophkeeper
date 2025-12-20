@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BinaryService_Upload_FullMethodName = "/binary.v1.BinaryService/Upload"
-	BinaryService_List_FullMethodName   = "/binary.v1.BinaryService/List"
+	BinaryService_Upload_FullMethodName   = "/binary.v1.BinaryService/Upload"
+	BinaryService_List_FullMethodName     = "/binary.v1.BinaryService/List"
+	BinaryService_Download_FullMethodName = "/binary.v1.BinaryService/Download"
+	BinaryService_Delete_FullMethodName   = "/binary.v1.BinaryService/Delete"
 )
 
 // BinaryServiceClient is the client API for BinaryService service.
@@ -29,6 +31,8 @@ const (
 type BinaryServiceClient interface {
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
 type binaryServiceClient struct {
@@ -62,12 +66,43 @@ func (c *binaryServiceClient) List(ctx context.Context, in *ListRequest, opts ..
 	return out, nil
 }
 
+func (c *binaryServiceClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &BinaryService_ServiceDesc.Streams[1], BinaryService_Download_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DownloadRequest, DownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BinaryService_DownloadClient = grpc.ServerStreamingClient[DownloadResponse]
+
+func (c *binaryServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, BinaryService_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BinaryServiceServer is the server API for BinaryService service.
 // All implementations must embed UnimplementedBinaryServiceServer
 // for forward compatibility.
 type BinaryServiceServer interface {
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
 	List(context.Context, *ListRequest) (*ListResponse, error)
+	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	mustEmbedUnimplementedBinaryServiceServer()
 }
 
@@ -83,6 +118,12 @@ func (UnimplementedBinaryServiceServer) Upload(grpc.ClientStreamingServer[Upload
 }
 func (UnimplementedBinaryServiceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedBinaryServiceServer) Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error {
+	return status.Error(codes.Unimplemented, "method Download not implemented")
+}
+func (UnimplementedBinaryServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedBinaryServiceServer) mustEmbedUnimplementedBinaryServiceServer() {}
 func (UnimplementedBinaryServiceServer) testEmbeddedByValue()                       {}
@@ -130,6 +171,35 @@ func _BinaryService_List_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BinaryService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BinaryServiceServer).Download(m, &grpc.GenericServerStream[DownloadRequest, DownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BinaryService_DownloadServer = grpc.ServerStreamingServer[DownloadResponse]
+
+func _BinaryService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BinaryServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BinaryService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BinaryServiceServer).Delete(ctx, req.(*DeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BinaryService_ServiceDesc is the grpc.ServiceDesc for BinaryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -141,12 +211,21 @@ var BinaryService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "List",
 			Handler:    _BinaryService_List_Handler,
 		},
+		{
+			MethodName: "Delete",
+			Handler:    _BinaryService_Delete_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Upload",
 			Handler:       _BinaryService_Upload_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Download",
+			Handler:       _BinaryService_Download_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "binary/v1/binary.proto",

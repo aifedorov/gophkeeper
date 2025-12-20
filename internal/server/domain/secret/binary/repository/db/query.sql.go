@@ -60,6 +60,32 @@ func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, 
 	return result.RowsAffected(), nil
 }
 
+const getFile = `-- name: GetFile :one
+SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, uploaded_at
+FROM files
+WHERE id = $1 AND user_id = $2
+`
+
+type GetFileParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (File, error) {
+	row := q.db.QueryRow(ctx, getFile, arg.ID, arg.UserID)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.EncryptedPath,
+		&i.EncryptedSize,
+		&i.EncryptedNotes,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
 const listFiles = `-- name: ListFiles :many
 SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, uploaded_at
 FROM files

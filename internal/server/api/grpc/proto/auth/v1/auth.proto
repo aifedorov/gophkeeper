@@ -31,6 +31,8 @@ message RegisterResponse {
   string access_token = 1;
   // encryption_key is the key used to encrypt the user's data.
   bytes encryption_key = 2;
+  // user_id is the unique identifier for the user.
+  string user_id = 3;
 }
 
 // LoginRequest contains the credentials for user authentication.
@@ -47,4 +49,6 @@ message LoginResponse {
   string access_token = 1;
   // encryption_key is the key used to encrypt the user's data.
   bytes encryption_key = 2;
+  // user_id is the unique identifier for the user.
+  string user_id = 3;
 }

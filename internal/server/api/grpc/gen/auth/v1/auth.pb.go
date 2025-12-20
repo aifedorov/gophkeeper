@@ -83,6 +83,8 @@ type RegisterResponse struct {
 	AccessToken *string `protobuf:"bytes,1,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
 	// encryption_key is the key used to encrypt the user's data.
 	EncryptionKey []byte `protobuf:"bytes,2,opt,name=encryption_key,json=encryptionKey" json:"encryption_key,omitempty"`
+	// user_id is the unique identifier for the user.
+	UserId        *string `protobuf:"bytes,3,opt,name=user_id,json=userId" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -129,6 +131,13 @@ func (x *RegisterResponse) GetEncryptionKey() []byte {
 		return x.EncryptionKey
 	}
 	return nil
+}
+
+func (x *RegisterResponse) GetUserId() string {
+	if x != nil && x.UserId != nil {
+		return *x.UserId
+	}
+	return ""
 }
 
 // LoginRequest contains the credentials for user authentication.
@@ -193,6 +202,8 @@ type LoginResponse struct {
 	AccessToken *string `protobuf:"bytes,1,opt,name=access_token,json=accessToken" json:"access_token,omitempty"`
 	// encryption_key is the key used to encrypt the user's data.
 	EncryptionKey []byte `protobuf:"bytes,2,opt,name=encryption_key,json=encryptionKey" json:"encryption_key,omitempty"`
+	// user_id is the unique identifier for the user.
+	UserId        *string `protobuf:"bytes,3,opt,name=user_id,json=userId" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -241,6 +252,13 @@ func (x *LoginResponse) GetEncryptionKey() []byte {
 	return nil
 }
 
+func (x *LoginResponse) GetUserId() string {
+	if x != nil && x.UserId != nil {
+		return *x.UserId
+	}
+	return ""
+}
+
 var File_auth_v1_auth_proto protoreflect.FileDescriptor
 
 const file_auth_v1_auth_proto_rawDesc = "" +
@@ -248,16 +266,18 @@ const file_auth_v1_auth_proto_rawDesc = "" +
 	"\x12auth/v1/auth.proto\x12\aauth.v1\"C\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\\\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"u\n" +
 	"\x10RegisterResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12%\n" +
-	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey\"@\n" +
+	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"Y\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"r\n" +
 	"\rLoginResponse\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12%\n" +
-	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey2\x86\x01\n" +
+	"\x0eencryption_key\x18\x02 \x01(\fR\rencryptionKey\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId2\x86\x01\n" +
 	"\vAuthService\x12?\n" +
 	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponseBw\n" +

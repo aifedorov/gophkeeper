@@ -35,7 +35,19 @@ func NewCommand(binarySrv domainbinary.Service) (*Command, error) {
 	}
 	cmd.AddCommand(listCommand.GetCommand())
 
+	downloadCommand, err := NewDownloadCommand(binarySrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create download command: %w", err)
+	}
+	cmd.AddCommand(downloadCommand.GetCommand())
+
 	c.cmd = cmd
+
+	deleteCommand, err := NewDeleteCommand(binarySrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create delete command: %w", err)
+	}
+	cmd.AddCommand(deleteCommand.GetCommand())
 
 	return c, nil
 }

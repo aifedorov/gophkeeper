@@ -2,6 +2,12 @@
 INSERT INTO files (id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, uploaded_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7);
 
+-- name: GetFile :one
+SELECT *
+FROM files
+WHERE id = $1
+  AND user_id = $2;
+
 -- name: ListFiles :many
 SELECT *
 FROM files

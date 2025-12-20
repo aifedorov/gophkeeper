@@ -11,6 +11,7 @@ type File struct {
 	id         string
 	name       string
 	size       int64
+	path       string
 	notes      string
 	uploadedAt time.Time
 }
@@ -18,7 +19,7 @@ type File struct {
 func NewFile(
 	id, name string,
 	size int64,
-	notes string,
+	path, notes string,
 	uploadedAt time.Time,
 ) (*File, error) {
 	if id == "" {
@@ -38,6 +39,7 @@ func NewFile(
 		id:         id,
 		name:       name,
 		size:       size,
+		path:       path,
 		notes:      notes,
 		uploadedAt: uploadedAt,
 	}, nil
@@ -61,4 +63,12 @@ func (f *File) GetNotes() string {
 
 func (f *File) GetUploadedAt() time.Time {
 	return f.uploadedAt
+}
+
+func (f *File) GetPath() string {
+	return f.path
+}
+
+func (f *File) SetPath(path string) {
+	f.path = path
 }

@@ -3,6 +3,7 @@ package binary
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 
@@ -14,6 +15,8 @@ import (
 type Service interface {
 	Upload(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error)
 	List(ctx context.Context, userID, encryptionKey string) ([]interfaces.File, error)
+	Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error)
+	Delete(ctx context.Context, userID, id string) error
 }
 
 type service struct {
@@ -56,7 +59,7 @@ func (s *service) Upload(ctx context.Context, userID, encryptionKey string, meta
 		return nil, fmt.Errorf("failed to encrypt file: %w", err)
 	}
 
-	file, err := MetadataToDomain(metadata)
+	file, err := MetadataToFile(metadata)
 	if err != nil {
 		s.logger.Error("binary: failed to convert metadata to domain", zap.Error(err))
 		return nil, fmt.Errorf("failed to convert metadata: %w", err)
@@ -68,10 +71,12 @@ func (s *service) Upload(ctx context.Context, userID, encryptionKey string, meta
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
+	file.SetPath(filepath)
+
 	s.logger.Debug("binary: file encrypted successfully", zap.String("filepath", filepath))
 
 	s.logger.Debug("binary: converting file to repository file")
-	repoFile, err := FileToRepository(s.crypto, key, file, filepath)
+	repoFile, err := FileToRepository(s.crypto, key, file)
 	if err != nil {
 		s.logger.Error("binary: failed to convert file to repository", zap.Error(err))
 		return nil, fmt.Errorf("failed to convert file: %w", err)
@@ -113,4 +118,75 @@ func (s *service) List(ctx context.Context, userID, encryptionKey string) ([]int
 		res[i] = *file
 	}
 	return res, nil
+}
+
+func (s *service) Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error) {
+	s.logger.Debug("binary: downloading file", zap.String("user_id", userID), zap.String("id", id))
+
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("binary: failed to decode encryption key", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to decode encryption key: %w", err)
+	}
+
+	fileRepo, err := s.repo.Get(ctx, userID, id)
+	if errors.Is(err, ErrFileNotFound) {
+		s.logger.Debug("binary: file not found", zap.String("id", id))
+		return nil, interfaces.FileMetadata{}, ErrFileNotFound
+	}
+	if err != nil {
+		s.logger.Error("binary: failed to get file from repository", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to get file from repository: %w", err)
+	}
+
+	file, err := FileToDomain(s.crypto, key, fileRepo)
+	if err != nil {
+		s.logger.Error("binary: failed to convert file metadata", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to convert file metadata: %w", err)
+	}
+
+	encryptedReader, err := s.fileStore.Download(ctx, userID, file.GetID())
+	if err != nil {
+		s.logger.Error("binary: failed to open file for reading", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to open file for reading: %w", err)
+	}
+
+	decryptingReader, err := crypto.NewDecryptReader(encryptedReader, key)
+	if err != nil {
+		s.logger.Error("binary: failed to create decrypting reader", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to create decrypting reader: %w", err)
+	}
+
+	meta, err := FileToMetadata(file)
+	if err != nil {
+		s.logger.Error("binary: failed to convert file metadata to domain", zap.Error(err))
+		return nil, interfaces.FileMetadata{}, fmt.Errorf("failed to convert file metadata to domain: %w", err)
+	}
+
+	return decryptingReader, meta, nil
+}
+
+func (s *service) Delete(ctx context.Context, userID, id string) error {
+	s.logger.Debug("binary: deleting file", zap.String("user_id", userID), zap.String("id", id))
+
+	// Delete from repository first
+	err := s.repo.Delete(ctx, userID, id)
+	if errors.Is(err, ErrFileNotFound) {
+		s.logger.Debug("binary: file not found", zap.String("id", id))
+		return ErrFileNotFound
+	}
+	if err != nil {
+		s.logger.Error("binary: failed to delete file from repository", zap.Error(err))
+		return fmt.Errorf("failed to delete file from repository: %w", err)
+	}
+
+	// Delete physical file
+	err = s.fileStore.Delete(ctx, userID, id)
+	if err != nil {
+		s.logger.Warn("binary: failed to delete physical file", zap.Error(err))
+		// Don't return error here as the database record is already deleted
+	}
+
+	s.logger.Debug("binary: file deleted successfully", zap.String("id", id))
+	return nil
 }

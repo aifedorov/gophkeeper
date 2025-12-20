@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CreateFile(ctx context.Context, arg CreateFileParams) error
+	GetFile(ctx context.Context, arg GetFileParams) (File, error)
 	ListFiles(ctx context.Context, userID uuid.UUID) ([]File, error)
 	DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, error)
 }

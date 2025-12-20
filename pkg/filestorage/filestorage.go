@@ -2,12 +2,12 @@ package filestorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/interfaces"
 	"go.uber.org/zap"
 )
 
@@ -16,24 +16,24 @@ const (
 	dirMode  = 0700
 )
 
-type fileStorage struct {
+type FileStorage struct {
 	logger *zap.Logger
 }
 
-func NewFileStorage(logger *zap.Logger) interfaces.FileStorage {
-	return &fileStorage{
+func NewFileStorage(logger *zap.Logger) *FileStorage {
+	return &FileStorage{
 		logger: logger,
 	}
 }
 
-func (f *fileStorage) Upload(_ context.Context, userID, fileID string, reader io.Reader) (path string, err error) {
+func (f *FileStorage) Upload(_ context.Context, userID, fileID string, reader io.Reader) (path string, err error) {
 	f.logger.Debug("filestorage: uploading file",
 		zap.String("user_id", userID),
 		zap.String("file_id", fileID),
 	)
 
-	dir := filepath.Join(rootPath, userID)
-	path = filepath.Join(dir, fileID)
+	dir := f.getDir(userID)
+	path = f.getFullPath(userID, fileID)
 
 	if err := os.MkdirAll(dir, dirMode); err != nil {
 		f.logger.Error("filestorage: failed to create directory", zap.Error(err))
@@ -79,10 +79,41 @@ func (f *fileStorage) Upload(_ context.Context, userID, fileID string, reader io
 	return path, nil
 }
 
-func (f *fileStorage) Delete(_ context.Context, userID, fileID string) error {
+func (f *FileStorage) Delete(_ context.Context, userID, fileID string) error {
 	f.logger.Debug("filestorage: deleting file",
 		zap.String("user_id", userID),
 		zap.String("file_id", fileID),
 	)
-	return os.Remove(filepath.Join(rootPath, userID, fileID))
+
+	path := f.getFullPath(userID, fileID)
+	return os.Remove(path)
+}
+
+func (f *FileStorage) Download(_ context.Context, userID, fileID string) (reader io.ReadCloser, err error) {
+	f.logger.Debug("filestorage: getting file",
+		zap.String("user_id", userID),
+		zap.String("file_id", fileID),
+	)
+
+	path := f.getFullPath(userID, fileID)
+
+	// #nosec G304
+	file, err := os.Open(path)
+	if errors.Is(err, os.ErrNotExist) {
+		f.logger.Debug("filestorage: file not found", zap.String("path", path))
+		return nil, fmt.Errorf("filestorage: file not found: %w", err)
+	}
+	if err != nil {
+		f.logger.Error("filestorage: failed to open file", zap.Error(err))
+		return nil, fmt.Errorf("filestorage: failed to open file: %w", err)
+	}
+	return file, nil
+}
+
+func (f *FileStorage) getDir(userID string) string {
+	return filepath.Join(rootPath, userID)
+}
+
+func (f *FileStorage) getFullPath(userID, fileID string) string {
+	return filepath.Join(rootPath, userID, fileID)
 }

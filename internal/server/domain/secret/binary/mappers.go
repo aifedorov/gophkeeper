@@ -9,11 +9,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func MetadataToDomain(metadata interfaces.FileMetadata) (*interfaces.File, error) {
+func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) {
 	file, err := interfaces.NewFile(
 		uuid.NewString(),
 		metadata.Name,
 		metadata.Size,
+		"",
 		metadata.Notes,
 		time.Now(),
 	)
@@ -23,8 +24,12 @@ func MetadataToDomain(metadata interfaces.FileMetadata) (*interfaces.File, error
 	return file, nil
 }
 
-func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfaces.File, path string) (interfaces.RepositoryFile, error) {
-	encryptedPath, err := crypto.Encrypt(path, key)
+func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfaces.File) (interfaces.RepositoryFile, error) {
+	if file == nil {
+		return interfaces.RepositoryFile{}, fmt.Errorf("file is nil")
+	}
+
+	encryptedPath, err := crypto.Encrypt(file.GetPath(), key)
 	if err != nil {
 		return interfaces.RepositoryFile{}, fmt.Errorf("failed to encrypt path: %w", err)
 	}
@@ -60,12 +65,29 @@ func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.R
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert size: %w", err)
 	}
+	path, err := crypto.Decrypt(file.EncryptedPath, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt path: %w", err)
+	}
 
 	return interfaces.NewFile(
 		file.ID,
 		file.Name,
 		int64(size),
+		path,
 		notes,
 		file.UploadedAt,
 	)
+}
+
+func FileToMetadata(file *interfaces.File) (interfaces.FileMetadata, error) {
+	if file == nil {
+		return interfaces.FileMetadata{}, fmt.Errorf("file is nil")
+	}
+
+	return interfaces.FileMetadata{
+		Name:  file.GetName(),
+		Size:  file.GetSize(),
+		Notes: file.GetNotes(),
+	}, nil
 }

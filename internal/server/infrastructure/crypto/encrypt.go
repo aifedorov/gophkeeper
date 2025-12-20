@@ -7,8 +7,6 @@ import (
 	"io"
 )
 
-const chunkSize = 64 * 1024
-
 type encryptReader struct {
 	source io.Reader
 	gcm    cipher.AEAD
@@ -58,17 +56,9 @@ func (r *encryptReader) Read(p []byte) (n int, err error) {
 	}
 
 	ciphertext := r.gcm.Seal(nil, r.nonce, plaintext[:n], nil)
+	incrementNonce(r.nonce)
+
 	copy(p, ciphertext)
-	r.incrementNonce(r.nonce)
 
 	return len(ciphertext), nil
-}
-
-func (r *encryptReader) incrementNonce(nonce []byte) {
-	for i := len(nonce) - 1; i >= 0; i-- {
-		nonce[i]++
-		if nonce[i] != 0 {
-			break
-		}
-	}
 }
