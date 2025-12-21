@@ -7,6 +7,7 @@ import (
 
 	authvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/auth/v1"
 	binarypb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/binary/v1"
+	cardpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/card/v1"
 	credvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
@@ -31,6 +32,7 @@ type grpcServer struct {
 	grpc         *grpc.Server
 	authServer   *AuthServer
 	credServer   *CredentialServer
+	cardServer   *CardServer
 	binaryServer *BinaryServer
 	jwtSrv       jwt.Service
 	authSrv      auth.Service
@@ -44,6 +46,7 @@ func NewGRRPCServer(
 	grpc *grpc.Server,
 	authServer *AuthServer,
 	credServer *CredentialServer,
+	cardServer *CardServer,
 	binaryServer *BinaryServer,
 	jwtSrv jwt.Service,
 	authSrv auth.Service,
@@ -54,6 +57,7 @@ func NewGRRPCServer(
 		grpc:         grpc,
 		authServer:   authServer,
 		credServer:   credServer,
+		cardServer:   cardServer,
 		binaryServer: binaryServer,
 		jwtSrv:       jwtSrv,
 		authSrv:      authSrv,
@@ -89,6 +93,7 @@ func (s *grpcServer) Run(ctx context.Context) error {
 	)
 	authvpb.RegisterAuthServiceServer(s.grpc, s.authServer)
 	credvpb.RegisterCredentialServiceServer(s.grpc, s.credServer)
+	cardpb.RegisterCardServiceServer(s.grpc, s.cardServer)
 	binarypb.RegisterBinaryServiceServer(s.grpc, s.binaryServer)
 
 	reflection.Register(s.grpc)

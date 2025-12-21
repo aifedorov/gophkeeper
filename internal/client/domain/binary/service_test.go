@@ -361,7 +361,6 @@ type mockSessionProvider struct {
 	ctrl    *gomock.Controller
 	session authinterfaces.Session
 	err     error
-	expects []func()
 }
 
 func (m *mockSessionProvider) GetSession(ctx context.Context) (authinterfaces.Session, error) {

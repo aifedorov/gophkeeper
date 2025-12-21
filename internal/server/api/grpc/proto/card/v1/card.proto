@@ -1,0 +1,66 @@
+edition = "2023";
+
+package card.v1;
+
+option go_package = "github.com/aifedorov/gen/card/v1";
+
+service CardService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  rpc List(ListRequest) returns (ListResponse);
+
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+message CreateRequest {
+  string name = 1;
+  string number = 2;
+  string expired_date = 3;
+  string card_holder_name = 4;
+  string cvv = 5;
+  string notes = 6;
+}
+
+message CreateResponse {
+  string id = 1;
+}
+
+message UpdateRequest {
+  string id = 1;
+  string name = 2;
+  string number = 3;
+  string expired_date = 4;
+  string card_holder_name = 5;
+  string cvv = 6;
+  string notes = 7;
+}
+
+message UpdateResponse {
+  bool success = 1;
+}
+
+message DeleteRequest {
+  string id = 1;
+}
+
+message DeleteResponse {
+  bool success = 1;
+}
+
+message ListRequest {}
+
+message ListResponse {
+  message ListItem {
+    string id = 1;
+    string name = 2;
+    string number = 3;
+    string expired_date = 4;
+    string card_holder_name = 5;
+    string cvv = 6;
+    string notes = 7;
+  }
+
+  repeated ListItem cards = 1;
+}

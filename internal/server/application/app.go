@@ -9,6 +9,8 @@ import (
 	authrepository "github.com/aifedorov/gophkeeper/internal/server/domain/auth/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary"
 	binaryrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/repository/db"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/card"
+	cardrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/card/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
 	credrepository "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/repository/db"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/crypto"
@@ -55,14 +57,18 @@ func (a *App) Run() error {
 	credRepo := credrepository.NewRepository(db.DBPool(), a.logger)
 	credSrv := credential.NewService(credRepo, cryptoSrv, a.logger)
 
+	cardRepo := cardrepository.NewRepository(db.DBPool(), a.logger)
+	cardSrv := card.NewService(cardRepo, cryptoSrv, a.logger)
+
 	binaryFileStore := filestorage.NewFileStorage(a.logger)
 	binaryRepo := binaryrepository.NewRepository(db.DBPool(), a.logger)
 	binarySrv := binary.NewService(binaryRepo, binaryFileStore, cryptoSrv, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)
 	credServer := server.NewCredentialServer(a.cfg, a.logger, authSrv, credSrv)
+	cardServer := server.NewCardServer(a.cfg, a.logger, authSrv, cardSrv)
 	binaryServer := server.NewBinaryServer(a.cfg, a.logger, authSrv, binarySrv)
-	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, binaryServer, jwtSrv, authSrv)
+	grpcServer := server.NewGRRPCServer(a.cfg, a.logger, grpc.NewServer(), authServer, credServer, cardServer, binaryServer, jwtSrv, authSrv)
 
 	if err := grpcServer.Run(ctx); err != nil {
 		return err
