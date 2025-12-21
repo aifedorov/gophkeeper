@@ -321,3 +321,87 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to compare hash and password")
 	})
 }
+
+func TestService_GetUserDataFromContext(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		setupContext func(*testing.T, Service) context.Context
+		wantUserID   string
+		wantEncKey   string
+		wantErr      bool
+		errMsg       string
+	}{
+		{
+			name: "successful get user data",
+			setupContext: func(t *testing.T, service Service) context.Context {
+				ctx := context.Background()
+				ctx = service.SetUserID(ctx, "test-user-123")
+				ctx = service.SetEncryptionKeyEncoded(ctx, "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhAAA=")
+				return ctx
+			},
+			wantUserID: "test-user-123",
+			wantEncKey: "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhAAA=",
+			wantErr:    false,
+		},
+		{
+			name: "missing user ID",
+			setupContext: func(t *testing.T, service Service) context.Context {
+				ctx := context.Background()
+				ctx = service.SetEncryptionKeyEncoded(ctx, "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhAAA=")
+				return ctx
+			},
+			wantErr: true,
+			errMsg:  "failed to get userID",
+		},
+		{
+			name: "missing encryption key",
+			setupContext: func(t *testing.T, service Service) context.Context {
+				ctx := context.Background()
+				ctx = service.SetUserID(ctx, "test-user-123")
+				return ctx
+			},
+			wantErr: true,
+			errMsg:  "failed to get encryption key",
+		},
+		{
+			name: "both missing",
+			setupContext: func(t *testing.T, service Service) context.Context {
+				return context.Background()
+			},
+			wantErr: true,
+			errMsg:  "failed to get userID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mocks.NewMockRepository(ctrl)
+			mockCrypto := mocks.NewMockCryptoService(ctrl)
+			logger := zap.NewNop()
+			service := NewService(mockRepo, logger, mockCrypto)
+
+			ctx := tt.setupContext(t, service)
+			userID, encKey, err := service.GetUserDataFromContext(ctx)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+				assert.Empty(t, userID)
+				assert.Empty(t, encKey)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantUserID, userID)
+				assert.Equal(t, tt.wantEncKey, encKey)
+			}
+		})
+	}
+}

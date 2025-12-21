@@ -1,3 +1,7 @@
+// Package auth provides authentication and user management services for the GophKeeper server.
+//
+// This package implements the core authentication business logic including user registration,
+// login, password hashing, encryption key derivation, and context management for authenticated requests.
 package auth
 
 import (
@@ -10,13 +14,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// ContextKey is a type for context keys used to store user data in request context.
 type ContextKey string
 
 const (
-	userIDKey        = ContextKey("user_id")
+	// userIDKey is the context key for storing user ID in request context.
+	userIDKey = ContextKey("user_id")
+	// encryptionKeyKey is the context key for storing base64-encoded encryption key in request context.
 	encryptionKeyKey = ContextKey("encryption_key_encoded")
 )
 
+// Service defines the interface for authentication and user management operations.
+// It provides methods for user registration, login, and context management for authenticated requests.
 type Service interface {
 	// Register creates a new auth account with the provided login and password.
 	// Returns the user entity, the encryption key, and an error if the registration fails.
@@ -32,15 +41,20 @@ type Service interface {
 	SetEncryptionKeyEncoded(ctx context.Context, encryptionKey string) context.Context
 	// GetEncryptionKeyFromContext List an encryption key in base64 from context.
 	GetEncryptionKeyFromContext(ctx context.Context) (string, error)
+	// GetUserDataFromContext retrieves both user ID and encryption key from the request context.
+	// Returns an error if either value is missing or invalid.
 	GetUserDataFromContext(ctx context.Context) (userID, encryptionKey string, err error)
 }
 
+// service implements the Service interface for authentication operations.
 type service struct {
 	repo      interfaces.Repository
 	logger    *zap.Logger
 	cryptoSrv interfaces.CryptoService
 }
 
+// NewService creates a new instance of the authentication service with the provided dependencies.
+// It initializes the service with a user repository, logger, and cryptographic service.
 func NewService(repo interfaces.Repository, logger *zap.Logger, cryptoSrv interfaces.CryptoService) Service {
 	return &service{
 		repo:      repo,
@@ -49,6 +63,10 @@ func NewService(repo interfaces.Repository, logger *zap.Logger, cryptoSrv interf
 	}
 }
 
+// Register creates a new user account with the provided login and password.
+// It validates credentials, generates a salt, derives an encryption key, hashes the password,
+// and stores the user in the repository. Returns the created user entity, encryption key, and any error.
+// Returns ErrLoginExists if the login is already taken.
 func (s *service) Register(ctx context.Context, login, password string) (*User, []byte, error) {
 	s.logger.Debug("auth: starting registration", zap.String("login", login))
 
@@ -107,6 +125,10 @@ func (s *service) Register(ctx context.Context, login, password string) (*User, 
 	return &dusr, encryptionKey, nil
 }
 
+// Login authenticates a user with the provided credentials.
+// It validates credentials, retrieves the user from the repository, verifies the password,
+// and derives the encryption key. Returns the user entity, encryption key, and any error.
+// Returns ErrUserNotFound if the user doesn't exist or ErrInvalidCredentials if the password is incorrect.
 func (s *service) Login(ctx context.Context, login, password string) (*User, []byte, error) {
 	s.logger.Debug("auth: starting login", zap.String("login", login))
 
@@ -150,27 +172,44 @@ func (s *service) Login(ctx context.Context, login, password string) (*User, []b
 	return &dusr, encryptionKey, nil
 }
 
+// GetUserIDFromContext retrieves the user ID from the request context.
+// Returns an error if the user ID is not found or is invalid.
 func (s *service) GetUserIDFromContext(ctx context.Context) (string, error) {
 	userID, ok := ctx.Value(userIDKey).(string)
 	if !ok || userID == "" {
 		s.logger.Error("auth: user id not found in context")
 		return "", errors.New("auth: failed to get user id from context")
 	}
-	return ctx.Value(userIDKey).(string), nil
+	return userID, nil
 }
 
+// GetEncryptionKeyFromContext retrieves the base64-encoded encryption key from the request context.
+// Returns an error if the encryption key is not found or is invalid.
 func (s *service) GetEncryptionKeyFromContext(ctx context.Context) (string, error) {
-	return ctx.Value(encryptionKeyKey).(string), nil
+	encryptionKey, ok := ctx.Value(encryptionKeyKey).(string)
+	if !ok || encryptionKey == "" {
+		s.logger.Error("auth: encryption key not found in context")
+		return "", errors.New("auth: failed to get encryption key from context")
+	}
+	return encryptionKey, nil
 }
 
+// SetUserID stores the user ID in the request context and returns a new context with the value.
+// This is used by authentication interceptors to pass user information to service methods.
 func (s *service) SetUserID(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, userIDKey, userID)
 }
 
+// SetEncryptionKeyEncoded stores the base64-encoded encryption key in the request context
+// and returns a new context with the value. This is used by authentication interceptors
+// to pass encryption key information to service methods.
 func (s *service) SetEncryptionKeyEncoded(ctx context.Context, encryptionKey string) context.Context {
 	return context.WithValue(ctx, encryptionKeyKey, encryptionKey)
 }
 
+// GetUserDataFromContext retrieves both user ID and encryption key from the request context.
+// This is a convenience method that calls both GetUserIDFromContext and GetEncryptionKeyFromContext.
+// Returns an error if either value is missing or invalid.
 func (s *service) GetUserDataFromContext(ctx context.Context) (userID, encryptionKey string, err error) {
 	userID, err = s.GetUserIDFromContext(ctx)
 	if err != nil {

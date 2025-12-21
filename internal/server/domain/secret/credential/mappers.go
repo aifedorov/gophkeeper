@@ -1,3 +1,4 @@
+// Package credential provides mappers for converting between domain and repository representations.
 package credential
 
 import (
@@ -6,6 +7,9 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
 )
 
+// toDomainCredential converts a repository credential representation to a domain Credential entity.
+// It decrypts all encrypted fields (login, password, notes) using the provided encryption key.
+// Returns an error if decryption fails for any field.
 func toDomainCredential(crypto interfaces.CryptoService, key []byte, credential interfaces.RepositoryCredential) (Credential, error) {
 	login, err := crypto.Decrypt(credential.EncryptedLogin, key)
 	if err != nil {
@@ -30,6 +34,9 @@ func toDomainCredential(crypto interfaces.CryptoService, key []byte, credential 
 	}, nil
 }
 
+// toRepositoryCredential converts a domain Credential entity to a repository credential representation.
+// It encrypts all sensitive fields (login, password, notes) using the provided encryption key.
+// Returns an error if encryption fails for any field.
 func toRepositoryCredential(crypto interfaces.CryptoService, key []byte, credential Credential) (interfaces.RepositoryCredential, error) {
 	encryptLogin, err := crypto.Encrypt(credential.login, key)
 	if err != nil {

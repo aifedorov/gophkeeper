@@ -1,3 +1,9 @@
+// Package binary provides binary file management services for the GophKeeper server.
+//
+// This package implements the core business logic for managing binary file storage with
+// end-to-end encryption. Files are encrypted using AES-256-GCM before storage and decrypted
+// during retrieval. All operations require user authentication and use encryption keys
+// derived from the user's password.
 package binary
 
 import (
@@ -12,13 +18,30 @@ import (
 	"go.uber.org/zap"
 )
 
+// Service defines the interface for binary file management operations.
+// All methods require user authentication and encryption key for file encryption/decryption.
 type Service interface {
+	// Upload stores a new binary file for the specified user with encryption.
+	// The file is read from the provided reader, encrypted using AES-256-GCM, and stored both
+	// in the file storage and database. The encryptionKey should be provided as a base64-encoded string.
+	// If database creation fails, the uploaded file is automatically cleaned up.
 	Upload(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error)
+	// List retrieves all binary files for the specified user and decrypts their metadata.
+	// The encryptionKey should be provided as a base64-encoded string.
+	// Returns an empty slice if the user has no files.
 	List(ctx context.Context, userID, encryptionKey string) ([]interfaces.File, error)
+	// Download retrieves a binary file for the specified user and returns a reader for the decrypted content.
+	// The encryptionKey should be provided as a base64-encoded string.
+	// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+	// The returned reader should be closed by the caller after use.
 	Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error)
+	// Delete removes a binary file for the specified user.
+	// Deletes both the database record and the physical file.
+	// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
 	Delete(ctx context.Context, userID, id string) error
 }
 
+// service implements the Service interface for binary file management.
 type service struct {
 	repo      interfaces.Repository
 	fileStore interfaces.FileStorage
@@ -26,6 +49,8 @@ type service struct {
 	logger    *zap.Logger
 }
 
+// NewService creates a new instance of the binary file service with the provided dependencies.
+// It initializes the service with a file repository, file storage, cryptographic service, and logger.
 func NewService(
 	repo interfaces.Repository,
 	fileStore interfaces.FileStorage,
@@ -40,6 +65,10 @@ func NewService(
 	}
 }
 
+// Upload stores a new binary file for the specified user with encryption.
+// The file is read from the provided reader, encrypted using AES-256-GCM, and stored both
+// in the file storage and database. The encryptionKey should be provided as a base64-encoded string.
+// If database creation fails, the uploaded file is automatically cleaned up.
 func (s *service) Upload(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error) {
 	s.logger.Debug("binary: uploading file",
 		zap.String("user_id", userID),
@@ -93,6 +122,9 @@ func (s *service) Upload(ctx context.Context, userID, encryptionKey string, meta
 	return file, nil
 }
 
+// List retrieves all binary files for the specified user and decrypts their metadata.
+// The encryptionKey should be provided as a base64-encoded string.
+// Returns an empty slice if the user has no files.
 func (s *service) List(ctx context.Context, userID, encryptionKey string) ([]interfaces.File, error) {
 	s.logger.Debug("binary: listing files", zap.String("user_id", userID))
 
@@ -120,6 +152,10 @@ func (s *service) List(ctx context.Context, userID, encryptionKey string) ([]int
 	return res, nil
 }
 
+// Download retrieves a binary file for the specified user and returns a reader for the decrypted content.
+// The encryptionKey should be provided as a base64-encoded string.
+// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+// The returned reader should be closed by the caller after use.
 func (s *service) Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error) {
 	s.logger.Debug("binary: downloading file", zap.String("user_id", userID), zap.String("id", id))
 
@@ -166,6 +202,11 @@ func (s *service) Download(ctx context.Context, userID, encryptionKey, id string
 	return decryptingReader, meta, nil
 }
 
+// Delete removes a binary file for the specified user.
+// Deletes the database record first, then attempts to delete the physical file.
+// If physical file deletion fails, it logs a warning but doesn't return an error
+// since the database record is already deleted.
+// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
 func (s *service) Delete(ctx context.Context, userID, id string) error {
 	s.logger.Debug("binary: deleting file", zap.String("user_id", userID), zap.String("id", id))
 

@@ -1,3 +1,4 @@
+// Package binary provides mappers for converting between domain and repository representations.
 package binary
 
 import (
@@ -9,6 +10,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// MetadataToFile converts file metadata to a domain File entity.
+// It generates a new UUID for the file and sets the current time as the upload timestamp.
+// Returns an error if the metadata is invalid (e.g., empty name or zero size).
 func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) {
 	file, err := interfaces.NewFile(
 		uuid.NewString(),
@@ -24,6 +28,9 @@ func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) 
 	return file, nil
 }
 
+// FileToRepository converts a domain File entity to a repository file representation.
+// It encrypts all sensitive fields (path, size, notes) using the provided encryption key.
+// Returns an error if the file is nil or if encryption fails for any field.
 func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfaces.File) (interfaces.RepositoryFile, error) {
 	if file == nil {
 		return interfaces.RepositoryFile{}, fmt.Errorf("file is nil")
@@ -52,6 +59,9 @@ func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfa
 	}, nil
 }
 
+// FileToDomain converts a repository file representation to a domain File entity.
+// It decrypts all encrypted fields (path, size, notes) using the provided encryption key.
+// Returns an error if decryption fails for any field or if size conversion fails.
 func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.RepositoryFile) (*interfaces.File, error) {
 	notes, err := crypto.Decrypt(file.EncryptedNotes, key)
 	if err != nil {
@@ -80,6 +90,8 @@ func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.R
 	)
 }
 
+// FileToMetadata converts a domain File entity to file metadata.
+// Returns an error if the file is nil.
 func FileToMetadata(file *interfaces.File) (interfaces.FileMetadata, error) {
 	if file == nil {
 		return interfaces.FileMetadata{}, fmt.Errorf("file is nil")
