@@ -60,7 +60,7 @@ func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest
 		return status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	streamReader := newGRPCStreamReader(stream)
+	streamReader := newUploadStreamReader(stream)
 	fileMetadata := interfaces.FileMetadata{
 		Name:  metadata.GetName(),
 		Size:  metadata.GetSize(),
@@ -68,6 +68,10 @@ func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest
 	}
 
 	res, err := s.binarySrv.Upload(ctx, userID, encryptionKey, fileMetadata, streamReader)
+	if errors.Is(err, binary.ErrNameExists) {
+		s.logger.Debug("grpc: file with this name already exists")
+		return status.Error(codes.AlreadyExists, "file with this name already exists")
+	}
 	if err != nil {
 		s.logger.Error("grpc: failed to upload file", zap.Error(err))
 		return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
@@ -200,4 +204,50 @@ func (s *BinaryServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.D
 	}
 
 	return &pb.DeleteResponse{}, nil
+}
+
+func (s *BinaryServer) Update(stream grpc.ClientStreamingServer[pb.UpdateRequest, pb.UpdateResponse]) error {
+	s.logger.Debug("grpc: update binary request received")
+
+	ctx := stream.Context()
+
+	s.logger.Debug("grpc: extracting user ID and encryption key from token")
+	userID, encryptionKey, err := s.authScr.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	s.logger.Debug("grpc: receiving metadata and uploading binary")
+
+	firstMsg, err := stream.Recv()
+	if err != nil {
+		s.logger.Error("grpc: failed to receive first message", zap.Error(err))
+		return status.Error(codes.Internal, "internal error")
+	}
+
+	metadata := firstMsg.GetFile()
+	if metadata == nil {
+		s.logger.Error("grpc: file metadata is nil")
+		return status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	streamReader := newUpdateStreamReader(stream)
+	fileMetadata := interfaces.FileMetadata{
+		ID:    metadata.GetFileId(),
+		Name:  metadata.GetName(),
+		Size:  metadata.GetSize(),
+		Notes: metadata.GetNotes(),
+	}
+
+	_, err = s.binarySrv.Update(ctx, userID, encryptionKey, fileMetadata, streamReader)
+	if err != nil {
+		s.logger.Error("grpc: failed to upload file", zap.Error(err))
+		return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
+	}
+
+	success := true
+	return stream.SendAndClose(&pb.UpdateResponse{
+		Success: &success,
+	})
 }

@@ -27,6 +27,10 @@ type Service interface {
 	// and saves it using the local file storage. Returns the path where the file was saved.
 	// Returns an error if the session is not found, if the download fails, or if file save fails.
 	Download(ctx context.Context, id string) (filepath string, error error)
+	// Update sends a request to update an existing binary file on the server.
+	// It opens the file at the specified path, creates file metadata with the given ID, and streams to the server.
+	// Returns an error if the file doesn't exist, can't be opened, or if the update fails.
+	Update(ctx context.Context, id string, filePath string, notes string) error
 	// Delete sends a request to delete a binary file by ID from the server.
 	// Returns an error if the file doesn't exist or if the deletion fails.
 	Delete(ctx context.Context, id string) error
@@ -95,6 +99,27 @@ func (s *service) Download(ctx context.Context, id string) (filepath string, err
 	}()
 
 	return s.store.Upload(ctx, session.GetUserID(), meta.Name(), reader)
+}
+
+// Update sends a request to update an existing binary file on the server.
+// It opens the file at the specified path, creates file metadata with the given ID, and streams to the server.
+// Returns an error if the file doesn't exist, can't be opened, or if the update fails.
+func (s *service) Update(ctx context.Context, id string, filePath string, notes string) error {
+	// #nosec G304
+	f, err := os.Open(filePath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("file not found: %w", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+
+	fileInfo, err := NewUpdateFileInfo(id, f, notes)
+	if err != nil {
+		return fmt.Errorf("failed to create update file info: %w", err)
+	}
+
+	return s.client.Update(ctx, fileInfo, f)
 }
 
 // Delete sends a request to delete a binary file by ID from the server.

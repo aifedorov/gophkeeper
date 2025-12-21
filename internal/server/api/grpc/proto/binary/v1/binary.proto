@@ -10,6 +10,7 @@ service BinaryService {
   rpc Upload(stream UploadRequest) returns (UploadResponse);
   rpc List(ListRequest) returns (ListResponse);
   rpc Download(DownloadRequest) returns (stream DownloadResponse);
+  rpc Update(stream UpdateRequest) returns (UpdateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
 
@@ -59,6 +60,24 @@ message DownloadResponse {
     Metadata file = 1;
     bytes chunk = 2;
   }
+}
+
+message UpdateRequest {
+  message Metadata {
+    string file_id = 1;
+    string name = 2;
+    int64 size = 3;
+    string notes = 4;
+  }
+
+  oneof data {
+    Metadata file = 1;
+    bytes chunk = 2;
+  }
+}
+
+message UpdateResponse {
+  bool success = 1;
 }
 
 message DeleteRequest {

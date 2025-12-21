@@ -50,8 +50,8 @@ func (c *ListCommand) run(cmd *cobra.Command) error {
 	fmt.Printf("%-36s %-20s %-20s %-12s %-20s %-5s %s\n", "ID", "NAME", "NUMBER", "EXPIRED", "HOLDER", "CVV", "NOTES")
 	fmt.Println(strings.Repeat("-", 150))
 
-	for _, card := range cards {
-		fmt.Printf("%-36s %-20s %-20s %-12s %-20s %-5s %s\n", card.ID, card.Name, card.Number, card.ExpiredDate, card.CardHolderName, card.Cvv, card.Notes)
+	for _, c := range cards {
+		fmt.Printf("%-36s %-20s %-20s %-12s %-20s %-5s %s\n", c.ID, c.Name, c.Number, c.ExpiredDate, c.CardHolderName, c.Cvv, c.Notes)
 	}
 
 	return nil

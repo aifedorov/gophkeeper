@@ -206,7 +206,7 @@ func TestService_Download(t *testing.T) {
 
 				fileContent := "test file content"
 				mockReader := &mockReadCloser{Reader: strings.NewReader(fileContent)}
-				mockMeta, _ := NewFileMeta("test.txt", int64(len(fileContent)), "test notes")
+				mockMeta, _ := NewFileMeta("test_new.txt", int64(len(fileContent)), "test notes")
 
 				m.EXPECT().
 					Download(gomock.Any(), "test-file-id").

@@ -6,7 +6,13 @@ CREATE TABLE IF NOT EXISTS files
     encrypted_path  BYTEA        NOT NULL,
     encrypted_size  BYTEA        NOT NULL,
     encrypted_notes BYTEA,
-    uploaded_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    deleted_at        TIMESTAMP,
+    updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_files_user_id ON files (user_id, uploaded_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS files_unique_name
+    ON files (name, user_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_files_user_id ON files (user_id, updated_at DESC);

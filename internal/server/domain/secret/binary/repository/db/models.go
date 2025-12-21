@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type File struct {
@@ -17,5 +18,7 @@ type File struct {
 	EncryptedPath  []byte
 	EncryptedSize  []byte
 	EncryptedNotes []byte
-	UploadedAt     time.Time
+	DeletedAt      pgtype.Timestamp
+	UpdatedAt      time.Time
+	CreatedAt      time.Time
 }

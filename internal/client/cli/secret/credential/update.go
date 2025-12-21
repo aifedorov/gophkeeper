@@ -20,7 +20,7 @@ func NewUpdateCommand(credentialSrv credential.Service) (*UpdateCommand, error) 
 	cred := inputCredentials{}
 
 	cmd := &cobra.Command{
-		Use:   "update -d <id> -n <name> -l <login> -p <password> -i <info>",
+		Use:   "update -i <id> -n <name> -l <login> -p <password> -f <info>",
 		Short: "Update a credential by ID",
 		Long:  `Update a credential by ID with the given name, login, password and optional notes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -28,11 +28,11 @@ func NewUpdateCommand(credentialSrv credential.Service) (*UpdateCommand, error) 
 		},
 	}
 
-	cmd.Flags().StringVarP(&cred.id, "id", "d", "", "ID")
+	cmd.Flags().StringVarP(&cred.id, "id", "i", "", "ID")
 	cmd.Flags().StringVarP(&cred.name, "name", "n", "", "Name")
 	cmd.Flags().StringVarP(&cred.login, "login", "l", "", "login")
 	cmd.Flags().StringVarP(&cred.password, "password", "p", "", "password")
-	cmd.Flags().StringVarP(&cred.notes, "info", "i", "", "Info")
+	cmd.Flags().StringVarP(&cred.notes, "info", "f", "", "Info")
 
 	c.cmd = cmd
 

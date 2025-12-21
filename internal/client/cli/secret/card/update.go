@@ -20,7 +20,7 @@ func NewUpdateCommand(cardSrv card.Service) (*UpdateCommand, error) {
 	cardInput := inputCard{}
 
 	cmd := &cobra.Command{
-		Use:   "update -d <id> -n <name> -u <number> -e <expired_date> -H <card_holder_name> -c <cvv> -i <info>",
+		Use:   "update -i <id> -n <name> -u <number> -e <expired_date> -o <card_holder_name> -c <cvv> -i <info>",
 		Short: "Update a card by ID",
 		Long:  `Update a card by ID with the given name, number, expired date, card holder name, cvv and optional notes.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -32,7 +32,7 @@ func NewUpdateCommand(cardSrv card.Service) (*UpdateCommand, error) {
 	cmd.Flags().StringVarP(&cardInput.name, "name", "n", "", "Name")
 	cmd.Flags().StringVarP(&cardInput.number, "number", "u", "", "Card number")
 	cmd.Flags().StringVarP(&cardInput.expiredDate, "expired_date", "e", "", "Expired date")
-	cmd.Flags().StringVarP(&cardInput.cardHolderName, "card_holder_name", "H", "", "Card holder name")
+	cmd.Flags().StringVarP(&cardInput.cardHolderName, "card_holder_name", "o", "", "Card holder name")
 	cmd.Flags().StringVarP(&cardInput.cvv, "cvv", "c", "", "CVV")
 	cmd.Flags().StringVarP(&cardInput.notes, "info", "i", "", "Info")
 

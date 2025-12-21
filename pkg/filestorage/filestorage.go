@@ -110,6 +110,42 @@ func (f *FileStorage) Download(_ context.Context, userID, fileID string) (reader
 	return file, nil
 }
 
+func (f *FileStorage) Update(_ context.Context, userID, fileID string, reader io.Reader) (path string, err error) {
+	f.logger.Debug("filestorage: updating file",
+		zap.String("user_id", userID),
+		zap.String("file_id", fileID),
+	)
+
+	path = f.getFullPath(userID, fileID)
+
+	// #nosec G304
+	file, err := os.Create(path)
+	defer func() {
+		if err != nil && file != nil {
+			_ = file.Close()
+		}
+	}()
+	if err != nil {
+		f.logger.Error("filestorage: failed to create file", zap.Error(err))
+		return "", fmt.Errorf("filestorage: failed to create file: %w", err)
+	}
+
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		f.logger.Error("filestorage: failed to update file", zap.Error(err))
+		return "", fmt.Errorf("filestorage: failed to update file: %w", err)
+	}
+
+	err = file.Close()
+	if err != nil {
+		f.logger.Error("filestorage: failed to close file", zap.Error(err))
+		return "", fmt.Errorf("filestorage: failed to close file: %w", err)
+	}
+
+	f.logger.Debug("filestorage: file updated successfully", zap.String("path", path))
+	return path, nil
+}
+
 func (f *FileStorage) getDir(userID string) string {
 	return filepath.Join(rootPath, userID)
 }

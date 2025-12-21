@@ -9,18 +9,36 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/interfaces"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
+// QuerierFactory creates a Querier from a DBTX (used for transactions).
+type QuerierFactory func(db DBTX) Querier
+
 type repository struct {
-	queries Querier
-	logger  *zap.Logger
+	pool           TxBeginner
+	queries        Querier
+	querierFactory QuerierFactory
+	logger         *zap.Logger
 }
 
-func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
+func NewRepository(pool *pgxpool.Pool, db DBTX, logger *zap.Logger) interfaces.Repository {
 	return &repository{
-		queries: New(db),
-		logger:  logger,
+		pool:           pool,
+		queries:        New(db),
+		querierFactory: func(db DBTX) Querier { return New(db) },
+		logger:         logger,
+	}
+}
+
+// newRepositoryForTest creates a repository with mocked dependencies for testing.
+func newRepositoryForTest(pool TxBeginner, queries Querier, txQueries Querier, logger *zap.Logger) *repository {
+	return &repository{
+		pool:           pool,
+		queries:        queries,
+		querierFactory: func(db DBTX) Querier { return txQueries },
+		logger:         logger,
 	}
 }
 
@@ -54,8 +72,12 @@ func (r *repository) Create(ctx context.Context, userID string, file interfaces.
 		EncryptedPath:  file.EncryptedPath,
 		EncryptedSize:  file.EncryptedSize,
 		EncryptedNotes: file.EncryptedNotes,
-		UploadedAt:     file.UploadedAt,
+		UpdatedAt:      file.UpdatedAt,
 	})
+	if conflictError(err) {
+		r.logger.Debug("repo: file name already exists", zap.String("name", file.Name))
+		return binary.ErrNameExists
+	}
 	if err != nil {
 		r.logger.Error("repo: failed to create binary", zap.Error(err))
 		return fmt.Errorf("repo: failed to create binary: %w", err)
@@ -86,7 +108,7 @@ func (r *repository) Get(ctx context.Context, userID, id string) (interfaces.Rep
 	})
 	if errors.Is(err, sql.ErrNoRows) {
 		r.logger.Debug("repo: file not found")
-		return interfaces.RepositoryFile{}, binary.ErrFileNotFound
+		return interfaces.RepositoryFile{}, binary.ErrNotFound
 	}
 	if err != nil {
 		r.logger.Error("repo: failed to get file", zap.Error(err))
@@ -101,7 +123,7 @@ func (r *repository) Get(ctx context.Context, userID, id string) (interfaces.Rep
 		EncryptedPath:  dbFile.EncryptedPath,
 		EncryptedSize:  dbFile.EncryptedSize,
 		EncryptedNotes: dbFile.EncryptedNotes,
-		UploadedAt:     dbFile.UploadedAt,
+		UpdatedAt:      dbFile.UpdatedAt,
 	}, nil
 }
 
@@ -129,7 +151,7 @@ func (r *repository) List(ctx context.Context, userID string) ([]interfaces.Repo
 			EncryptedPath:  f.EncryptedPath,
 			EncryptedSize:  f.EncryptedSize,
 			EncryptedNotes: f.EncryptedNotes,
-			UploadedAt:     f.UploadedAt,
+			UpdatedAt:      f.UpdatedAt,
 		}
 	}
 	return files, nil
@@ -160,7 +182,64 @@ func (r *repository) Delete(ctx context.Context, userID, id string) error {
 	}
 	if rows == 0 {
 		r.logger.Debug("repo: binary not found")
-		return binary.ErrFileNotFound
+		return binary.ErrNotFound
 	}
 	return nil
+}
+
+func (r *repository) Update(ctx context.Context, userID, id string, file interfaces.RepositoryFile) error {
+	r.logger.Debug("repo: updating binary", zap.String("user_id", userID), zap.String("id", id))
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		r.logger.Error("repo: failed to parse user id", zap.Error(err))
+		return fmt.Errorf("repo: failed to parse user id: %w", err)
+	}
+
+	r.logger.Debug("repo: start transaction for update")
+
+	idUUID, err := uuid.Parse(id)
+	if err != nil {
+		r.logger.Error("repo: failed to parse binary id", zap.Error(err))
+		return fmt.Errorf("repo: failed to parse binary id: %w", err)
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		r.logger.Error("repo: failed to begin transaction", zap.Error(err))
+		return fmt.Errorf("repo: failed to begin transaction: %w", err)
+	}
+	defer func() {
+		r.logger.Debug("repo: rollback transaction for update")
+		_ = tx.Rollback(ctx)
+	}()
+
+	txQuery := r.querierFactory(tx)
+	_, err = txQuery.GetFileForUpdate(ctx, GetFileForUpdateParams{
+		ID:     idUUID,
+		UserID: userUUID,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		r.logger.Debug("repo: file not found for update")
+		return binary.ErrNotFound
+	}
+	if err != nil {
+		r.logger.Error("repo: failed to get file for update", zap.Error(err))
+		return fmt.Errorf("repo: failed to get file for update: %w", err)
+	}
+
+	err = txQuery.UpdateFile(ctx, UpdateFileParams{
+		ID:             idUUID,
+		UserID:         userUUID,
+		Name:           file.Name,
+		EncryptedPath:  file.EncryptedPath,
+		EncryptedSize:  file.EncryptedSize,
+		EncryptedNotes: file.EncryptedNotes,
+	})
+	if err != nil {
+		r.logger.Error("repo: failed to update file", zap.Error(err))
+		return fmt.Errorf("repo: failed to update file: %w", err)
+	}
+	r.logger.Debug("repo: file updated successfully", zap.String("id", id))
+	return tx.Commit(ctx)
 }

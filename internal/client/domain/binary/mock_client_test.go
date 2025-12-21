@@ -86,6 +86,20 @@ func (mr *MockClientMockRecorder) List(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClient)(nil).List), ctx)
 }
 
+// Update mocks base method.
+func (m *MockClient) Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, fileInfo, reader)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockClientMockRecorder) Update(ctx, fileInfo, reader any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClient)(nil).Update), ctx, fileInfo, reader)
+}
+
 // Upload mocks base method.
 func (m *MockClient) Upload(ctx context.Context, fileInfo *FileInfo, reader io.Reader) error {
 	m.ctrl.T.Helper()

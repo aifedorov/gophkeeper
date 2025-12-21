@@ -19,6 +19,9 @@ type Client interface {
 	// Download retrieves a file by ID from the server using streaming.
 	// Returns a ReadCloser for the file content and metadata. The reader should be closed after use.
 	Download(ctx context.Context, id string) (io.ReadCloser, *FileMeta, error)
+	// Update sends an updated file to the server using streaming.
+	// The fileInfo contains metadata including file ID, and reader provides the new file content.
+	Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) error
 	// Delete sends a request to delete a file by ID from the server.
 	Delete(ctx context.Context, id string) error
 }

@@ -22,6 +22,7 @@ const (
 	BinaryService_Upload_FullMethodName   = "/binary.v1.BinaryService/Upload"
 	BinaryService_List_FullMethodName     = "/binary.v1.BinaryService/List"
 	BinaryService_Download_FullMethodName = "/binary.v1.BinaryService/Download"
+	BinaryService_Update_FullMethodName   = "/binary.v1.BinaryService/Update"
 	BinaryService_Delete_FullMethodName   = "/binary.v1.BinaryService/Delete"
 )
 
@@ -32,6 +33,7 @@ type BinaryServiceClient interface {
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
+	Update(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UpdateRequest, UpdateResponse], error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
@@ -85,6 +87,19 @@ func (c *binaryServiceClient) Download(ctx context.Context, in *DownloadRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BinaryService_DownloadClient = grpc.ServerStreamingClient[DownloadResponse]
 
+func (c *binaryServiceClient) Update(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UpdateRequest, UpdateResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &BinaryService_ServiceDesc.Streams[2], BinaryService_Update_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[UpdateRequest, UpdateResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BinaryService_UpdateClient = grpc.ClientStreamingClient[UpdateRequest, UpdateResponse]
+
 func (c *binaryServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteResponse)
@@ -102,6 +117,7 @@ type BinaryServiceServer interface {
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
+	Update(grpc.ClientStreamingServer[UpdateRequest, UpdateResponse]) error
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	mustEmbedUnimplementedBinaryServiceServer()
 }
@@ -121,6 +137,9 @@ func (UnimplementedBinaryServiceServer) List(context.Context, *ListRequest) (*Li
 }
 func (UnimplementedBinaryServiceServer) Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error {
 	return status.Error(codes.Unimplemented, "method Download not implemented")
+}
+func (UnimplementedBinaryServiceServer) Update(grpc.ClientStreamingServer[UpdateRequest, UpdateResponse]) error {
+	return status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedBinaryServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
@@ -182,6 +201,13 @@ func _BinaryService_Download_Handler(srv interface{}, stream grpc.ServerStream) 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BinaryService_DownloadServer = grpc.ServerStreamingServer[DownloadResponse]
 
+func _BinaryService_Update_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BinaryServiceServer).Update(&grpc.GenericServerStream[UpdateRequest, UpdateResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BinaryService_UpdateServer = grpc.ClientStreamingServer[UpdateRequest, UpdateResponse]
+
 func _BinaryService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
@@ -226,6 +252,11 @@ var BinaryService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Download",
 			Handler:       _BinaryService_Download_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "Update",
+			Handler:       _BinaryService_Update_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "binary/v1/binary.proto",

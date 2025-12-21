@@ -113,6 +113,60 @@ func (c *binaryClient) Download(ctx context.Context, id string) (io.ReadCloser, 
 	return newGRPCStreamReader(stream), fileMeta, nil
 }
 
+func (c *binaryClient) Update(ctx context.Context, fileInfo *binary.UpdateFileInfo, reader io.Reader) error {
+	clientStream, err := c.client.Update(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create update stream: %w", err)
+	}
+
+	id := fileInfo.ID()
+	name := fileInfo.Name()
+	size := fileInfo.Size()
+	notes := fileInfo.Notes()
+	req := pb.UpdateRequest{
+		Data: &pb.UpdateRequest_File{
+			File: &pb.UpdateRequest_Metadata{
+				FileId: &id,
+				Name:   &name,
+				Size:   &size,
+				Notes:  &notes,
+			},
+		},
+	}
+	err = clientStream.Send(&req)
+	if err != nil {
+		return fmt.Errorf("failed to send file metadata: %w", err)
+	}
+
+	buffer := make([]byte, bufferSize)
+	for {
+		n, err := reader.Read(buffer)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read file: %w", err)
+		}
+
+		err = clientStream.Send(
+			&pb.UpdateRequest{
+				Data: &pb.UpdateRequest_Chunk{
+					Chunk: buffer[:n],
+				},
+			})
+		if err != nil {
+			return fmt.Errorf("failed to send chunk: %w", err)
+		}
+	}
+
+	_, err = clientStream.CloseAndRecv()
+	if err != nil {
+		return fmt.Errorf("failed to complete update: %w", err)
+	}
+
+	return nil
+}
+
 func (c *binaryClient) Delete(ctx context.Context, id string) error {
 	req := pb.DeleteRequest{
 		FileId: &id,

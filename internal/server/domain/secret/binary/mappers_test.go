@@ -22,7 +22,7 @@ func TestMetadataToFile(t *testing.T) {
 		{
 			name: "successful conversion",
 			metadata: interfaces.FileMetadata{
-				Name:  "test.txt",
+				Name:  "test_new.txt",
 				Size:  1024,
 				Notes: "test notes",
 			},
@@ -40,7 +40,7 @@ func TestMetadataToFile(t *testing.T) {
 		{
 			name: "zero size",
 			metadata: interfaces.FileMetadata{
-				Name:  "test.txt",
+				Name:  "test_new.txt",
 				Size:  0,
 				Notes: "test notes",
 			},
@@ -80,7 +80,7 @@ func TestFileToRepository(t *testing.T) {
 	}{
 		{
 			name: "successful conversion",
-			file: newTestFile("test-id", "test.txt", 1024, "/path/to/file", "notes"),
+			file: newTestFile("test-id", "test_new.txt", 1024, "/path/to/file", "notes"),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Encrypt("/path/to/file", gomock.Any()).
@@ -108,7 +108,7 @@ func TestFileToRepository(t *testing.T) {
 		},
 		{
 			name: "encryption failure for path",
-			file: newTestFile("test-id", "test.txt", 1024, "/path/to/file", "notes"),
+			file: newTestFile("test-id", "test_new.txt", 1024, "/path/to/file", "notes"),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Encrypt("/path/to/file", gomock.Any()).
@@ -120,7 +120,7 @@ func TestFileToRepository(t *testing.T) {
 		},
 		{
 			name: "encryption failure for notes",
-			file: newTestFile("test-id", "test.txt", 1024, "/path/to/file", "notes"),
+			file: newTestFile("test-id", "test_new.txt", 1024, "/path/to/file", "notes"),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Encrypt("/path/to/file", gomock.Any()).
@@ -136,7 +136,7 @@ func TestFileToRepository(t *testing.T) {
 		},
 		{
 			name: "encryption failure for size",
-			file: newTestFile("test-id", "test.txt", 1024, "/path/to/file", "notes"),
+			file: newTestFile("test-id", "test_new.txt", 1024, "/path/to/file", "notes"),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Encrypt("/path/to/file", gomock.Any()).
@@ -196,7 +196,7 @@ func TestFileToDomain(t *testing.T) {
 	}{
 		{
 			name:     "successful conversion",
-			repoFile: newTestRepositoryFile("test-id", "test.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
+			repoFile: newTestRepositoryFile("test-id", "test_new.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Decrypt([]byte("encrypted-notes"), gomock.Any()).
@@ -215,7 +215,7 @@ func TestFileToDomain(t *testing.T) {
 		},
 		{
 			name:     "decryption failure for notes",
-			repoFile: newTestRepositoryFile("test-id", "test.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
+			repoFile: newTestRepositoryFile("test-id", "test_new.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Decrypt([]byte("encrypted-notes"), gomock.Any()).
@@ -227,7 +227,7 @@ func TestFileToDomain(t *testing.T) {
 		},
 		{
 			name:     "decryption failure for size",
-			repoFile: newTestRepositoryFile("test-id", "test.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
+			repoFile: newTestRepositoryFile("test-id", "test_new.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Decrypt([]byte("encrypted-notes"), gomock.Any()).
@@ -243,7 +243,7 @@ func TestFileToDomain(t *testing.T) {
 		},
 		{
 			name:     "invalid size format",
-			repoFile: newTestRepositoryFile("test-id", "test.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
+			repoFile: newTestRepositoryFile("test-id", "test_new.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Decrypt([]byte("encrypted-notes"), gomock.Any()).
@@ -259,7 +259,7 @@ func TestFileToDomain(t *testing.T) {
 		},
 		{
 			name:     "decryption failure for path",
-			repoFile: newTestRepositoryFile("test-id", "test.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
+			repoFile: newTestRepositoryFile("test-id", "test_new.txt", []byte("encrypted-path"), []byte("encrypted-size"), []byte("encrypted-notes")),
 			setupMock: func(m *mocks.MockCryptoService) {
 				m.EXPECT().
 					Decrypt([]byte("encrypted-notes"), gomock.Any()).
@@ -320,10 +320,10 @@ func TestFileToMetadata(t *testing.T) {
 	}{
 		{
 			name:    "successful conversion",
-			file:    newTestFile("test-id", "test.txt", 1024, "/path/to/file", "notes"),
+			file:    newTestFile("test-id", "test_new.txt", 1024, "/path/to/file", "notes"),
 			wantErr: false,
 			wantMeta: interfaces.FileMetadata{
-				Name:  "test.txt",
+				Name:  "test_new.txt",
 				Size:  1024,
 				Notes: "notes",
 			},

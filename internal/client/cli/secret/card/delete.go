@@ -19,7 +19,7 @@ func NewDeleteCommand(cardSrv card.Service) (*DeleteCommand, error) {
 
 	var id string
 	cmd := &cobra.Command{
-		Use:   "delete -d <id>",
+		Use:   "delete -i <id>",
 		Short: "Delete a card by ID",
 		Long:  `Delete a card by ID`,
 		RunE: func(cmd *cobra.Command, _ []string) error {

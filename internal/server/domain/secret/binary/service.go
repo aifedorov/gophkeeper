@@ -24,6 +24,7 @@ type Service interface {
 	// Upload stores a new binary file for the specified user with encryption.
 	// The file is read from the provided reader, encrypted using AES-256-GCM, and stored both
 	// in the file storage and database. The encryptionKey should be provided as a base64-encoded string.
+	// Returns ErrNameExists if a file with the same name already exists for the user.
 	// If database creation fails, the uploaded file is automatically cleaned up.
 	Upload(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error)
 	// List retrieves all binary files for the specified user and decrypts their metadata.
@@ -32,12 +33,17 @@ type Service interface {
 	List(ctx context.Context, userID, encryptionKey string) ([]interfaces.File, error)
 	// Download retrieves a binary file for the specified user and returns a reader for the decrypted content.
 	// The encryptionKey should be provided as a base64-encoded string.
-	// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+	// Returns ErrNotFound if the file doesn't exist or doesn't belong to the user.
 	// The returned reader should be closed by the caller after use.
 	Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error)
+	// Update updates a binary file for the specified user.
+	// The file is updated in the database and file storage.
+	// The encryptionKey should be provided as a base64-encoded string.
+	// Returns an error if the file doesn't exist or doesn't belong to the user.
+	Update(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error)
 	// Delete removes a binary file for the specified user.
 	// Deletes both the database record and the physical file.
-	// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+	// Returns ErrNotFound if the file doesn't exist or doesn't belong to the user.
 	Delete(ctx context.Context, userID, id string) error
 }
 
@@ -72,8 +78,6 @@ func NewService(
 func (s *service) Upload(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error) {
 	s.logger.Debug("binary: uploading file",
 		zap.String("user_id", userID),
-		zap.String("filename", metadata.Name),
-		zap.Int64("filesize", metadata.Size),
 	)
 
 	key, err := base64.StdEncoding.DecodeString(encryptionKey)
@@ -112,6 +116,11 @@ func (s *service) Upload(ctx context.Context, userID, encryptionKey string, meta
 	}
 
 	err = s.repo.Create(ctx, userID, repoFile)
+	if errors.Is(err, ErrNameExists) {
+		s.logger.Debug("binary: file name already exists", zap.String("name", file.GetName()))
+		_ = s.fileStore.Delete(ctx, userID, file.GetID())
+		return nil, ErrNameExists
+	}
 	if err != nil {
 		s.logger.Error("binary: failed to create file in repository", zap.Error(err))
 		_ = s.fileStore.Delete(ctx, userID, file.GetID())
@@ -154,7 +163,7 @@ func (s *service) List(ctx context.Context, userID, encryptionKey string) ([]int
 
 // Download retrieves a binary file for the specified user and returns a reader for the decrypted content.
 // The encryptionKey should be provided as a base64-encoded string.
-// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+// Returns ErrNotFound if the file doesn't exist or doesn't belong to the user.
 // The returned reader should be closed by the caller after use.
 func (s *service) Download(ctx context.Context, userID, encryptionKey, id string) (io.Reader, interfaces.FileMetadata, error) {
 	s.logger.Debug("binary: downloading file", zap.String("user_id", userID), zap.String("id", id))
@@ -166,9 +175,9 @@ func (s *service) Download(ctx context.Context, userID, encryptionKey, id string
 	}
 
 	fileRepo, err := s.repo.Get(ctx, userID, id)
-	if errors.Is(err, ErrFileNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		s.logger.Debug("binary: file not found", zap.String("id", id))
-		return nil, interfaces.FileMetadata{}, ErrFileNotFound
+		return nil, interfaces.FileMetadata{}, ErrNotFound
 	}
 	if err != nil {
 		s.logger.Error("binary: failed to get file from repository", zap.Error(err))
@@ -202,19 +211,74 @@ func (s *service) Download(ctx context.Context, userID, encryptionKey, id string
 	return decryptingReader, meta, nil
 }
 
+// Update updates a binary file for the specified user.
+// The file is updated in the database and file storage with encryption.
+// The encryptionKey should be provided as a base64-encoded string.
+// Returns an error if the file doesn't exist or doesn't belong to the user.
+func (s *service) Update(ctx context.Context, userID, encryptionKey string, metadata interfaces.FileMetadata, reader io.Reader) (*interfaces.File, error) {
+	s.logger.Debug("binary: updating file",
+		zap.String("user_id", userID),
+		zap.String("id", metadata.ID),
+	)
+
+	key, err := base64.StdEncoding.DecodeString(encryptionKey)
+	if err != nil {
+		s.logger.Error("binary: failed to decode encryption key", zap.Error(err))
+		return nil, fmt.Errorf("failed to decode encryption key: %w", err)
+	}
+
+	encryptReader, err := crypto.NewEncryptReader(reader, key)
+	if err != nil {
+		s.logger.Error("binary: failed to create encrypt reader", zap.Error(err))
+		return nil, fmt.Errorf("failed to encrypt file: %w", err)
+	}
+
+	file, err := MetadataToFile(metadata)
+	if err != nil {
+		s.logger.Error("binary: failed to convert metadata to domain", zap.Error(err))
+		return nil, fmt.Errorf("failed to convert metadata: %w", err)
+	}
+
+	filepath, err := s.fileStore.Update(ctx, userID, file.GetID(), encryptReader)
+	if err != nil {
+		s.logger.Error("binary: failed to update file", zap.Error(err))
+		return nil, fmt.Errorf("failed to update file: %w", err)
+	}
+
+	file.SetPath(filepath)
+
+	s.logger.Debug("binary: file encrypted successfully", zap.String("filepath", filepath))
+
+	repoFile, err := FileToRepository(s.crypto, key, file)
+	if err != nil {
+		s.logger.Error("binary: failed to convert file to repository", zap.Error(err))
+		return nil, fmt.Errorf("failed to convert file: %w", err)
+	}
+
+	err = s.repo.Update(ctx, userID, metadata.ID, repoFile)
+	if err != nil {
+		s.logger.Error("binary: failed to update file in repository", zap.Error(err))
+		// TODO: Remove last version and restore from backup
+		return nil, fmt.Errorf("failed to update file: %w", err)
+	}
+
+	s.logger.Debug("binary: file updated successfully", zap.String("id", file.GetID()))
+	return file, nil
+}
+
 // Delete removes a binary file for the specified user.
 // Deletes the database record first, then attempts to delete the physical file.
 // If physical file deletion fails, it logs a warning but doesn't return an error
 // since the database record is already deleted.
-// Returns ErrFileNotFound if the file doesn't exist or doesn't belong to the user.
+// Returns ErrNotFound if the file doesn't exist or doesn't belong to the user.
 func (s *service) Delete(ctx context.Context, userID, id string) error {
 	s.logger.Debug("binary: deleting file", zap.String("user_id", userID), zap.String("id", id))
 
 	// Delete from repository first
 	err := s.repo.Delete(ctx, userID, id)
-	if errors.Is(err, ErrFileNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		s.logger.Debug("binary: file not found", zap.String("id", id))
-		return ErrFileNotFound
+		return ErrNotFound
 	}
 	if err != nil {
 		s.logger.Error("binary: failed to delete file from repository", zap.Error(err))

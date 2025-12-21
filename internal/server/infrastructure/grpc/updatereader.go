@@ -9,19 +9,19 @@ import (
 	"google.golang.org/grpc"
 )
 
-type gRPCStreamReader struct {
-	stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]
+type updateStreamReader struct {
+	stream grpc.ClientStreamingServer[pb.UpdateRequest, pb.UpdateResponse]
 	buffer []byte
 }
 
-func newGRPCStreamReader(stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]) *gRPCStreamReader {
-	return &gRPCStreamReader{
+func newUpdateStreamReader(stream grpc.ClientStreamingServer[pb.UpdateRequest, pb.UpdateResponse]) *updateStreamReader {
+	return &updateStreamReader{
 		stream: stream,
 		buffer: nil,
 	}
 }
 
-func (r *gRPCStreamReader) Read(p []byte) (n int, err error) {
+func (r *updateStreamReader) Read(p []byte) (n int, err error) {
 	if len(r.buffer) > 0 {
 		n = copy(p, r.buffer)
 		r.buffer = r.buffer[n:]

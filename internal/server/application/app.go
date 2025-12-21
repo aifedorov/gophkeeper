@@ -61,7 +61,7 @@ func (a *App) Run() error {
 	cardSrv := card.NewService(cardRepo, cryptoSrv, a.logger)
 
 	binaryFileStore := filestorage.NewFileStorage(a.logger)
-	binaryRepo := binaryrepository.NewRepository(db.DBPool(), a.logger)
+	binaryRepo := binaryrepository.NewRepository(db.DBPool(), db.DBPool(), a.logger)
 	binarySrv := binary.NewService(binaryRepo, binaryFileStore, cryptoSrv, a.logger)
 
 	authServer := server.NewAuthServer(a.cfg, a.logger, authSrv, jwtSrv)

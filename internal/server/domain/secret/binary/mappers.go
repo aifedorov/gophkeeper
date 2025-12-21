@@ -11,11 +11,16 @@ import (
 )
 
 // MetadataToFile converts file metadata to a domain File entity.
-// It generates a new UUID for the file and sets the current time as the upload timestamp.
+// It generates a new UUID for the file if ID is empty, otherwise uses the provided ID.
+// Sets the current time as the upload timestamp.
 // Returns an error if the metadata is invalid (e.g., empty name or zero size).
 func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) {
+	id := metadata.ID
+	if id == "" {
+		id = uuid.NewString()
+	}
 	file, err := interfaces.NewFile(
-		uuid.NewString(),
+		id,
 		metadata.Name,
 		metadata.Size,
 		"",
@@ -55,7 +60,7 @@ func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfa
 		EncryptedPath:  encryptedPath,
 		EncryptedSize:  encryptedSize,
 		EncryptedNotes: encryptedNotes,
-		UploadedAt:     file.GetUploadedAt(),
+		UpdatedAt:      file.GetUploadedAt(),
 	}, nil
 }
 
@@ -86,7 +91,7 @@ func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.R
 		int64(size),
 		path,
 		notes,
-		file.UploadedAt,
+		file.UpdatedAt,
 	)
 }
 

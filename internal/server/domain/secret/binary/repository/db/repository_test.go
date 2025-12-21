@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,41 +11,10 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/interfaces"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 )
-
-// MockQuerier is a mock implementation of the Querier interface
-type MockQuerier struct {
-	mock.Mock
-}
-
-func (m *MockQuerier) CreateFile(ctx context.Context, arg CreateFileParams) error {
-	args := m.Called(ctx, arg)
-	return args.Error(0)
-}
-
-func (m *MockQuerier) GetFile(ctx context.Context, arg GetFileParams) (File, error) {
-	args := m.Called(ctx, arg)
-	if args.Get(0) == nil {
-		return File{}, args.Error(1)
-	}
-	return args.Get(0).(File), args.Error(1)
-}
-
-func (m *MockQuerier) ListFiles(ctx context.Context, userID uuid.UUID) ([]File, error) {
-	args := m.Called(ctx, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]File), args.Error(1)
-}
-
-func (m *MockQuerier) DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, error) {
-	args := m.Called(ctx, arg)
-	return args.Get(0).(int64), args.Error(1)
-}
 
 func TestRepository_Get(t *testing.T) {
 	t.Parallel()
@@ -53,28 +23,28 @@ func TestRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("successful get", func(t *testing.T) {
-		mockQuerier := new(MockQuerier)
-		repo := &repository{
-			queries: mockQuerier,
-			logger:  logger,
-		}
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
 
 		userID := uuid.New()
 		fileID := uuid.New()
 		expectedFile := File{
 			ID:             fileID,
 			UserID:         userID,
-			Name:           "test.txt",
+			Name:           "test_new.txt",
 			EncryptedPath:  []byte("encrypted-path"),
 			EncryptedSize:  []byte("encrypted-size"),
 			EncryptedNotes: []byte("encrypted-notes"),
-			UploadedAt:     time.Now(),
+			UpdatedAt:      time.Now(),
 		}
 
-		mockQuerier.On("GetFile", ctx, GetFileParams{
-			ID:     fileID,
-			UserID: userID,
-		}).Return(expectedFile, nil)
+		mockQuerier.EXPECT().
+			GetFile(ctx, GetFileParams{ID: fileID, UserID: userID}).
+			Return(expectedFile, nil)
 
 		result, err := repo.Get(ctx, userID.String(), fileID.String())
 
@@ -85,39 +55,38 @@ func TestRepository_Get(t *testing.T) {
 		assert.Equal(t, expectedFile.EncryptedPath, result.EncryptedPath)
 		assert.Equal(t, expectedFile.EncryptedSize, result.EncryptedSize)
 		assert.Equal(t, expectedFile.EncryptedNotes, result.EncryptedNotes)
-		assert.Equal(t, expectedFile.UploadedAt, result.UploadedAt)
-		mockQuerier.AssertExpectations(t)
+		assert.Equal(t, expectedFile.UpdatedAt, result.UpdatedAt)
 	})
 
 	t.Run("file not found", func(t *testing.T) {
-		mockQuerier := new(MockQuerier)
-		repo := &repository{
-			queries: mockQuerier,
-			logger:  logger,
-		}
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
 
 		userID := uuid.New()
 		fileID := uuid.New()
 
-		mockQuerier.On("GetFile", ctx, GetFileParams{
-			ID:     fileID,
-			UserID: userID,
-		}).Return(nil, sql.ErrNoRows)
+		mockQuerier.EXPECT().
+			GetFile(ctx, GetFileParams{ID: fileID, UserID: userID}).
+			Return(File{}, sql.ErrNoRows)
 
 		result, err := repo.Get(ctx, userID.String(), fileID.String())
 
 		require.Error(t, err)
-		assert.ErrorIs(t, err, binary.ErrFileNotFound)
+		assert.ErrorIs(t, err, binary.ErrNotFound)
 		assert.Equal(t, interfaces.RepositoryFile{}, result)
-		mockQuerier.AssertExpectations(t)
 	})
 
 	t.Run("invalid user UUID", func(t *testing.T) {
-		mockQuerier := new(MockQuerier)
-		repo := &repository{
-			queries: mockQuerier,
-			logger:  logger,
-		}
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
 
 		fileID := uuid.New()
 
@@ -126,15 +95,15 @@ func TestRepository_Get(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse user id")
 		assert.Equal(t, interfaces.RepositoryFile{}, result)
-		mockQuerier.AssertNotCalled(t, "GetFile")
 	})
 
 	t.Run("invalid file UUID", func(t *testing.T) {
-		mockQuerier := new(MockQuerier)
-		repo := &repository{
-			queries: mockQuerier,
-			logger:  logger,
-		}
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
 
 		userID := uuid.New()
 
@@ -143,30 +112,241 @@ func TestRepository_Get(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse file id")
 		assert.Equal(t, interfaces.RepositoryFile{}, result)
-		mockQuerier.AssertNotCalled(t, "GetFile")
 	})
 
 	t.Run("database error", func(t *testing.T) {
-		mockQuerier := new(MockQuerier)
-		repo := &repository{
-			queries: mockQuerier,
-			logger:  logger,
-		}
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
 
 		userID := uuid.New()
 		fileID := uuid.New()
-		dbErr := assert.AnError
+		dbErr := errors.New("database error")
 
-		mockQuerier.On("GetFile", ctx, GetFileParams{
-			ID:     fileID,
-			UserID: userID,
-		}).Return(nil, dbErr)
+		mockQuerier.EXPECT().
+			GetFile(ctx, GetFileParams{ID: fileID, UserID: userID}).
+			Return(File{}, dbErr)
 
 		result, err := repo.Get(ctx, userID.String(), fileID.String())
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to get file")
 		assert.Equal(t, interfaces.RepositoryFile{}, result)
-		mockQuerier.AssertExpectations(t)
+	})
+}
+
+func TestRepository_Update(t *testing.T) {
+	t.Parallel()
+
+	logger := zap.NewNop()
+	ctx := context.Background()
+
+	t.Run("successful update", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPool := NewMockTxBeginner(ctrl)
+		mockQuerier := NewMockQuerier(ctrl)
+		mockTxQuerier := NewMockQuerier(ctrl)
+		tx := NewMockTx(ctrl)
+
+		repo := newRepositoryForTest(mockPool, mockQuerier, mockTxQuerier, logger)
+
+		userID := uuid.New()
+		fileID := uuid.New()
+		existingFile := File{
+			ID:             fileID,
+			UserID:         userID,
+			Name:           "test_new.txt",
+			EncryptedPath:  []byte("encrypted-path"),
+			EncryptedSize:  []byte("encrypted-size"),
+			EncryptedNotes: []byte("encrypted-notes"),
+			UpdatedAt:      time.Now(),
+		}
+
+		newFile := interfaces.RepositoryFile{
+			Name:           "new-name.txt",
+			EncryptedPath:  []byte("new-path"),
+			EncryptedSize:  []byte("new-size"),
+			EncryptedNotes: []byte("new-notes"),
+		}
+
+		mockPool.EXPECT().Begin(ctx).Return(tx, nil)
+		mockTxQuerier.EXPECT().
+			GetFileForUpdate(ctx, GetFileForUpdateParams{ID: fileID, UserID: userID}).
+			Return(existingFile, nil)
+		mockTxQuerier.EXPECT().
+			UpdateFile(ctx, UpdateFileParams{
+				ID:             fileID,
+				UserID:         userID,
+				Name:           newFile.Name,
+				EncryptedPath:  newFile.EncryptedPath,
+				EncryptedSize:  newFile.EncryptedSize,
+				EncryptedNotes: newFile.EncryptedNotes,
+			}).
+			Return(nil)
+		tx.EXPECT().Commit(ctx).Return(nil)
+		tx.EXPECT().Rollback(ctx).Return(nil)
+
+		err := repo.Update(ctx, userID.String(), fileID.String(), newFile)
+
+		require.NoError(t, err)
+	})
+
+	t.Run("file not found", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPool := NewMockTxBeginner(ctrl)
+		mockQuerier := NewMockQuerier(ctrl)
+		mockTxQuerier := NewMockQuerier(ctrl)
+		tx := NewMockTx(ctrl)
+
+		repo := newRepositoryForTest(mockPool, mockQuerier, mockTxQuerier, logger)
+
+		userID := uuid.New()
+		fileID := uuid.New()
+
+		mockPool.EXPECT().Begin(ctx).Return(tx, nil)
+		mockTxQuerier.EXPECT().
+			GetFileForUpdate(ctx, GetFileForUpdateParams{ID: fileID, UserID: userID}).
+			Return(File{}, sql.ErrNoRows)
+		tx.EXPECT().Rollback(ctx).Return(nil)
+
+		err := repo.Update(ctx, userID.String(), fileID.String(), interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, binary.ErrNotFound)
+	})
+
+	t.Run("begin transaction error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPool := NewMockTxBeginner(ctrl)
+		mockQuerier := NewMockQuerier(ctrl)
+
+		repo := newRepositoryForTest(mockPool, mockQuerier, nil, logger)
+
+		userID := uuid.New()
+		fileID := uuid.New()
+		txErr := errors.New("transaction error")
+
+		mockPool.EXPECT().Begin(ctx).Return(nil, txErr)
+
+		err := repo.Update(ctx, userID.String(), fileID.String(), interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to begin transaction")
+	})
+
+	t.Run("update file error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPool := NewMockTxBeginner(ctrl)
+		mockQuerier := NewMockQuerier(ctrl)
+		mockTxQuerier := NewMockQuerier(ctrl)
+		tx := NewMockTx(ctrl)
+
+		repo := newRepositoryForTest(mockPool, mockQuerier, mockTxQuerier, logger)
+
+		userID := uuid.New()
+		fileID := uuid.New()
+		existingFile := File{
+			ID:     fileID,
+			UserID: userID,
+			Name:   "test_new.txt",
+		}
+		updateErr := errors.New("update error")
+
+		mockPool.EXPECT().Begin(ctx).Return(tx, nil)
+		mockTxQuerier.EXPECT().
+			GetFileForUpdate(ctx, GetFileForUpdateParams{ID: fileID, UserID: userID}).
+			Return(existingFile, nil)
+		mockTxQuerier.EXPECT().
+			UpdateFile(ctx, gomock.Any()).
+			Return(updateErr)
+		tx.EXPECT().Rollback(ctx).Return(nil)
+
+		err := repo.Update(ctx, userID.String(), fileID.String(), interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to update file")
+	})
+
+	t.Run("invalid user UUID", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
+
+		fileID := uuid.New()
+
+		err := repo.Update(ctx, "invalid-uuid", fileID.String(), interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse user id")
+	})
+
+	t.Run("invalid file UUID", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockQuerier := NewMockQuerier(ctrl)
+		repo := newRepositoryForTest(nil, mockQuerier, nil, logger)
+
+		userID := uuid.New()
+
+		err := repo.Update(ctx, userID.String(), "invalid-uuid", interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse binary id")
+	})
+
+	t.Run("commit error", func(t *testing.T) {
+		t.Parallel()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPool := NewMockTxBeginner(ctrl)
+		mockQuerier := NewMockQuerier(ctrl)
+		mockTxQuerier := NewMockQuerier(ctrl)
+		tx := NewMockTx(ctrl)
+
+		repo := newRepositoryForTest(mockPool, mockQuerier, mockTxQuerier, logger)
+
+		userID := uuid.New()
+		fileID := uuid.New()
+		existingFile := File{
+			ID:     fileID,
+			UserID: userID,
+			Name:   "test_new.txt",
+		}
+
+		mockPool.EXPECT().Begin(ctx).Return(tx, nil)
+		mockTxQuerier.EXPECT().
+			GetFileForUpdate(ctx, GetFileForUpdateParams{ID: fileID, UserID: userID}).
+			Return(existingFile, nil)
+		mockTxQuerier.EXPECT().
+			UpdateFile(ctx, gomock.Any()).
+			Return(nil)
+		tx.EXPECT().Commit(ctx).Return(errors.New("commit error"))
+		tx.EXPECT().Rollback(ctx).Return(nil)
+
+		err := repo.Update(ctx, userID.String(), fileID.String(), interfaces.RepositoryFile{})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "commit error")
 	})
 }

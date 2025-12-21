@@ -20,7 +20,7 @@ func NewCommand(binarySrv domainbinary.Service) (*Command, error) {
 	cmd := &cobra.Command{
 		Use:   "file",
 		Short: "Manage files",
-		Long:  `Manage files: upload, download, list, delete`,
+		Long:  `Manage files: upload, download, list, update, delete`,
 	}
 
 	uploadCommand, err := NewUploadCommand(binarySrv)
@@ -40,6 +40,12 @@ func NewCommand(binarySrv domainbinary.Service) (*Command, error) {
 		return nil, fmt.Errorf("failed to create download command: %w", err)
 	}
 	cmd.AddCommand(downloadCommand.GetCommand())
+
+	updateCommand, err := NewUpdateCommand(binarySrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create update command: %w", err)
+	}
+	cmd.AddCommand(updateCommand.GetCommand())
 
 	c.cmd = cmd
 

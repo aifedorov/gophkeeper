@@ -18,5 +18,8 @@ type FileStorage interface {
 	Delete(ctx context.Context, userID, fileID string) error
 	// Download retrieves a physical file for the specified user and file ID.
 	// Returns a ReadCloser that should be closed by the caller after use.
-	Download(_ context.Context, userID, fileID string) (reader io.ReadCloser, err error)
+	Download(ctx context.Context, userID, fileID string) (reader io.ReadCloser, err error)
+	// Update updates a physical file for the specified user and file ID.
+	// Returns the file path where the file was updated.
+	Update(ctx context.Context, userID, fileID string, reader io.Reader) (filepath string, err error)
 }

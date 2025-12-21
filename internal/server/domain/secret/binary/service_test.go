@@ -383,11 +383,11 @@ func TestService_Download(t *testing.T) {
 			setupMock: func(s *testSetup) {
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(interfaces.RepositoryFile{}, ErrFileNotFound).
+					Return(interfaces.RepositoryFile{}, ErrNotFound).
 					Times(1)
 			},
 			wantErr:   true,
-			wantErrIs: ErrFileNotFound,
+			wantErrIs: ErrNotFound,
 		},
 		{
 			name: "repository error",
@@ -517,11 +517,11 @@ func TestService_Delete(t *testing.T) {
 			setupMock: func(s *testSetup) {
 				s.mockRepo.EXPECT().
 					Delete(gomock.Any(), s.userID, s.fileID).
-					Return(ErrFileNotFound).
+					Return(ErrNotFound).
 					Times(1)
 			},
 			wantErr:   true,
-			wantErrIs: ErrFileNotFound,
+			wantErrIs: ErrNotFound,
 		},
 		{
 			name: "repository error",

@@ -19,7 +19,7 @@ func NewDeleteCommand(credentialSrv credential.Service) (*DeleteCommand, error) 
 
 	var id string
 	cmd := &cobra.Command{
-		Use:   "delete -d <id>",
+		Use:   "delete -i <id>",
 		Short: "Delete a credential by ID",
 		Long:  `Delete a credential by ID`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -27,7 +27,7 @@ func NewDeleteCommand(credentialSrv credential.Service) (*DeleteCommand, error) 
 		},
 	}
 
-	cmd.Flags().StringVarP(&id, "id", "d", "", "ID")
+	cmd.Flags().StringVarP(&id, "id", "i", "", "ID")
 	if err := cmd.MarkFlagRequired("id"); err != nil {
 		return nil, fmt.Errorf("cli: failed to mark id flag as required: %w", err)
 	}

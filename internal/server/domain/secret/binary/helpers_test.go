@@ -102,7 +102,7 @@ func newTestRepositoryFile(id, name string, encryptedPath, encryptedSize, encryp
 		EncryptedPath:  encryptedPath,
 		EncryptedSize:  encryptedSize,
 		EncryptedNotes: encryptedNotes,
-		UploadedAt:     time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 }
 

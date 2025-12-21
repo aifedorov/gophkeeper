@@ -56,18 +56,33 @@ func (mr *MockFileStorageMockRecorder) Delete(ctx, userID, fileID any) *gomock.C
 }
 
 // Download mocks base method.
-func (m *MockFileStorage) Download(arg0 context.Context, userID, fileID string) (io.ReadCloser, error) {
+func (m *MockFileStorage) Download(ctx context.Context, userID, fileID string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Download", arg0, userID, fileID)
+	ret := m.ctrl.Call(m, "Download", ctx, userID, fileID)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockFileStorageMockRecorder) Download(arg0, userID, fileID any) *gomock.Call {
+func (mr *MockFileStorageMockRecorder) Download(ctx, userID, fileID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockFileStorage)(nil).Download), arg0, userID, fileID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockFileStorage)(nil).Download), ctx, userID, fileID)
+}
+
+// Update mocks base method.
+func (m *MockFileStorage) Update(ctx context.Context, userID, fileID string, reader io.Reader) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, userID, fileID, reader)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockFileStorageMockRecorder) Update(ctx, userID, fileID, reader any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockFileStorage)(nil).Update), ctx, userID, fileID, reader)
 }
 
 // Upload mocks base method.

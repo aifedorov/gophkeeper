@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS credentials
     encryptedLogin    BYTEA     NOT NULL,
     encryptedPassword BYTEA     NOT NULL,
     encryptedNotes BYTEA,
-    deleted_at     TIMESTAMP,
+    deleted_at        TIMESTAMP,
     updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

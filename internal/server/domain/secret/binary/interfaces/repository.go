@@ -17,6 +17,9 @@ type Repository interface {
 	Get(ctx context.Context, userID, id string) (RepositoryFile, error)
 	// List retrieves all file records for the specified user.
 	List(ctx context.Context, userID string) ([]RepositoryFile, error)
+	// Update updates a file record by ID for the specified user.
+	// Returns an error if the file doesn't exist or doesn't belong to the user.
+	Update(ctx context.Context, userID, id string, file RepositoryFile) error
 	// Delete removes a file record by ID for the specified user.
 	// Returns an error if the file doesn't exist or doesn't belong to the user.
 	Delete(ctx context.Context, userID, id string) error
