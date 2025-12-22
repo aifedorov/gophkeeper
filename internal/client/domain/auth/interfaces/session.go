@@ -7,14 +7,16 @@ type Session struct {
 	accessToken   string // JWT access token for authenticated requests
 	encryptionKey string // Base64-encoded encryption key for data encryption/decryption
 	userID        string // Unique user identifier
+	login         string // Unique user login
 }
 
 // NewSession creates a new Session with the provided authentication data.
-func NewSession(accessToken, encryptionKey, userID string) Session {
+func NewSession(accessToken, encryptionKey, userID, login string) Session {
 	return Session{
 		accessToken:   accessToken,
 		encryptionKey: encryptionKey,
 		userID:        userID,
+		login:         login,
 	}
 }
 
@@ -31,4 +33,9 @@ func (s Session) GetEncryptionKey() string {
 // GetUserID returns the unique user identifier.
 func (s Session) GetUserID() string {
 	return s.userID
+}
+
+// GetLogin returns the unique user login.
+func (s Session) GetLogin() string {
+	return s.login
 }

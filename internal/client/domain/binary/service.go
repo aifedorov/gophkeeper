@@ -7,7 +7,6 @@ package binary
 import (
 	"context"
 	"fmt"
-	"os"
 
 	authinterfaces "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
 	"github.com/aifedorov/gophkeeper/pkg/filestorage"
@@ -39,13 +38,13 @@ type Service interface {
 // service implements the Service interface for client-side binary file management.
 type service struct {
 	client          Client
-	store           *filestorage.FileStorage
+	store           filestorage.Storage
 	sessionProvider authinterfaces.SessionProvider
 }
 
 // NewService creates a new instance of the binary file service with the provided dependencies.
 // It initializes the service with a gRPC client, local file storage, and session provider.
-func NewService(client Client, store *filestorage.FileStorage, sessionProvider authinterfaces.SessionProvider) Service {
+func NewService(client Client, store filestorage.Storage, sessionProvider authinterfaces.SessionProvider) Service {
 	return &service{
 		client:          client,
 		store:           store,
@@ -57,13 +56,9 @@ func NewService(client Client, store *filestorage.FileStorage, sessionProvider a
 // It opens the file at the specified path, creates file metadata, and streams the file to the server.
 // Returns an error if the file doesn't exist, can't be opened, or if the upload fails.
 func (s *service) Upload(ctx context.Context, filePath string, notes string) error {
-	// #nosec G304
-	f, err := os.Open(filePath)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("file not found: %w", err)
-	}
+	f, err := s.store.OpenFile(ctx, filePath)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return err
 	}
 
 	fileInfo, err := NewFileInfo(f, notes)
@@ -98,20 +93,16 @@ func (s *service) Download(ctx context.Context, id string) (filepath string, err
 		_ = reader.Close()
 	}()
 
-	return s.store.Upload(ctx, session.GetUserID(), meta.Name(), reader)
+	return s.store.Upload(ctx, session.GetLogin(), meta.Name(), reader)
 }
 
 // Update sends a request to update an existing binary file on the server.
 // It opens the file at the specified path, creates file metadata with the given ID, and streams to the server.
 // Returns an error if the file doesn't exist, can't be opened, or if the update fails.
 func (s *service) Update(ctx context.Context, id string, filePath string, notes string) error {
-	// #nosec G304
-	f, err := os.Open(filePath)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("file not found: %w", err)
-	}
+	f, err := s.store.OpenFile(ctx, filePath)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return err
 	}
 
 	fileInfo, err := NewUpdateFileInfo(id, f, notes)

@@ -11,6 +11,7 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/domain/binary"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/card"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/text"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage"
@@ -23,6 +24,7 @@ type Services struct {
 	CredsSrv      credential.Service
 	BinarySrv     binary.Service
 	CardSrv       card.Service
+	TextSrv       text.Service
 	TokenProvider authinterfaces.SessionProvider
 	grpcConn      grpcClient.GRPCConnection
 }
@@ -50,11 +52,14 @@ func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 	cardClient := client.NewCardClient(conn.Conn())
 	cardService := card.NewService(cardClient)
 
+	textService := text.NewService(binaryService, fileStore)
+
 	return &Services{
 		AuthSrv:       authService,
 		CredsSrv:      credService,
 		BinarySrv:     binaryService,
 		CardSrv:       cardService,
+		TextSrv:       textService,
 		TokenProvider: tokenProvider,
 		grpcConn:      conn,
 	}, nil

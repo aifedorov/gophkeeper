@@ -33,7 +33,7 @@ func TestService_Login(t *testing.T) {
 			name:  "successful login",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID)
+				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
 					Return(session, nil)
@@ -61,7 +61,7 @@ func TestService_Login(t *testing.T) {
 			name:  "login succeeds but save fails",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID)
+				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
 				client.EXPECT().
 					Login(gomock.Any(), testLogin, testPassword).
 					Return(session, nil)
@@ -115,7 +115,7 @@ func TestService_Register(t *testing.T) {
 			name:  "successful registration",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID)
+				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
 					Return(session, nil)
@@ -143,7 +143,7 @@ func TestService_Register(t *testing.T) {
 			name:  "registration succeeds but save fails",
 			creds: interfaces.NewCredentials(testLogin, testPassword),
 			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID)
+				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
 				client.EXPECT().
 					Register(gomock.Any(), testLogin, testPassword).
 					Return(session, nil)
@@ -250,9 +250,9 @@ func TestService_GetCurrentSession(t *testing.T) {
 			setupMock: func(repo *MockRepository) {
 				repo.EXPECT().
 					Load().
-					Return(interfaces.NewSession(testToken, testToken, testUserID), nil)
+					Return(interfaces.NewSession(testToken, testToken, testUserID, testLogin), nil)
 			},
-			wantSession: interfaces.NewSession(testToken, testToken, testUserID),
+			wantSession: interfaces.NewSession(testToken, testToken, testUserID, testLogin),
 			wantErr:     false,
 		},
 		{

@@ -33,6 +33,8 @@ message RegisterResponse {
   bytes encryption_key = 2;
   // user_id is the unique identifier for the user.
   string user_id = 3;
+  // login is the unique identifier for the user.
+  string login = 4;
 }
 
 // LoginRequest contains the credentials for user authentication.
@@ -51,4 +53,6 @@ message LoginResponse {
   bytes encryption_key = 2;
   // user_id is the unique identifier for the user.
   string user_id = 3;
+  // login is the unique identifier for the user.
+  string login = 4;
 }

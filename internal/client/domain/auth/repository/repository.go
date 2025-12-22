@@ -43,19 +43,3 @@ func (r *repository) Load() (interfaces.Session, error) {
 func (r *repository) Delete() error {
 	return r.store.Delete()
 }
-
-func toDomainSession(session storage.Session) interfaces.Session {
-	return interfaces.NewSession(
-		session.GetAccessToken(),
-		session.GetEncryptionKey(),
-		session.GetUserID(),
-	)
-}
-
-func toStoreSession(session interfaces.Session) storage.Session {
-	return storage.NewSession(
-		session.GetAccessToken(),
-		session.GetEncryptionKey(),
-		session.GetUserID(),
-	)
-}

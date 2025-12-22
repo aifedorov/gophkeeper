@@ -10,10 +10,12 @@ import (
 	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/binary"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/card"
 	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/credential"
+	"github.com/aifedorov/gophkeeper/internal/client/cli/secret/text"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	domainbinary "github.com/aifedorov/gophkeeper/internal/client/domain/binary"
 	domaincard "github.com/aifedorov/gophkeeper/internal/client/domain/card"
 	domaincredential "github.com/aifedorov/gophkeeper/internal/client/domain/credential"
+	domaintext "github.com/aifedorov/gophkeeper/internal/client/domain/text"
 	clientversion "github.com/aifedorov/gophkeeper/internal/client/version"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +24,7 @@ type Command struct {
 	cmd *cobra.Command
 }
 
-func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service, binarySrv domainbinary.Service, cardSrv domaincard.Service) (*Command, error) {
+func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service, binarySrv domainbinary.Service, cardSrv domaincard.Service, textSrv domaintext.Service) (*Command, error) {
 	cmd := &cobra.Command{
 		Use:     "gophkeeper",
 		Short:   "GophKeeper is a secure password manager",
@@ -63,6 +65,12 @@ func NewCommand(authSrv auth.Service, credentialSrv domaincredential.Service, bi
 		return nil, fmt.Errorf("failed to create card command: %w", err)
 	}
 	cmd.AddCommand(cardCmd.GetCommand())
+
+	textCmd, err := text.NewCommand(textSrv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text command: %w", err)
+	}
+	cmd.AddCommand(textCmd.GetCommand())
 
 	return &Command{
 		cmd: cmd,

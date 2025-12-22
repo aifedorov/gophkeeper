@@ -29,5 +29,6 @@ func (p *sessionProvider) GetSession(_ context.Context) (interfaces.Session, err
 		session.GetAccessToken(),
 		session.GetEncryptionKey(),
 		session.GetUserID(),
+		session.GetLogin(),
 	), nil
 }

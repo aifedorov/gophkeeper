@@ -38,6 +38,7 @@ func (c *authClient) Register(ctx context.Context, login, pass string) (session 
 		resp.GetAccessToken(),
 		base64.StdEncoding.EncodeToString(resp.GetEncryptionKey()),
 		resp.GetUserId(),
+		resp.GetLogin(),
 	), nil
 }
 
@@ -54,5 +55,6 @@ func (c *authClient) Login(ctx context.Context, login, pass string) (session int
 		resp.GetAccessToken(),
 		base64.StdEncoding.EncodeToString(resp.GetEncryptionKey()),
 		resp.GetUserId(),
+		resp.GetLogin(),
 	), nil
 }

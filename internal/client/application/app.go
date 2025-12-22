@@ -16,7 +16,7 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config, services *container.Services) (*App, error) {
-	rootCmd, err := cliroot.NewCommand(services.AuthSrv, services.CredsSrv, services.BinarySrv, services.CardSrv)
+	rootCmd, err := cliroot.NewCommand(services.AuthSrv, services.CredsSrv, services.BinarySrv, services.CardSrv, services.TextSrv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create root command: %w", err)
 	}

@@ -9,17 +9,15 @@ import (
 //go:generate mockgen -source=filestorage.go -destination=mocks/mock_filestorage.go -package=mocks
 
 // FileStorage defines the interface for physical file storage operations.
-// Files are stored encrypted and organized by user ID and file ID.
+// Files are stored encrypted and organized by directory and filename.
 type FileStorage interface {
-	// Upload stores a file from the provided reader for the specified user and file ID.
-	// Returns the file path where the file was stored.
-	Upload(ctx context.Context, userID, fileID string, reader io.Reader) (filepath string, err error)
-	// Delete removes a physical file for the specified user and file ID.
-	Delete(ctx context.Context, userID, fileID string) error
-	// Download retrieves a physical file for the specified user and file ID.
+	// Upload stores a file from the provided reader for the specified directory and filename.
+	Upload(ctx context.Context, dirname, filename string, reader io.Reader) (filepath string, err error)
+	// Delete removes a physical file for the specified directory and filename.
+	Delete(ctx context.Context, dirname, filename string) error
+	// Download retrieves a physical file for the specified directory and filename.
 	// Returns a ReadCloser that should be closed by the caller after use.
-	Download(ctx context.Context, userID, fileID string) (reader io.ReadCloser, err error)
-	// Update updates a physical file for the specified user and file ID.
-	// Returns the file path where the file was updated.
-	Update(ctx context.Context, userID, fileID string, reader io.Reader) (filepath string, err error)
+	Download(ctx context.Context, dirname, filename string) (reader io.ReadCloser, err error)
+	// Update updates a physical file for the specified directory and filename.
+	Update(ctx context.Context, dirname, filename string, reader io.Reader) (filepath string, err error)
 }

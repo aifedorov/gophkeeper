@@ -66,13 +66,18 @@ func (a *AuthServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.
 		return nil, status.Error(codes.Internal, errMsgInternalError)
 	}
 
-	a.logger.Debug("grpc: token and encryption key issued successfully", zap.String("user_id", user.GetUserID()))
-
 	userID := user.GetUserID()
+	login := user.GetLogin()
+	a.logger.Debug("grpc: registration completed successfully",
+		zap.String("user_id", userID),
+		zap.String("login", login),
+	)
+
 	return &pb.RegisterResponse{
 		AccessToken:   &token,
 		EncryptionKey: encryptionKey,
 		UserId:        &userID,
+		Login:         &login,
 	}, nil
 }
 
@@ -102,11 +107,17 @@ func (a *AuthServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 		return nil, status.Error(codes.Internal, errMsgInternalError)
 	}
 
-	a.logger.Debug("grpc: login completed successfully", zap.String("user_id", userID))
+	login := user.GetLogin()
+	a.logger.Debug("grpc: login completed successfully",
+		zap.String("user_id", userID),
+		zap.String("login", login),
+	)
+
 	return &pb.LoginResponse{
 		AccessToken:   &token,
 		EncryptionKey: encryptionKey,
 		UserId:        &userID,
+		Login:         &login,
 	}, nil
 }
 
