@@ -3,6 +3,7 @@ package credential
 import (
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/shared"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ func (c *DeleteCommand) GetCommand() *cobra.Command {
 func (c *DeleteCommand) run(cmd *cobra.Command, id string) error {
 	err := c.credentialSrv.Delete(cmd.Context(), id)
 	if err != nil {
-		return fmt.Errorf("cli: failed to delete credential: %w", err)
+		return shared.ParseErrorForCLI(err)
 	}
 
 	fmt.Println("Credential deleted successfully")

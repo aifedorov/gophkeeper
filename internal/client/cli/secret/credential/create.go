@@ -3,6 +3,7 @@ package credential
 import (
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/shared"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -45,7 +46,7 @@ func (c *CreateCommand) GetCommand() *cobra.Command {
 
 func (c *CreateCommand) run(cmd *cobra.Command, cred inputCredentials) error {
 	id := uuid.New().String()
-	newCred, err := credential.NewCredential(id, cred.name, cred.login, cred.password, cred.notes)
+	newCred, err := credential.NewCredential(id, cred.name, cred.login, cred.password, cred.notes, 1)
 	if err != nil || newCred == nil {
 		return fmt.Errorf("cli: failed to create credential: %w", err)
 	}
@@ -55,7 +56,7 @@ func (c *CreateCommand) run(cmd *cobra.Command, cred inputCredentials) error {
 	}
 
 	if err := c.credentialSrv.Create(cmd.Context(), *newCred); err != nil {
-		return fmt.Errorf("cli: failed to create credential: %w", err)
+		return shared.ParseErrorForCLI(err)
 	}
 
 	fmt.Println("Credential created successfully")

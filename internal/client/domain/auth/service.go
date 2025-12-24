@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/shared"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
 )
 
@@ -28,21 +29,21 @@ type Service interface {
 	Logout(ctx context.Context) error
 	// GetCurrentSession retrieves the current user session from local storage.
 	// Returns an error if no session is found or if session loading fails.
-	GetCurrentSession() (interfaces.Session, error)
+	GetCurrentSession() (shared.Session, error)
 }
 
 // service implements the Service interface for client-side authentication.
 type service struct {
-	client client.AuthClient
-	repo   interfaces.Repository
+	client       client.AuthClient
+	sessionStore interfaces.SessionStore
 }
 
 // NewService creates a new instance of the authentication service with the provided dependencies.
-// It initializes the service with a gRPC auth client and a local session repository.
-func NewService(client client.AuthClient, repo interfaces.Repository) Service {
+// It initializes the service with a gRPC auth client and a session store.
+func NewService(client client.AuthClient, sessionStore interfaces.SessionStore) Service {
 	return &service{
-		client: client,
-		repo:   repo,
+		client:       client,
+		sessionStore: sessionStore,
 	}
 }
 
@@ -55,7 +56,7 @@ func (s *service) Login(ctx context.Context, creds interfaces.Credentials) error
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	err = s.repo.Save(session)
+	err = s.sessionStore.Save(session)
 	if err != nil {
 		return fmt.Errorf("failed to save session: %w", err)
 	}
@@ -72,7 +73,7 @@ func (s *service) Register(ctx context.Context, creds interfaces.Credentials) er
 		return fmt.Errorf("failed to register: %w", err)
 	}
 
-	err = s.repo.Save(session)
+	err = s.sessionStore.Save(session)
 	if err != nil {
 		return fmt.Errorf("failed to save session: %w", err)
 	}
@@ -83,7 +84,7 @@ func (s *service) Register(ctx context.Context, creds interfaces.Credentials) er
 // Logout removes the current user session from local storage.
 // Returns an error if session deletion fails.
 func (s *service) Logout(_ context.Context) error {
-	err := s.repo.Delete()
+	err := s.sessionStore.Delete()
 	if err != nil {
 		return fmt.Errorf("failed to complete logout: %w", err)
 	}
@@ -92,6 +93,10 @@ func (s *service) Logout(_ context.Context) error {
 
 // GetCurrentSession retrieves the current user session from local storage.
 // Returns an error if no session is found or if session loading fails.
-func (s *service) GetCurrentSession() (interfaces.Session, error) {
-	return s.repo.Load()
+func (s *service) GetCurrentSession() (shared.Session, error) {
+	session, err := s.sessionStore.Load()
+	if err != nil {
+		return shared.Session{}, ErrSessionNotFound
+	}
+	return session, nil
 }

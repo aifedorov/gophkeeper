@@ -98,7 +98,7 @@ func (s *testSetup) expectDecryptCredential() {
 }
 
 func newTestCredential() *Credential {
-	cred, _ := NewCredential(testID, testName, testLogin, testPassword, testNotes)
+	cred, _ := NewCredential(testID, testName, testLogin, testPassword, testNotes, 1)
 	return cred
 }
 

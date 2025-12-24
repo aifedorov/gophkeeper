@@ -18,7 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	services, err := container.NewServices(ctx, cfg)
+	services, err := container.NewServices(cfg)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create services: %v\n", err)
 		os.Exit(1)

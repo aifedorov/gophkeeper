@@ -9,17 +9,19 @@ type Credential struct {
 	Login    string // Username or email
 	Password string // Password
 	Notes    string // Optional notes/metadata
+	Version  int64  // Version number
 }
 
 // NewCredential creates a new Credential entity with the provided data.
 // Returns an error if validation fails (currently always returns nil as validation is done in Validate method).
-func NewCredential(id, name, login, password, notes string) (*Credential, error) {
+func NewCredential(id, name, login, password, notes string, version int64) (*Credential, error) {
 	return &Credential{
 		ID:       id,
 		Name:     name,
 		Login:    login,
 		Password: password,
 		Notes:    notes,
+		Version:  version,
 	}, nil
 }
 

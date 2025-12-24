@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	pgx "github.com/jackc/pgx/v5"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -127,4 +128,18 @@ func (m *MockQuerier) UpdateFile(ctx context.Context, arg UpdateFileParams) erro
 func (mr *MockQuerierMockRecorder) UpdateFile(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFile", reflect.TypeOf((*MockQuerier)(nil).UpdateFile), ctx, arg)
+}
+
+// WithTx mocks base method.
+func (m *MockQuerier) WithTx(tx pgx.Tx) Querier {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(Querier)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockQuerierMockRecorder) WithTx(tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockQuerier)(nil).WithTx), tx)
 }

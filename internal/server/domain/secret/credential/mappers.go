@@ -23,6 +23,9 @@ func toDomainCredential(crypto interfaces.CryptoService, key []byte, credential 
 	if err != nil {
 		return Credential{}, fmt.Errorf("failed to decrypt notes: %w", err)
 	}
+	if credential.Version < 1 {
+		return Credential{}, fmt.Errorf("invalid credential version: %d", credential.Version)
+	}
 
 	return Credential{
 		id:       credential.ID,
@@ -31,6 +34,7 @@ func toDomainCredential(crypto interfaces.CryptoService, key []byte, credential 
 		login:    login,
 		password: password,
 		notes:    notes,
+		version:  credential.Version,
 	}, nil
 }
 
@@ -60,5 +64,6 @@ func toRepositoryCredential(crypto interfaces.CryptoService, key []byte, credent
 		EncryptedLogin:    encryptLogin,
 		EncryptedPassword: encryptPassword,
 		EncryptedNotes:    encryptNotes,
+		Version:           credential.GetVersion(),
 	}, nil
 }

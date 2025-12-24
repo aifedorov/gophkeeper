@@ -56,6 +56,7 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 		req.GetLogin(),
 		req.GetPassword(),
 		req.GetNotes(),
+		1,
 	)
 	if err != nil || newCred == nil {
 		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
@@ -73,10 +74,12 @@ func (s *CredentialServer) Create(ctx context.Context, req *pb.CreateRequest) (*
 	}
 
 	id := res.GetID()
-	s.logger.Debug("grpc: credential created successfully", zap.String("id", id))
+	version := res.GetVersion()
+	s.logger.Debug("grpc: credential created successfully", zap.String("id", id), zap.Int64("version", version))
 
 	resp := pb.CreateResponse{
-		Id: &id,
+		Id:      &id,
+		Version: &version,
 	}
 
 	return &resp, nil
@@ -108,6 +111,7 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 		login := cred.GetLogin()
 		password := cred.GetPassword()
 		notes := cred.GetMetadata()
+		version := cred.GetVersion()
 
 		credentials[i] = &pb.ListResponse_ListItem{
 			Id:       &id,
@@ -115,6 +119,7 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 			Login:    &login,
 			Password: &password,
 			Notes:    &notes,
+			Version:  &version,
 		}
 	}
 
@@ -138,6 +143,7 @@ func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*
 		req.GetLogin(),
 		req.GetPassword(),
 		req.GetNotes(),
+		req.GetVersion(),
 	)
 	if err != nil || updatedCred == nil {
 		s.logger.Error("grpc: failed to create credential entity", zap.Error(err))
@@ -153,17 +159,23 @@ func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*
 		s.logger.Debug("grpc: credential not found for update", zap.String("id", updatedCred.GetID()))
 		return nil, status.Error(codes.NotFound, "credential not found")
 	}
+	if errors.Is(err, credential.ErrVersionConflict) {
+		s.logger.Debug("grpc: version conflict", zap.String("id", updatedCred.GetID()))
+		return nil, status.Error(codes.Aborted, "version conflict")
+	}
 	if err != nil {
 		s.logger.Error("grpc: failed to update credential", zap.Error(err))
 		return nil, status.Error(codes.Internal, "internal binary error")
 	}
 
 	id := res.GetID()
-	s.logger.Debug("grpc: credential updated successfully", zap.String("id", id))
+	version := res.GetVersion()
+	s.logger.Debug("grpc: credential updated successfully", zap.String("id", id), zap.Int64("version", version))
 
 	success := true
 	resp := pb.UpdateResponse{
 		Success: &success,
+		Version: &version,
 	}
 	return &resp, nil
 }

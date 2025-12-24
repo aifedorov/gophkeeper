@@ -1,20 +1,19 @@
 package container
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/config"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/auth"
 	authinterfaces "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/repository"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/binary"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/card"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/text"
 	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc"
 	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
-	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage/cache"
+	"github.com/aifedorov/gophkeeper/internal/client/infrastructure/storage/session"
 	"github.com/aifedorov/gophkeeper/pkg/filestorage"
 	"go.uber.org/zap"
 )
@@ -29,8 +28,9 @@ type Services struct {
 	grpcConn      grpcClient.GRPCConnection
 }
 
-func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
-	sessionStore := storage.NewStorage()
+func NewServices(cfg *config.Config) (*Services, error) {
+	sessionStore := session.NewStorage()
+	cacheStore := cache.NewStorage()
 	fileStore := filestorage.NewFileStorage(zap.NewNop())
 	tokenProvider := auth.NewSessionProvider(sessionStore)
 	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr, tokenProvider)
@@ -39,12 +39,10 @@ func NewServices(ctx context.Context, cfg *config.Config) (*Services, error) {
 	}
 
 	authClient := client.NewAuthClient(conn.Conn())
-	store := storage.NewStorage()
-	repo := repository.NewRepository(ctx, store)
-	authService := auth.NewService(authClient, repo)
+	authService := auth.NewService(authClient, sessionStore)
 
 	credClient := client.NewCredentialClient(conn.Conn())
-	credService := credential.NewService(credClient)
+	credService := credential.NewService(credClient, cacheStore)
 
 	binaryClient := client.NewBinaryClient(conn.Conn())
 	binaryService := binary.NewService(binaryClient, fileStore, tokenProvider)

@@ -5,6 +5,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -17,6 +19,7 @@ type Credential struct {
 	Encryptedpassword []byte
 	Encryptednotes    []byte
 	DeletedAt         pgtype.Timestamp
-	UpdatedAt         pgtype.Timestamp
-	CreatedAt         pgtype.Timestamp
+	UpdatedAt         time.Time
+	CreatedAt         time.Time
+	Version           int64
 }

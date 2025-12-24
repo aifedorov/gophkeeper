@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	shared "github.com/aifedorov/gophkeeper/internal/client/domain/shared"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,10 +42,10 @@ func (m *MockSessionProvider) EXPECT() *MockSessionProviderMockRecorder {
 }
 
 // GetSession mocks base method.
-func (m *MockSessionProvider) GetSession(ctx context.Context) (Session, error) {
+func (m *MockSessionProvider) GetSession(ctx context.Context) (shared.Session, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSession", ctx)
-	ret0, _ := ret[0].(Session)
+	ret0, _ := ret[0].(shared.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

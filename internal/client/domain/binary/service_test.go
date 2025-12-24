@@ -1,71 +1,43 @@
 package binary
 
 import (
-	"context"
 	"errors"
-	"io"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
-	authinterfaces "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	"github.com/aifedorov/gophkeeper/pkg/filestorage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
-
-// mockReadCloser is a simple implementation of io.ReadCloser for testing
-type mockReadCloser struct {
-	io.Reader
-	closed bool
-}
-
-func (m *mockReadCloser) Close() error {
-	m.closed = true
-	return nil
-}
 
 func TestService_Upload(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		filePath     string
-		notes        string
-		setupMock    func(*MockClient, *filestorage.MockStorage)
-		wantErr      bool
-		errMsg       string
-		cleanupFiles bool
+		name     string
+		filePath string
+		notes    string
+		setup    func(*testSetup, string) string
+		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name:     "successful upload",
-			filePath: "test.txt",
-			notes:    "test notes",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				tmpFile := createTempFile(t, "test content")
-				// #nosec G304
-				ms.EXPECT().
-					OpenFile(gomock.Any(), "test.txt").
-					Return(os.Open(tmpFile))
-
-				mc.EXPECT().
-					Upload(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).
-					Times(1)
+			filePath: testFileName,
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.expectUploadSuccess(filePath, tmpFile)
+				return tmpFile
 			},
-			wantErr:      false,
-			cleanupFiles: true,
+			wantErr: false,
 		},
 		{
 			name:     "file not found",
 			filePath: "/nonexistent/file.txt",
-			notes:    "test notes",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				ms.EXPECT().
-					OpenFile(gomock.Any(), "/nonexistent/file.txt").
-					Return(nil, errors.New("filestorage: file not found: file does not exist"))
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				s.expectUploadFileNotFound(filePath, errors.New("filestorage: file not found: file does not exist"))
+				return ""
 			},
 			wantErr: true,
 			errMsg:  "file not found",
@@ -73,34 +45,25 @@ func TestService_Upload(t *testing.T) {
 		{
 			name:     "file open error",
 			filePath: "/root/readonly.txt",
-			notes:    "test notes",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				ms.EXPECT().
-					OpenFile(gomock.Any(), "/root/readonly.txt").
-					Return(nil, errors.New("filestorage: file not found: permission denied"))
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				s.expectUploadFileNotFound(filePath, errors.New("filestorage: file not found: permission denied"))
+				return ""
 			},
 			wantErr: true,
 			errMsg:  "file not found",
 		},
 		{
 			name:     "client upload error",
-			filePath: "test.txt",
-			notes:    "test notes",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				tmpFile := createTempFile(t, "test content")
-				// #nosec G304
-				ms.EXPECT().
-					OpenFile(gomock.Any(), "test.txt").
-					Return(os.Open(tmpFile))
-
-				mc.EXPECT().
-					Upload(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(errors.New("upload failed")).
-					Times(1)
+			filePath: testFileName,
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.expectUploadClientError(filePath, tmpFile, errors.New("upload failed"))
+				return tmpFile
 			},
-			wantErr:      true,
-			errMsg:       "upload failed",
-			cleanupFiles: true,
+			wantErr: true,
+			errMsg:  "upload failed",
 		},
 	}
 
@@ -108,26 +71,20 @@ func TestService_Upload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
 
-			mockClient := NewMockClient(ctrl)
-			mockStorage := filestorage.NewMockStorage(ctrl)
-			tt.setupMock(mockClient, mockStorage)
-
-			service := NewService(mockClient, mockStorage, nil)
-
-			ctx := context.Background()
-			err := service.Upload(ctx, tt.filePath, tt.notes)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
-			} else {
-				require.NoError(t, err)
+			tmpFile := tt.setup(s, tt.filePath)
+			if tmpFile != "" {
+				defer func() {
+					_ = os.Remove(tmpFile)
+				}()
 			}
+
+			err := s.service.Upload(s.ctx, tt.filePath, tt.notes)
+
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
 }
@@ -136,33 +93,27 @@ func TestService_List(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		setupMock func(*MockClient, *filestorage.MockStorage)
-		wantFiles []File
-		wantErr   bool
-		errMsg    string
+		name    string
+		setup   func(*testSetup)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "successful list",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				file1, _ := NewFile("1", "file1.txt", 100, "note1", time.Now())
-				file2, _ := NewFile("2", "file2.txt", 200, "note2", time.Now())
+			setup: func(s *testSetup) {
+				now := time.Now()
+				file1, _ := NewFile("1", "file1.txt", 100, "note1", now)
+				file2, _ := NewFile("2", "file2.txt", 200, "note2", now)
 				expectedFiles := []File{*file1, *file2}
-
-				mc.EXPECT().
-					List(gomock.Any()).
-					Return(expectedFiles, nil).
-					Times(1)
+				s.expectListSuccess(expectedFiles)
+				s.wantFiles = expectedFiles
 			},
 			wantErr: false,
 		},
 		{
 			name: "list error",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				mc.EXPECT().
-					List(gomock.Any()).
-					Return(nil, errors.New("list failed")).
-					Times(1)
+			setup: func(s *testSetup) {
+				s.expectListError(errors.New("list failed"))
 			},
 			wantErr: true,
 			errMsg:  "list failed",
@@ -173,27 +124,16 @@ func TestService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := NewMockClient(ctrl)
-			mockStorage := filestorage.NewMockStorage(ctrl)
-			tt.setupMock(mockClient, mockStorage)
+			files, err := s.service.List(s.ctx)
 
-			service := NewService(mockClient, mockStorage, nil)
-
-			ctx := context.Background()
-			files, err := service.List(ctx)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
-				assert.Nil(t, files)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, files)
+			assertError(t, err, tt.wantErr, tt.errMsg)
+			if !tt.wantErr && s.wantFiles != nil {
+				assertFilesEqual(t, files, s.wantFiles)
 			}
 		})
 	}
@@ -203,108 +143,54 @@ func TestService_Download(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		fileID    string
-		setupMock func(*MockClient, *filestorage.MockStorage, *mockSessionProvider)
-		wantErr   bool
-		errMsg    string
+		name     string
+		fileID   string
+		setup    func(*testSetup, string)
+		wantErr  bool
+		errMsg   string
+		wantPath string
 	}{
 		{
 			name:   "successful download",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage, sp *mockSessionProvider) {
-				userID := "test-user-id"
-				login := "test-login"
-				session := authinterfaces.NewSession("token", "key", userID, login)
-				sp.setSession(session)
-				sp.setError(nil)
-
-				fileContent := "test file content"
-				mockReader := &mockReadCloser{Reader: strings.NewReader(fileContent)}
-				mockMeta, _ := NewFileMeta("test_new.txt", int64(len(fileContent)), "test notes")
-
-				mc.EXPECT().
-					Download(gomock.Any(), "test-file-id").
-					Return(mockReader, mockMeta, nil).
-					Times(1)
-
-				ms.EXPECT().
-					Upload(gomock.Any(), login, "test_new.txt", mockReader).
-					Return("/path/to/test_new.txt", nil).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDownloadSuccess(fileID, testFileName)
 			},
-			wantErr: false,
+			wantErr:  false,
+			wantPath: testFilePath,
 		},
 		{
 			name:   "session provider error",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage, sp *mockSessionProvider) {
-				sp.setSession(authinterfaces.Session{})
-				sp.setError(errors.New("session not found"))
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDownloadSessionError(errors.New("session not found"))
 			},
 			wantErr: true,
 			errMsg:  "failed to get session",
 		},
 		{
 			name:   "client download error",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage, sp *mockSessionProvider) {
-				userID := "test-user-id"
-				login := "test-login"
-				session := authinterfaces.NewSession("token", "key", userID, login)
-				sp.setSession(session)
-				sp.setError(nil)
-
-				mc.EXPECT().
-					Download(gomock.Any(), "test-file-id").
-					Return(nil, nil, errors.New("download failed")).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDownloadClientError(fileID, errors.New("download failed"))
 			},
 			wantErr: true,
 			errMsg:  "failed to download file",
 		},
 		{
 			name:   "client download returns nil meta",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage, sp *mockSessionProvider) {
-				userID := "test-user-id"
-				login := "test-login"
-				session := authinterfaces.NewSession("token", "key", userID, login)
-				sp.setSession(session)
-				sp.setError(nil)
-
-				mockReader := &mockReadCloser{Reader: strings.NewReader("content")}
-				mc.EXPECT().
-					Download(gomock.Any(), "test-file-id").
-					Return(mockReader, nil, nil).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDownloadNilMeta(fileID)
 			},
 			wantErr: true,
 			errMsg:  "failed to download file",
 		},
 		{
 			name:   "storage upload error",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage, sp *mockSessionProvider) {
-				userID := "test-user-id"
-				login := "test-login"
-				session := authinterfaces.NewSession("token", "key", userID, login)
-				sp.setSession(session)
-				sp.setError(nil)
-
-				fileContent := "test file content"
-				mockReader := &mockReadCloser{Reader: strings.NewReader(fileContent)}
-				mockMeta, _ := NewFileMeta("test_new.txt", int64(len(fileContent)), "test notes")
-
-				mc.EXPECT().
-					Download(gomock.Any(), "test-file-id").
-					Return(mockReader, mockMeta, nil).
-					Times(1)
-
-				ms.EXPECT().
-					Upload(gomock.Any(), login, "test_new.txt", mockReader).
-					Return("", errors.New("storage upload failed")).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDownloadStorageError(fileID, testFileName, errors.New("storage upload failed"))
 			},
 			wantErr: true,
 			errMsg:  "storage upload failed",
@@ -315,28 +201,16 @@ func TestService_Download(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s, tt.fileID)
 
-			mockClient := NewMockClient(ctrl)
-			mockStorage := filestorage.NewMockStorage(ctrl)
-			mockSessionProvider := &mockSessionProvider{ctrl: ctrl}
-			tt.setupMock(mockClient, mockStorage, mockSessionProvider)
+			filepath, err := s.service.Download(s.ctx, tt.fileID)
 
-			service := NewService(mockClient, mockStorage, mockSessionProvider)
-
-			ctx := context.Background()
-			filepath, err := service.Download(ctx, tt.fileID)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
-				assert.Empty(t, filepath)
-			} else {
-				require.NoError(t, err)
-				assert.NotEmpty(t, filepath)
+			assertError(t, err, tt.wantErr, tt.errMsg)
+			if !tt.wantErr {
+				assert.Equal(t, tt.wantPath, filepath)
 			}
 		})
 	}
@@ -346,31 +220,25 @@ func TestService_Delete(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		fileID    string
-		setupMock func(*MockClient, *filestorage.MockStorage)
-		wantErr   bool
-		errMsg    string
+		name    string
+		fileID  string
+		setup   func(*testSetup, string)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name:   "successful deletion",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				mc.EXPECT().
-					Delete(gomock.Any(), "test-file-id").
-					Return(nil).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDeleteSuccess(fileID)
 			},
 			wantErr: false,
 		},
 		{
 			name:   "client delete error",
-			fileID: "test-file-id",
-			setupMock: func(mc *MockClient, ms *filestorage.MockStorage) {
-				mc.EXPECT().
-					Delete(gomock.Any(), "test-file-id").
-					Return(errors.New("delete failed")).
-					Times(1)
+			fileID: testFileID,
+			setup: func(s *testSetup, fileID string) {
+				s.expectDeleteError(fileID, errors.New("delete failed"))
 			},
 			wantErr: true,
 			errMsg:  "delete failed",
@@ -381,60 +249,14 @@ func TestService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s, tt.fileID)
 
-			mockClient := NewMockClient(ctrl)
-			mockStorage := filestorage.NewMockStorage(ctrl)
-			tt.setupMock(mockClient, mockStorage)
+			err := s.service.Delete(s.ctx, tt.fileID)
 
-			service := NewService(mockClient, mockStorage, nil)
-
-			ctx := context.Background()
-			err := service.Delete(ctx, tt.fileID)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
-}
-
-// mockSessionProvider is a simple mock for SessionProvider using gomock pattern
-type mockSessionProvider struct {
-	ctrl    *gomock.Controller
-	session authinterfaces.Session
-	err     error
-}
-
-func (m *mockSessionProvider) GetSession(ctx context.Context) (authinterfaces.Session, error) {
-	return m.session, m.err
-}
-
-func (m *mockSessionProvider) setSession(session authinterfaces.Session) {
-	m.session = session
-}
-
-func (m *mockSessionProvider) setError(err error) {
-	m.err = err
-}
-
-// Helper function to create a temporary file for testing
-func createTempFile(t *testing.T, content string) string {
-	t.Helper()
-	tmpfile, err := os.CreateTemp("", "test-*.txt")
-	require.NoError(t, err)
-
-	_, err = tmpfile.WriteString(content)
-	require.NoError(t, err)
-
-	err = tmpfile.Close()
-	require.NoError(t, err)
-
-	return tmpfile.Name()
 }

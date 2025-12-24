@@ -13,32 +13,26 @@ import (
 	"go.uber.org/zap"
 )
 
-// QuerierFactory creates a Querier from a DBTX (used for transactions).
-type QuerierFactory func(db DBTX) Querier
-
 type repository struct {
-	pool           TxBeginner
-	queries        Querier
-	querierFactory QuerierFactory
-	logger         *zap.Logger
+	pool    TxBeginner
+	queries Querier
+	logger  *zap.Logger
 }
 
 func NewRepository(pool *pgxpool.Pool, db DBTX, logger *zap.Logger) interfaces.Repository {
 	return &repository{
-		pool:           pool,
-		queries:        New(db),
-		querierFactory: func(db DBTX) Querier { return New(db) },
-		logger:         logger,
+		pool:    pool,
+		queries: newQuerier(db),
+		logger:  logger,
 	}
 }
 
 // newRepositoryForTest creates a repository with mocked dependencies for testing.
-func newRepositoryForTest(pool TxBeginner, queries Querier, txQueries Querier, logger *zap.Logger) *repository {
+func newRepositoryForTest(pool TxBeginner, queries Querier, logger *zap.Logger) *repository {
 	return &repository{
-		pool:           pool,
-		queries:        queries,
-		querierFactory: func(db DBTX) Querier { return txQueries },
-		logger:         logger,
+		pool:    pool,
+		queries: queries,
+		logger:  logger,
 	}
 }
 
@@ -214,7 +208,7 @@ func (r *repository) Update(ctx context.Context, userID, id string, file interfa
 		_ = tx.Rollback(ctx)
 	}()
 
-	txQuery := r.querierFactory(tx)
+	txQuery := r.queries.WithTx(tx)
 	_, err = txQuery.GetFileForUpdate(ctx, GetFileForUpdateParams{
 		ID:     idUUID,
 		UserID: userUUID,

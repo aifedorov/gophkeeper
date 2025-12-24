@@ -16,4 +16,6 @@ var (
 	ErrPasswordRequired = errors.New("password can't be empty")
 	// ErrIDRequired is returned when attempting to create a credential without an ID.
 	ErrIDRequired = errors.New("id can't be empty")
+	// ErrVersionConflict is returned when attempting to update a credential with a version that doesn't match the current one.
+	ErrVersionConflict = errors.New("version conflict")
 )

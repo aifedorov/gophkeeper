@@ -1,74 +1,40 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"testing"
 
-	"github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	grpcClient "github.com/aifedorov/gophkeeper/internal/client/infrastructure/grpc/client"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-)
-
-const (
-	testLogin    = "testuser"
-	testPassword = "testpass"
-	testToken    = "token-xyz-456"
-	testUserID   = "user-id-123"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/shared"
 )
 
 func TestService_Login(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		creds     interfaces.Credentials
-		setupMock func(*grpcClient.MockAuthClient, *MockRepository)
-		wantErr   bool
-		errCheck  func(*testing.T, error)
+		name        string
+		setup       func(*testSetup)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
-			name:  "successful login",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
-				client.EXPECT().
-					Login(gomock.Any(), testLogin, testPassword).
-					Return(session, nil)
-
-				repo.EXPECT().
-					Save(gomock.Any()).
-					Return(nil)
+			name: "successful login",
+			setup: func(s *testSetup) {
+				s.expectLoginSuccess()
 			},
 			wantErr: false,
 		},
 		{
-			name:  "login fails - client error",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				client.EXPECT().
-					Login(gomock.Any(), testLogin, testPassword).
-					Return(interfaces.Session{}, ErrInvalidCredentials)
+			name: "login fails - client error",
+			setup: func(s *testSetup) {
+				s.expectLoginClientError(ErrInvalidCredentials)
 			},
-			wantErr: true,
-			errCheck: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, ErrInvalidCredentials)
-			},
+			wantErr:     true,
+			expectedErr: ErrInvalidCredentials,
 		},
 		{
-			name:  "login succeeds but save fails",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
-				client.EXPECT().
-					Login(gomock.Any(), testLogin, testPassword).
-					Return(session, nil)
-
-				repo.EXPECT().
-					Save(gomock.Any()).
-					Return(errors.New("storage error"))
+			name: "login succeeds but save fails",
+			setup: func(s *testSetup) {
+				s.expectLoginSaveError(errors.New("storage error"))
 			},
 			wantErr: true,
 		},
@@ -78,25 +44,14 @@ func TestService_Login(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := grpcClient.NewMockAuthClient(ctrl)
-			mockRepo := NewMockRepository(ctrl)
-			tt.setupMock(mockClient, mockRepo)
+			err := s.service.Login(s.ctx, s.testCreds)
 
-			service := NewService(mockClient, mockRepo)
-
-			err := service.Login(context.Background(), tt.creds)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errCheck != nil {
-					tt.errCheck(t, err)
-				}
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.expectedErr)
 		})
 	}
 }
@@ -105,52 +60,30 @@ func TestService_Register(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		creds     interfaces.Credentials
-		setupMock func(*grpcClient.MockAuthClient, *MockRepository)
-		wantErr   bool
-		errCheck  func(*testing.T, error)
+		name        string
+		setup       func(*testSetup)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
-			name:  "successful registration",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
-				client.EXPECT().
-					Register(gomock.Any(), testLogin, testPassword).
-					Return(session, nil)
-
-				repo.EXPECT().
-					Save(gomock.Any()).
-					Return(nil)
+			name: "successful registration",
+			setup: func(s *testSetup) {
+				s.expectRegisterSuccess()
 			},
 			wantErr: false,
 		},
 		{
-			name:  "registration fails - auth already exists",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				client.EXPECT().
-					Register(gomock.Any(), testLogin, testPassword).
-					Return(interfaces.Session{}, ErrUserAlreadyExists)
+			name: "registration fails - auth already exists",
+			setup: func(s *testSetup) {
+				s.expectRegisterClientError(ErrUserAlreadyExists)
 			},
-			wantErr: true,
-			errCheck: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, ErrUserAlreadyExists)
-			},
+			wantErr:     true,
+			expectedErr: ErrUserAlreadyExists,
 		},
 		{
-			name:  "registration succeeds but save fails",
-			creds: interfaces.NewCredentials(testLogin, testPassword),
-			setupMock: func(client *grpcClient.MockAuthClient, repo *MockRepository) {
-				session := interfaces.NewSession(testToken, testToken, testUserID, testLogin)
-				client.EXPECT().
-					Register(gomock.Any(), testLogin, testPassword).
-					Return(session, nil)
-
-				repo.EXPECT().
-					Save(gomock.Any()).
-					Return(errors.New("storage error"))
+			name: "registration succeeds but save fails",
+			setup: func(s *testSetup) {
+				s.expectRegisterSaveError(errors.New("storage error"))
 			},
 			wantErr: true,
 		},
@@ -160,25 +93,14 @@ func TestService_Register(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := grpcClient.NewMockAuthClient(ctrl)
-			mockRepo := NewMockRepository(ctrl)
-			tt.setupMock(mockClient, mockRepo)
+			err := s.service.Register(s.ctx, s.testCreds)
 
-			service := NewService(mockClient, mockRepo)
-
-			err := service.Register(context.Background(), tt.creds)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errCheck != nil {
-					tt.errCheck(t, err)
-				}
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.expectedErr)
 		})
 	}
 }
@@ -187,25 +109,22 @@ func TestService_Logout(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		setupMock func(*MockRepository)
-		wantErr   bool
+		name        string
+		setup       func(*testSetup)
+		wantErr     bool
+		expectedErr error
 	}{
 		{
 			name: "successful logout",
-			setupMock: func(repo *MockRepository) {
-				repo.EXPECT().
-					Delete().
-					Return(nil)
+			setup: func(s *testSetup) {
+				s.expectLogoutSuccess()
 			},
 			wantErr: false,
 		},
 		{
 			name: "logout fails - delete error",
-			setupMock: func(repo *MockRepository) {
-				repo.EXPECT().
-					Delete().
-					Return(errors.New("delete error"))
+			setup: func(s *testSetup) {
+				s.expectLogoutError(errors.New("delete error"))
 			},
 			wantErr: true,
 		},
@@ -215,22 +134,14 @@ func TestService_Logout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := grpcClient.NewMockAuthClient(ctrl)
-			mockRepo := NewMockRepository(ctrl)
-			tt.setupMock(mockRepo)
+			err := s.service.Logout(s.ctx)
 
-			service := NewService(mockClient, mockRepo)
-
-			err := service.Logout(context.Background())
-
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.expectedErr)
 		})
 	}
 }
@@ -240,32 +151,26 @@ func TestService_GetCurrentSession(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setupMock   func(*MockRepository)
-		wantSession interfaces.Session
+		setup       func(*testSetup)
+		wantSession shared.Session
 		wantErr     bool
-		errCheck    func(*testing.T, error)
+		expectedErr error
 	}{
 		{
 			name: "get session successfully",
-			setupMock: func(repo *MockRepository) {
-				repo.EXPECT().
-					Load().
-					Return(interfaces.NewSession(testToken, testToken, testUserID, testLogin), nil)
+			setup: func(s *testSetup) {
+				s.expectGetSessionSuccess()
 			},
-			wantSession: interfaces.NewSession(testToken, testToken, testUserID, testLogin),
+			wantSession: shared.NewSession(testToken, testToken, testUserID, testLogin),
 			wantErr:     false,
 		},
 		{
 			name: "session not found",
-			setupMock: func(repo *MockRepository) {
-				repo.EXPECT().
-					Load().
-					Return(interfaces.Session{}, ErrSessionNotFound)
+			setup: func(s *testSetup) {
+				s.expectGetSessionError(ErrSessionNotFound)
 			},
-			wantErr: true,
-			errCheck: func(t *testing.T, err error) {
-				assert.ErrorIs(t, err, ErrSessionNotFound)
-			},
+			wantErr:     true,
+			expectedErr: ErrSessionNotFound,
 		},
 	}
 
@@ -273,25 +178,16 @@ func TestService_GetCurrentSession(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := grpcClient.NewMockAuthClient(ctrl)
-			mockRepo := NewMockRepository(ctrl)
-			tt.setupMock(mockRepo)
+			session, err := s.service.GetCurrentSession()
 
-			service := NewService(mockClient, mockRepo)
-
-			session, err := service.GetCurrentSession()
-
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errCheck != nil {
-					tt.errCheck(t, err)
-				}
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.wantSession, session)
+			assertError(t, err, tt.wantErr, tt.expectedErr)
+			if !tt.wantErr {
+				assertSessionEqual(t, session, tt.wantSession)
 			}
 		})
 	}

@@ -1,4 +1,4 @@
-package storage
+package shared
 
 type Session struct {
 	AccessToken   string `json:"access_token"`

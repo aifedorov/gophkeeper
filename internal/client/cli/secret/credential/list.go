@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/shared"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ func (c *ListCommand) GetCommand() *cobra.Command {
 func (c *ListCommand) run(cmd *cobra.Command) error {
 	creds, err := c.credentialSrv.List(cmd.Context())
 	if err != nil {
-		return fmt.Errorf("cli: failed to list credentials: %w", err)
+		return shared.ParseErrorForCLI(err)
 	}
 
 	if len(creds) == 0 {

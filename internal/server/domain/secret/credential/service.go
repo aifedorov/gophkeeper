@@ -158,13 +158,17 @@ func (s *service) Update(ctx context.Context, userID, encryptionKey string, cred
 		s.logger.Debug("credential: not found for update", zap.String("id", credential.GetID()))
 		return nil, ErrNotFound
 	}
-	if err != nil {
+	if errors.Is(err, ErrNameExists) {
+		s.logger.Debug("credential: name already exists", zap.String("name", credential.GetName()))
+		return nil, ErrNameExists
+	}
+	if errors.Is(err, ErrVersionConflict) {
+		s.logger.Debug("credential: version conflict", zap.String("id", credential.GetID()))
+		return nil, ErrVersionConflict
+	}
+	if err != nil || result == nil {
 		s.logger.Error("credential: failed to update in repository", zap.Error(err))
 		return nil, fmt.Errorf("failed to update credential: %w", err)
-	}
-	if result == nil {
-		s.logger.Error("credential: repository returned nil")
-		return nil, fmt.Errorf("failed to update credential: credential is nil")
 	}
 
 	domainCred, err := toDomainCredential(s.crypto, key, *result)

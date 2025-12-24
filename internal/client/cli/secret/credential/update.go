@@ -3,6 +3,7 @@ package credential
 import (
 	"fmt"
 
+	"github.com/aifedorov/gophkeeper/internal/client/cli/shared"
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +57,7 @@ func (c *UpdateCommand) run(cmd *cobra.Command, cred inputCredentials) error {
 		Notes:    cred.notes,
 	})
 	if err != nil {
-		return fmt.Errorf("cli: failed to update credential: %w", err)
+		return shared.ParseErrorForCLI(err)
 	}
 
 	fmt.Println("Credential updated successfully")

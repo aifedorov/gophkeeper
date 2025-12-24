@@ -1,6 +1,8 @@
 // Package credential provides credential domain entities.
 package credential
 
+import "fmt"
+
 // Credential represents a credential entity in the credential domain.
 // It contains login/password pairs along with metadata, all of which are encrypted before storage.
 type Credential struct {
@@ -10,12 +12,13 @@ type Credential struct {
 	login    string
 	password string
 	notes    string
+	version  int64
 }
 
 // NewCredential creates a new Credential entity with the provided data.
 // It validates that all required fields (id, name, login, password) are not empty.
 // Returns an error if validation fails.
-func NewCredential(id, name, login, password, metadata string) (*Credential, error) {
+func NewCredential(id, name, login, password, metadata string, version int64) (*Credential, error) {
 	if id == "" {
 		return nil, ErrIDRequired
 	}
@@ -28,6 +31,9 @@ func NewCredential(id, name, login, password, metadata string) (*Credential, err
 	if password == "" {
 		return nil, ErrPasswordRequired
 	}
+	if version < 1 {
+		return nil, fmt.Errorf("invalid credential version: %d", version)
+	}
 
 	return &Credential{
 		id:       id,
@@ -35,6 +41,7 @@ func NewCredential(id, name, login, password, metadata string) (*Credential, err
 		login:    login,
 		password: password,
 		notes:    metadata,
+		version:  version,
 	}, nil
 }
 
@@ -66,4 +73,9 @@ func (c *Credential) GetPassword() string {
 // GetMetadata returns the decrypted metadata/notes for this credential.
 func (c *Credential) GetMetadata() string {
 	return c.notes
+}
+
+// GetVersion returns the credential's version number for optimistic locking.
+func (c *Credential) GetVersion() int64 {
+	return c.version
 }

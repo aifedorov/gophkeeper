@@ -5,8 +5,11 @@ import (
 	"fmt"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/credential"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/shared"
 	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type credentialClient struct {
@@ -19,42 +22,50 @@ func NewCredentialClient(conn *grpc.ClientConn) credential.Client {
 	}
 }
 
-func (c *credentialClient) Create(ctx context.Context, creds credential.Credential) error {
+func (c *credentialClient) Create(ctx context.Context, creds credential.Credential) (id string, version int64, err error) {
 	request := pb.CreateRequest{
 		Name:     &creds.Name,
 		Login:    &creds.Login,
 		Password: &creds.Password,
 		Notes:    &creds.Notes,
 	}
-	_, err := c.client.Create(ctx, &request)
+
+	res, err := c.client.Create(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to create credential: %w", err)
+		return "", 0, handleGRPCError(err)
 	}
-	return nil
+
+	return res.GetId(), res.GetVersion(), nil
 }
 
-func (c *credentialClient) Update(ctx context.Context, id string, creds credential.Credential) error {
+func (c *credentialClient) Update(ctx context.Context, id string, creds credential.Credential) (version int64, err error) {
 	request := pb.UpdateRequest{
 		Id:       &id,
 		Name:     &creds.Name,
 		Login:    &creds.Login,
 		Password: &creds.Password,
 		Notes:    &creds.Notes,
+		Version:  &creds.Version,
 	}
-	_, err := c.client.Update(ctx, &request)
+	response, err := c.client.Update(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to update credential: %w", err)
+		return 0, handleGRPCError(err)
 	}
-	return nil
+
+	return response.GetVersion(), nil
 }
 
 func (c *credentialClient) Delete(ctx context.Context, id string) error {
 	request := pb.DeleteRequest{
 		Id: &id,
 	}
-	_, err := c.client.Delete(ctx, &request)
+
+	resp, err := c.client.Delete(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to delete credential: %w", err)
+		return handleGRPCError(err)
+	}
+	if !resp.GetSuccess() {
+		return fmt.Errorf("client: delete operation failed")
 	}
 	return nil
 }
@@ -63,7 +74,7 @@ func (c *credentialClient) List(ctx context.Context) ([]credential.Credential, e
 	request := pb.ListRequest{}
 	response, err := c.client.List(ctx, &request)
 	if err != nil {
-		return []credential.Credential{}, fmt.Errorf("client: failed to list credentials: %w", err)
+		return []credential.Credential{}, handleGRPCError(err)
 	}
 	credentials := make([]credential.Credential, len(response.Credentials))
 	for i, cred := range response.Credentials {
@@ -73,7 +84,34 @@ func (c *credentialClient) List(ctx context.Context) ([]credential.Credential, e
 			Login:    cred.GetLogin(),
 			Password: cred.GetPassword(),
 			Notes:    cred.GetNotes(),
+			Version:  cred.GetVersion(),
 		}
 	}
 	return credentials, nil
+}
+
+// handleGRPCError extracts gRPC status codes from errors and maps them to domain-specific errors.
+// This allows the rest of the application to handle errors without knowing about gRPC implementation details.
+func handleGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		return fmt.Errorf("client: failed to extract gRPC status: %w", err)
+	}
+
+	switch st.Code() {
+	case codes.Aborted:
+		return shared.ErrVersionConflict
+	case codes.NotFound:
+		return shared.ErrNotFound
+	case codes.AlreadyExists:
+		return shared.ErrAlreadyExists
+	case codes.Unauthenticated:
+		return shared.ErrUnauthenticated
+	default:
+		return fmt.Errorf("client: unexpected gRPC error: %w", err)
+	}
 }

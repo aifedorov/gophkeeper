@@ -35,6 +35,7 @@ func TestToDomainCredential(t *testing.T) {
 				EncryptedLogin:    []byte("encrypted-login"),
 				EncryptedPassword: []byte("encrypted-password"),
 				EncryptedNotes:    []byte("encrypted-notes"),
+				Version:           1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -68,6 +69,7 @@ func TestToDomainCredential(t *testing.T) {
 				EncryptedLogin:    []byte("encrypted-login"),
 				EncryptedPassword: []byte("encrypted-password"),
 				EncryptedNotes:    []byte("encrypted-notes"),
+				Version:           1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -86,6 +88,7 @@ func TestToDomainCredential(t *testing.T) {
 				EncryptedLogin:    []byte("encrypted-login"),
 				EncryptedPassword: []byte("encrypted-password"),
 				EncryptedNotes:    []byte("encrypted-notes"),
+				Version:           1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -108,6 +111,7 @@ func TestToDomainCredential(t *testing.T) {
 				EncryptedLogin:    []byte("encrypted-login"),
 				EncryptedPassword: []byte("encrypted-password"),
 				EncryptedNotes:    []byte("encrypted-notes"),
+				Version:           1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -172,6 +176,7 @@ func TestToRepositoryCredential(t *testing.T) {
 				login:    "test-login",
 				password: "test-password",
 				notes:    "test-notes",
+				version:  1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -203,6 +208,7 @@ func TestToRepositoryCredential(t *testing.T) {
 				login:    "test-login",
 				password: "test-password",
 				notes:    "test-notes",
+				version:  1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -221,6 +227,7 @@ func TestToRepositoryCredential(t *testing.T) {
 				login:    "test-login",
 				password: "test-password",
 				notes:    "test-notes",
+				version:  1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -243,6 +250,7 @@ func TestToRepositoryCredential(t *testing.T) {
 				login:    "test-login",
 				password: "test-password",
 				notes:    "test-notes",
+				version:  1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().
@@ -269,6 +277,7 @@ func TestToRepositoryCredential(t *testing.T) {
 				login:    "test-login",
 				password: "test-password",
 				notes:    "",
+				version:  1,
 			},
 			setupMock: func(m *credMocks.MockCryptoService) {
 				m.EXPECT().

@@ -14,6 +14,7 @@ type RepositoryCredential struct {
 	EncryptedLogin    []byte
 	EncryptedPassword []byte
 	EncryptedNotes    []byte
+	Version           int64
 }
 
 // Repository defines the interface for credential repository operations.

@@ -1,10 +1,12 @@
-package storage
+package session
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
+
+	"github.com/aifedorov/gophkeeper/internal/client/domain/shared"
 )
 
 const (
@@ -20,7 +22,7 @@ func NewStorage() *Storage {
 	return &Storage{}
 }
 
-func (s *Storage) Save(session Session) error {
+func (s *Storage) Save(session shared.Session) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -31,25 +33,25 @@ func (s *Storage) Save(session Session) error {
 
 	err = os.WriteFile(filename, jsonData, fileMode)
 	if err != nil {
-		return fmt.Errorf("storage: failed to write binary: %w", err)
+		return fmt.Errorf("storage: failed to write session: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Storage) Load() (Session, error) {
+func (s *Storage) Load() (shared.Session, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	jsonData, err := os.ReadFile(filename)
 	if err != nil {
-		return Session{}, fmt.Errorf("storage: failed to read binary: %w", err)
+		return shared.Session{}, fmt.Errorf("storage: failed to read session: %w", err)
 	}
 
-	var session Session
+	var session shared.Session
 	err = json.Unmarshal(jsonData, &session)
 	if err != nil {
-		return Session{}, fmt.Errorf("storage: failed to unmarshal session: %w", err)
+		return shared.Session{}, fmt.Errorf("storage: failed to unmarshal session: %w", err)
 	}
 
 	return session, nil

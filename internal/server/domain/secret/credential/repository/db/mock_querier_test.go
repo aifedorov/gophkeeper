@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	pgx "github.com/jackc/pgx/v5"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,6 +72,21 @@ func (mr *MockQuerierMockRecorder) DeleteCredential(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredential", reflect.TypeOf((*MockQuerier)(nil).DeleteCredential), ctx, arg)
 }
 
+// GetCredentialForUpdate mocks base method.
+func (m *MockQuerier) GetCredentialForUpdate(ctx context.Context, arg GetCredentialForUpdateParams) (Credential, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCredentialForUpdate", ctx, arg)
+	ret0, _ := ret[0].(Credential)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCredentialForUpdate indicates an expected call of GetCredentialForUpdate.
+func (mr *MockQuerierMockRecorder) GetCredentialForUpdate(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentialForUpdate", reflect.TypeOf((*MockQuerier)(nil).GetCredentialForUpdate), ctx, arg)
+}
+
 // ListCredentials mocks base method.
 func (m *MockQuerier) ListCredentials(ctx context.Context, userID uuid.UUID) ([]Credential, error) {
 	m.ctrl.T.Helper()
@@ -99,4 +115,18 @@ func (m *MockQuerier) UpdateCredential(ctx context.Context, arg UpdateCredential
 func (mr *MockQuerierMockRecorder) UpdateCredential(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCredential", reflect.TypeOf((*MockQuerier)(nil).UpdateCredential), ctx, arg)
+}
+
+// WithTx mocks base method.
+func (m *MockQuerier) WithTx(tx pgx.Tx) Querier {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(Querier)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockQuerierMockRecorder) WithTx(tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockQuerier)(nil).WithTx), tx)
 }

@@ -1,23 +1,18 @@
 package credential
 
 import (
-	"context"
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func TestNewService(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockClient := NewMockCredentialClient(ctrl)
-	service := NewService(mockClient)
+	s := newTestSetup(t)
+	defer s.cleanup()
+	service := NewService(s.mockClient, s.mockCache)
 
 	require.NotNil(t, service)
 }
@@ -26,26 +21,23 @@ func TestService_Create(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		cred      Credential
-		setupMock func(*MockCredentialClient)
-		wantErr   bool
-		errMsg    string
+		name    string
+		cred    Credential
+		setup   func(*testSetup, Credential)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "successful creation",
 			cred: Credential{
-				ID:       "test-id-123",
-				Name:     "test-credential",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "test notes",
+				ID:       testID,
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(nil).
-					Times(1)
+			setup: func(s *testSetup, cred Credential) {
+				s.expectCreateSuccess(cred.ID, testVersion)
 			},
 			wantErr: false,
 		},
@@ -58,11 +50,8 @@ func TestService_Create(t *testing.T) {
 				Password: "anotherpass",
 				Notes:    "",
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(nil).
-					Times(1)
+			setup: func(s *testSetup, cred Credential) {
+				s.expectCreateSuccess(cred.ID, testVersion)
 			},
 			wantErr: false,
 		},
@@ -71,11 +60,11 @@ func TestService_Create(t *testing.T) {
 			cred: Credential{
 				ID:       "test-id-789",
 				Name:     "",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "notes",
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -85,12 +74,12 @@ func TestService_Create(t *testing.T) {
 			name: "validation error - empty login",
 			cred: Credential{
 				ID:       "test-id-101",
-				Name:     "test-name",
+				Name:     testName,
 				Login:    "",
-				Password: "testpass",
-				Notes:    "notes",
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -100,12 +89,12 @@ func TestService_Create(t *testing.T) {
 			name: "validation error - empty password",
 			cred: Credential{
 				ID:       "test-id-102",
-				Name:     "test-name",
-				Login:    "testuser",
+				Name:     testName,
+				Login:    testLogin,
 				Password: "",
-				Notes:    "notes",
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -115,16 +104,13 @@ func TestService_Create(t *testing.T) {
 			name: "client error",
 			cred: Credential{
 				ID:       "test-id-103",
-				Name:     "test-credential",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "notes",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(errors.New("network error")).
-					Times(1)
+			setup: func(s *testSetup, cred Credential) {
+				s.expectCreateClientError(errors.New("network error"))
 			},
 			wantErr: true,
 			errMsg:  "failed to create credential",
@@ -135,21 +121,14 @@ func TestService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s, tt.cred)
 
-			mockClient := NewMockCredentialClient(ctrl)
-			tt.setupMock(mockClient)
+			err := s.service.Create(s.ctx, tt.cred)
 
-			service := NewService(mockClient)
-			err := service.Create(context.Background(), tt.cred)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
 }
@@ -158,98 +137,46 @@ func TestService_List(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		setupMock func(*MockCredentialClient)
-		wantCreds []Credential
-		wantErr   bool
-		errMsg    string
+		name    string
+		setup   func(*testSetup)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "successful list with multiple credentials",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					List(gomock.Any()).
-					Return([]Credential{
-						{
-							ID:       "id-1",
-							Name:     "cred-1",
-							Login:    "user1",
-							Password: "pass1",
-							Notes:    "notes1",
-						},
-						{
-							ID:       "id-2",
-							Name:     "cred-2",
-							Login:    "user2",
-							Password: "pass2",
-							Notes:    "notes2",
-						},
-					}, nil).
-					Times(1)
-			},
-			wantCreds: []Credential{
-				{
-					ID:       "id-1",
-					Name:     "cred-1",
-					Login:    "user1",
-					Password: "pass1",
-					Notes:    "notes1",
-				},
-				{
-					ID:       "id-2",
-					Name:     "cred-2",
-					Login:    "user2",
-					Password: "pass2",
-					Notes:    "notes2",
-				},
+			setup: func(s *testSetup) {
+				creds := []Credential{
+					{ID: "id-1", Name: "cred-1", Login: "user1", Password: "pass1", Notes: "notes1", Version: 1},
+					{ID: "id-2", Name: "cred-2", Login: "user2", Password: "pass2", Notes: "notes2", Version: 1},
+				}
+				s.expectListSuccess(creds)
+				s.wantCreds = creds
 			},
 			wantErr: false,
 		},
 		{
 			name: "successful list with empty result",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					List(gomock.Any()).
-					Return([]Credential{}, nil).
-					Times(1)
+			setup: func(s *testSetup) {
+				s.expectListSuccess([]Credential{})
+				s.wantCreds = []Credential{}
 			},
-			wantCreds: []Credential{},
-			wantErr:   false,
+			wantErr: false,
 		},
 		{
 			name: "successful list with single credential",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					List(gomock.Any()).
-					Return([]Credential{
-						{
-							ID:       "single-id",
-							Name:     "single-cred",
-							Login:    "singleuser",
-							Password: "singlepass",
-							Notes:    "",
-						},
-					}, nil).
-					Times(1)
-			},
-			wantCreds: []Credential{
-				{
-					ID:       "single-id",
-					Name:     "single-cred",
-					Login:    "singleuser",
-					Password: "singlepass",
-					Notes:    "",
-				},
+			setup: func(s *testSetup) {
+				creds := []Credential{
+					{ID: "single-id", Name: "single-cred", Login: "singleuser", Password: "singlepass", Notes: "", Version: 2},
+				}
+				s.expectListSuccess(creds)
+				s.wantCreds = creds
 			},
 			wantErr: false,
 		},
 		{
 			name: "client error",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					List(gomock.Any()).
-					Return(nil, errors.New("network error")).
-					Times(1)
+			setup: func(s *testSetup) {
+				s.expectListError(errors.New("network error"))
 			},
 			wantErr: true,
 			errMsg:  "failed to get list of credentials",
@@ -260,21 +187,16 @@ func TestService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s)
 
-			mockClient := NewMockCredentialClient(ctrl)
-			tt.setupMock(mockClient)
+			creds, err := s.service.List(s.ctx)
 
-			service := NewService(mockClient)
-			creds, err := service.List(context.Background())
-
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.wantCreds, creds)
+			assertError(t, err, tt.wantErr, tt.errMsg)
+			if !tt.wantErr && s.wantCreds != nil {
+				assertCredsEqual(t, creds, s.wantCreds)
 			}
 		})
 	}
@@ -284,28 +206,25 @@ func TestService_Update(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		id        string
-		cred      Credential
-		setupMock func(*MockCredentialClient)
-		wantErr   bool
-		errMsg    string
+		name    string
+		id      string
+		cred    Credential
+		setup   func(*testSetup, string, Credential)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "successful update",
-			id:   "test-id-123",
+			id:   testID,
 			cred: Credential{
-				ID:       "test-id-123",
+				ID:       testID,
 				Name:     "updated-credential",
 				Login:    "updateduser",
 				Password: "updatedpass",
 				Notes:    "updated notes",
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Update(gomock.Any(), "test-id-123", gomock.Any()).
-					Return(nil).
-					Times(1)
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.expectUpdateSuccess(id, testVersion, int64(2))
 			},
 			wantErr: false,
 		},
@@ -319,11 +238,8 @@ func TestService_Update(t *testing.T) {
 				Password: "updatedpass",
 				Notes:    "",
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Update(gomock.Any(), "test-id-456", gomock.Any()).
-					Return(nil).
-					Times(1)
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.expectUpdateSuccess(id, int64(3), int64(4))
 			},
 			wantErr: false,
 		},
@@ -333,11 +249,11 @@ func TestService_Update(t *testing.T) {
 			cred: Credential{
 				ID:       "test-id-789",
 				Name:     "",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "notes",
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, id string, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -348,12 +264,12 @@ func TestService_Update(t *testing.T) {
 			id:   "test-id-101",
 			cred: Credential{
 				ID:       "test-id-101",
-				Name:     "test-name",
+				Name:     testName,
 				Login:    "",
-				Password: "testpass",
-				Notes:    "notes",
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, id string, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -364,12 +280,12 @@ func TestService_Update(t *testing.T) {
 			id:   "test-id-102",
 			cred: Credential{
 				ID:       "test-id-102",
-				Name:     "test-name",
-				Login:    "testuser",
+				Name:     testName,
+				Login:    testLogin,
 				Password: "",
-				Notes:    "notes",
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
+			setup: func(s *testSetup, id string, cred Credential) {
 				// No expectation - validation fails before client call
 			},
 			wantErr: true,
@@ -380,38 +296,32 @@ func TestService_Update(t *testing.T) {
 			id:   "non-existent-id",
 			cred: Credential{
 				ID:       "non-existent-id",
-				Name:     "test-credential",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "notes",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Update(gomock.Any(), "non-existent-id", gomock.Any()).
-					Return(errors.New("not found")).
-					Times(1)
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.expectUpdateClientError(id, testVersion, errors.New("not found"))
 			},
 			wantErr: true,
-			errMsg:  "failed to get credential",
+			errMsg:  "failed to update",
 		},
 		{
 			name: "client error - network error",
 			id:   "test-id-103",
 			cred: Credential{
 				ID:       "test-id-103",
-				Name:     "test-credential",
-				Login:    "testuser",
-				Password: "testpass",
-				Notes:    "notes",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
 			},
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Update(gomock.Any(), "test-id-103", gomock.Any()).
-					Return(errors.New("network error")).
-					Times(1)
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.expectUpdateClientError(id, int64(2), errors.New("network error"))
 			},
 			wantErr: true,
-			errMsg:  "failed to get credential",
+			errMsg:  "failed to update",
 		},
 	}
 
@@ -419,21 +329,14 @@ func TestService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s, tt.id, tt.cred)
 
-			mockClient := NewMockCredentialClient(ctrl)
-			tt.setupMock(mockClient)
+			err := s.service.Update(s.ctx, tt.id, tt.cred)
 
-			service := NewService(mockClient)
-			err := service.Update(context.Background(), tt.id, tt.cred)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
 }
@@ -442,42 +345,33 @@ func TestService_Delete(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		id        string
-		setupMock func(*MockCredentialClient)
-		wantErr   bool
-		errMsg    string
+		name    string
+		id      string
+		setup   func(*testSetup, string)
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "successful deletion",
-			id:   "test-id-123",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Delete(gomock.Any(), "test-id-123").
-					Return(nil).
-					Times(1)
+			id:   testID,
+			setup: func(s *testSetup, id string) {
+				s.expectDeleteSuccess(id)
 			},
 			wantErr: false,
 		},
 		{
 			name: "successful deletion with different ID",
 			id:   "another-id-456",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Delete(gomock.Any(), "another-id-456").
-					Return(nil).
-					Times(1)
+			setup: func(s *testSetup, id string) {
+				s.expectDeleteSuccess(id)
 			},
 			wantErr: false,
 		},
 		{
 			name: "client error - not found",
 			id:   "non-existent-id",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Delete(gomock.Any(), "non-existent-id").
-					Return(errors.New("not found")).
-					Times(1)
+			setup: func(s *testSetup, id string) {
+				s.expectDeleteClientError(id, errors.New("not found"))
 			},
 			wantErr: true,
 			errMsg:  "failed to delete credential",
@@ -485,11 +379,8 @@ func TestService_Delete(t *testing.T) {
 		{
 			name: "client error - network error",
 			id:   "test-id-789",
-			setupMock: func(m *MockCredentialClient) {
-				m.EXPECT().
-					Delete(gomock.Any(), "test-id-789").
-					Return(errors.New("network error")).
-					Times(1)
+			setup: func(s *testSetup, id string) {
+				s.expectDeleteClientError(id, errors.New("network error"))
 			},
 			wantErr: true,
 			errMsg:  "failed to delete credential",
@@ -500,21 +391,14 @@ func TestService_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+			tt.setup(s, tt.id)
 
-			mockClient := NewMockCredentialClient(ctrl)
-			tt.setupMock(mockClient)
+			err := s.service.Delete(s.ctx, tt.id)
 
-			service := NewService(mockClient)
-			err := service.Delete(context.Background(), tt.id)
-
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
 }

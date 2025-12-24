@@ -1,3 +1,4 @@
+// Package repository provides database operations for credential management.
 package repository
 
 import (
@@ -7,17 +8,23 @@ import (
 	credentialDomain "github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/credential/interfaces"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
+// repository implements the interfaces.Repository for credential persistence.
 type repository struct {
+	pool    TxBeginner
 	queries Querier
 	logger  *zap.Logger
 }
 
-func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
+// NewRepository creates a new credential repository with database connection and logger.
+// The pool is used for transaction management while db is used for query execution.
+func NewRepository(pool *pgxpool.Pool, db DBTX, logger *zap.Logger) interfaces.Repository {
 	return &repository{
-		queries: New(db),
+		pool:    pool,
+		queries: newQuerier(db),
 		logger:  logger,
 	}
 }
@@ -96,17 +103,55 @@ func (r *repository) UpdateCredential(ctx context.Context, userID string, creden
 		return nil, fmt.Errorf("repo: failed to parse credential id: %w", err)
 	}
 
-	dbCredential, err := r.queries.UpdateCredential(ctx, UpdateCredentialParams{
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		r.logger.Error("repo: failed to begin transaction", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to begin transaction: %w", err)
+	}
+	defer func() {
+		r.logger.Debug("repo: rollback transaction for update")
+		_ = tx.Rollback(ctx)
+	}()
+
+	txQuery := r.queries.WithTx(tx)
+	credRepo, err := txQuery.GetCredentialForUpdate(ctx, GetCredentialForUpdateParams{
+		ID:     id,
+		UserID: userUUID,
+	})
+	if notFoundError(err) {
+		r.logger.Debug("repo: credential not found for update", zap.String("id", credential.ID))
+		return nil, credentialDomain.ErrNotFound
+	}
+	if err != nil {
+		r.logger.Error("repo: failed to get credential for update", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to get credential for update: %w", err)
+	}
+
+	if credRepo.Version != credential.Version {
+		r.logger.Debug("repo: version conflict",
+			zap.String("id", credential.ID),
+			zap.Int64("db_version", credRepo.Version),
+			zap.Int64("client_version", credential.Version),
+		)
+		return nil, credentialDomain.ErrVersionConflict
+	}
+
+	dbCredential, err := txQuery.UpdateCredential(ctx, UpdateCredentialParams{
 		ID:                id,
 		UserID:            userUUID,
+		Version:           credential.Version,
 		Name:              credential.Name,
 		Encryptedlogin:    credential.EncryptedLogin,
 		Encryptedpassword: credential.EncryptedPassword,
 		Encryptednotes:    credential.EncryptedNotes,
 	})
 	if notFoundError(err) {
-		r.logger.Debug("repo: credential not found for update", zap.String("id", credential.ID))
-		return nil, credentialDomain.ErrNotFound
+		r.logger.Debug("repo: version conflict", zap.String("id", credential.ID))
+		return nil, credentialDomain.ErrVersionConflict
+	}
+	if conflictError(err) {
+		r.logger.Debug("repo: credential name already exists", zap.String("name", credential.Name))
+		return nil, credentialDomain.ErrNameExists
 	}
 	if err != nil {
 		r.logger.Error("repo: failed to update credential", zap.Error(err))
@@ -114,6 +159,14 @@ func (r *repository) UpdateCredential(ctx context.Context, userID string, creden
 	}
 	result := toInterfacesCredential(dbCredential)
 	r.logger.Debug("repo: credential updated successfully", zap.String("id", result.ID))
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		r.logger.Error("repo: failed to commit transaction", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to commit transaction: %w", err)
+	}
+
+	r.logger.Debug("repo: transaction committed successfully")
 	return &result, nil
 }
 
@@ -148,15 +201,4 @@ func (r *repository) DeleteCredential(ctx context.Context, userID, id string) er
 	}
 	r.logger.Debug("repo: credential deleted successfully", zap.String("id", id))
 	return nil
-}
-
-func toInterfacesCredential(credential Credential) interfaces.RepositoryCredential {
-	return interfaces.RepositoryCredential{
-		ID:                credential.ID.String(),
-		UserID:            credential.UserID.String(),
-		Name:              credential.Name,
-		EncryptedLogin:    credential.Encryptedlogin,
-		EncryptedPassword: credential.Encryptedpassword,
-		EncryptedNotes:    credential.Encryptednotes,
-	}
 }

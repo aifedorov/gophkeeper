@@ -54,7 +54,7 @@ func (a *App) Run() error {
 	authSrv := auth.NewService(authRepo, a.logger, cryptoSrv)
 	jwtSrv := jwt.NewService(a.cfg.JWTSecretKey, a.cfg.JWTExpiration, a.logger)
 
-	credRepo := credrepository.NewRepository(db.DBPool(), a.logger)
+	credRepo := credrepository.NewRepository(db.DBPool(), db.DBPool(), a.logger)
 	credSrv := credential.NewService(credRepo, cryptoSrv, a.logger)
 
 	cardRepo := cardrepository.NewRepository(db.DBPool(), a.logger)

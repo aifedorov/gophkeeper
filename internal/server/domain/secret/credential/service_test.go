@@ -33,6 +33,7 @@ func TestService_Create(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -101,6 +102,7 @@ func TestService_Create(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -165,6 +167,7 @@ func TestService_List(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 				cred2 := interfaces.RepositoryCredential{
 					ID:                uuid.New().String(),
@@ -173,6 +176,7 @@ func TestService_List(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -216,6 +220,7 @@ func TestService_List(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -280,6 +285,7 @@ func TestService_Update(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -348,6 +354,7 @@ func TestService_Update(t *testing.T) {
 					EncryptedLogin:    s.encryptedLogin,
 					EncryptedPassword: s.encryptedPass,
 					EncryptedNotes:    s.encryptedNotes,
+					Version:           1,
 				}
 
 				s.mockRepo.EXPECT().

@@ -103,6 +103,7 @@ type CreateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// id is the unique identifier assigned to the newly created credential.
 	Id            *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Version       *int64  `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,6 +145,13 @@ func (x *CreateResponse) GetId() string {
 	return ""
 }
 
+func (x *CreateResponse) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 // UpdateRequest contains the data for updating an existing credential.
 type UpdateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -161,6 +169,7 @@ type UpdateRequest struct {
 	Password *string `protobuf:"bytes,4,opt,name=password" json:"password,omitempty"`
 	// metadata contains optional additional information.
 	Notes         *string `protobuf:"bytes,5,opt,name=notes" json:"notes,omitempty"`
+	Version       *int64  `protobuf:"varint,6,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -230,11 +239,19 @@ func (x *UpdateRequest) GetNotes() string {
 	return ""
 }
 
+func (x *UpdateRequest) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 // UpdateResponse contains the result of credential update operation.
 type UpdateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// success indicates whether the update operation was successful.
-	Success       *bool `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Success       *bool  `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Version       *int64 `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -274,6 +291,13 @@ func (x *UpdateResponse) GetSuccess() bool {
 		return *x.Success
 	}
 	return false
+}
+
+func (x *UpdateResponse) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
 }
 
 // DeleteRequest contains the identifier for deleting a credential.
@@ -464,6 +488,7 @@ type ListResponse_ListItem struct {
 	Password *string `protobuf:"bytes,4,opt,name=password" json:"password,omitempty"`
 	// metadata contains decrypted additional information.
 	Notes         *string `protobuf:"bytes,5,opt,name=notes" json:"notes,omitempty"`
+	Version       *int64  `protobuf:"varint,6,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -533,6 +558,13 @@ func (x *ListResponse_ListItem) GetNotes() string {
 	return ""
 }
 
+func (x *ListResponse_ListItem) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 var File_credential_v1_credential_proto protoreflect.FileDescriptor
 
 const file_credential_v1_credential_proto_rawDesc = "" +
@@ -542,30 +574,34 @@ const file_credential_v1_credential_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05login\x18\x02 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05notes\x18\x04 \x01(\tR\x05notes\" \n" +
+	"\x05notes\x18\x04 \x01(\tR\x05notes\":\n" +
 	"\x0eCreateResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"{\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\"\x95\x01\n" +
 	"\rUpdateRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05login\x18\x03 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes\"*\n" +
+	"\x05notes\x18\x05 \x01(\tR\x05notes\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\x03R\aversion\"D\n" +
 	"\x0eUpdateResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x1f\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\"\x1f\n" +
 	"\rDeleteRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
 	"\x0eDeleteResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"\r\n" +
-	"\vListRequest\"\xce\x01\n" +
+	"\vListRequest\"\xe9\x01\n" +
 	"\fListResponse\x12F\n" +
-	"\vcredentials\x18\x01 \x03(\v2$.credential.v1.ListResponse.ListItemR\vcredentials\x1av\n" +
+	"\vcredentials\x18\x01 \x03(\v2$.credential.v1.ListResponse.ListItemR\vcredentials\x1a\x90\x01\n" +
 	"\bListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05login\x18\x03 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x04 \x01(\tR\bpassword\x12\x14\n" +
-	"\x05notes\x18\x05 \x01(\tR\x05notes2\xa9\x02\n" +
+	"\x05notes\x18\x05 \x01(\tR\x05notes\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\x03R\aversion2\xa9\x02\n" +
 	"\x11CredentialService\x12E\n" +
 	"\x06Create\x12\x1c.credential.v1.CreateRequest\x1a\x1d.credential.v1.CreateResponse\x12?\n" +
 	"\x04List\x12\x1a.credential.v1.ListRequest\x1a\x1b.credential.v1.ListResponse\x12E\n" +
