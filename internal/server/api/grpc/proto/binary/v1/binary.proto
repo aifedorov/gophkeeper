@@ -29,20 +29,22 @@ message UploadRequest {
 
 message UploadResponse {
   string file_id = 1;
-}
-
-message MetadataResponse {
-  string id = 1;
-  string name = 2;
-  int64 size = 3;
-  string notes = 4;
-  google.protobuf.Timestamp uploaded_at = 5;
+  int64 version = 2;
 }
 
 message ListRequest {}
 
 message ListResponse {
-  repeated MetadataResponse files = 1;
+  message Metadata {
+    string id = 1;
+    string name = 2;
+    int64 size = 3;
+    string notes = 4;
+    int64 version = 5;
+    google.protobuf.Timestamp uploaded_at = 6;
+  }
+
+  repeated Metadata files = 1;
 }
 
 message DownloadRequest {
@@ -54,6 +56,7 @@ message DownloadResponse {
     string name = 1;
     int64 size = 2;
     string notes = 3;
+    int64 version = 4;
   }
 
   oneof data {
@@ -68,6 +71,7 @@ message UpdateRequest {
     string name = 2;
     int64 size = 3;
     string notes = 4;
+    int64 version = 5;
   }
 
   oneof data {
@@ -78,6 +82,7 @@ message UpdateRequest {
 
 message UpdateResponse {
   bool success = 1;
+  int64 version = 2;
 }
 
 message DeleteRequest {

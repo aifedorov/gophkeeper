@@ -87,11 +87,12 @@ func (mr *MockClientMockRecorder) List(ctx any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockClient) Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) error {
+func (m *MockClient) Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, fileInfo, reader)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
@@ -101,11 +102,13 @@ func (mr *MockClientMockRecorder) Update(ctx, fileInfo, reader any) *gomock.Call
 }
 
 // Upload mocks base method.
-func (m *MockClient) Upload(ctx context.Context, fileInfo *FileInfo, reader io.Reader) error {
+func (m *MockClient) Upload(ctx context.Context, fileInfo *FileInfo, reader io.Reader) (string, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Upload", ctx, fileInfo, reader)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Upload indicates an expected call of Upload.

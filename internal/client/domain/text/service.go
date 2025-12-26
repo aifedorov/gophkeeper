@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/aifedorov/gophkeeper/internal/client/domain/binary"
-	"github.com/aifedorov/gophkeeper/pkg/filestorage"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/text/interfaces"
 )
 
 const (
@@ -46,11 +46,11 @@ type Service interface {
 // service implements the Service interface for text note management.
 type service struct {
 	binarySrv binary.Service
-	store     filestorage.Storage
+	store     interfaces.Storage
 }
 
 // NewService creates a new instance of the text service.
-func NewService(binarySrv binary.Service, store filestorage.Storage) Service {
+func NewService(binarySrv binary.Service, store interfaces.Storage) Service {
 	return &service{
 		binarySrv: binarySrv,
 		store:     store,

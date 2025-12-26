@@ -102,8 +102,8 @@ func TestService_List(t *testing.T) {
 			name: "successful list",
 			setup: func(s *testSetup) {
 				now := time.Now()
-				file1, _ := NewFile("1", "file1.txt", 100, "note1", now)
-				file2, _ := NewFile("2", "file2.txt", 200, "note2", now)
+				file1, _ := NewFile("1", "file1.txt", 100, "note1", 1, now)
+				file2, _ := NewFile("2", "file2.txt", 200, "note2", 1, now)
 				expectedFiles := []File{*file1, *file2}
 				s.expectListSuccess(expectedFiles)
 				s.wantFiles = expectedFiles

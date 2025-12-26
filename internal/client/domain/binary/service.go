@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	authinterfaces "github.com/aifedorov/gophkeeper/internal/client/domain/auth/interfaces"
-	"github.com/aifedorov/gophkeeper/pkg/filestorage"
+	"github.com/aifedorov/gophkeeper/internal/client/domain/binary/interfaces"
 )
 
 // Service defines the interface for client-side binary file management operations.
@@ -38,16 +38,18 @@ type Service interface {
 // service implements the Service interface for client-side binary file management.
 type service struct {
 	client          Client
-	store           filestorage.Storage
+	store           interfaces.Storage
+	cache           interfaces.CacheStorage
 	sessionProvider authinterfaces.SessionProvider
 }
 
 // NewService creates a new instance of the binary file service with the provided dependencies.
 // It initializes the service with a gRPC client, local file storage, and session provider.
-func NewService(client Client, store filestorage.Storage, sessionProvider authinterfaces.SessionProvider) Service {
+func NewService(client Client, store interfaces.Storage, cache interfaces.CacheStorage, sessionProvider authinterfaces.SessionProvider) Service {
 	return &service{
 		client:          client,
 		store:           store,
+		cache:           cache,
 		sessionProvider: sessionProvider,
 	}
 }
@@ -66,13 +68,35 @@ func (s *service) Upload(ctx context.Context, filePath string, notes string) err
 		return fmt.Errorf("failed to create file info: %w", err)
 	}
 
-	return s.client.Upload(ctx, fileInfo, f)
+	id, version, err := s.client.Upload(ctx, fileInfo, f)
+	if err != nil {
+		return fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	err = s.cache.SetFileVersion(id, version)
+	if err != nil {
+		return fmt.Errorf("failed to save file version to cache: %w", err)
+	}
+
+	return nil
 }
 
 // List retrieves all binary files for the authenticated user from the server.
 // Returns an empty slice if the user has no files.
 func (s *service) List(ctx context.Context) ([]File, error) {
-	return s.client.List(ctx)
+	files, err := s.client.List(ctx)
+	if err != nil {
+		return []File{}, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	for _, file := range files {
+		err := s.cache.SetFileVersion(file.ID(), file.Version())
+		if err != nil {
+			return []File{}, fmt.Errorf("failed to save file version to cache: %w", err)
+		}
+	}
+
+	return files, nil
 }
 
 // Download retrieves a binary file by ID from the server and saves it to local storage.
@@ -105,16 +129,41 @@ func (s *service) Update(ctx context.Context, id string, filePath string, notes 
 		return err
 	}
 
-	fileInfo, err := NewUpdateFileInfo(id, f, notes)
+	currentVersion, err := s.cache.GetFileVersion(id)
+	if err != nil {
+		return fmt.Errorf("failed to get version from cache (try running 'list' first): %w", err)
+	}
+
+	fileInfo, err := NewUpdateFileInfoWithVersion(id, f, notes, currentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to create update file info: %w", err)
 	}
 
-	return s.client.Update(ctx, fileInfo, f)
+	newVersion, err := s.client.Update(ctx, fileInfo, f)
+	if err != nil {
+		return fmt.Errorf("failed to update file: %w", err)
+	}
+
+	err = s.cache.SetFileVersion(id, newVersion)
+	if err != nil {
+		return fmt.Errorf("failed to save file version to cache: %w", err)
+	}
+
+	return nil
 }
 
 // Delete sends a request to delete a binary file by ID from the server.
 // Returns an error if the file doesn't exist or if the deletion fails.
 func (s *service) Delete(ctx context.Context, id string) error {
-	return s.client.Delete(ctx, id)
+	err := s.client.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+
+	err = s.cache.DeleteFileVersion(id)
+	if err != nil {
+		return fmt.Errorf("failed to delete file version from cache: %w", err)
+	}
+
+	return nil
 }

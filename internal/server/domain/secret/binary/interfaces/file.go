@@ -17,6 +17,7 @@ type File struct {
 	size       int64
 	path       string
 	notes      string
+	version    int64
 	uploadedAt time.Time
 }
 
@@ -28,6 +29,7 @@ func NewFile(
 	id, name string,
 	size int64,
 	path, notes string,
+	version int64,
 	uploadedAt time.Time,
 ) (*File, error) {
 	if id == "" {
@@ -42,6 +44,9 @@ func NewFile(
 	if size > maxFileSize {
 		return nil, fmt.Errorf("file size exceeds maximum allowed size: %d", maxFileSize)
 	}
+	if version < 1 {
+		return nil, fmt.Errorf("invalid file version: %d", version)
+	}
 
 	return &File{
 		id:         id,
@@ -49,6 +54,7 @@ func NewFile(
 		size:       size,
 		path:       path,
 		notes:      notes,
+		version:    version,
 		uploadedAt: uploadedAt,
 	}, nil
 }
@@ -86,4 +92,8 @@ func (f *File) GetPath() string {
 // SetPath sets the file's storage path.
 func (f *File) SetPath(path string) {
 	f.path = path
+}
+
+func (f *File) GetVersion() int64 {
+	return f.version
 }

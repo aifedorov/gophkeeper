@@ -12,6 +12,9 @@ type encryptReader struct {
 	gcm    cipher.AEAD
 	nonce  []byte
 	first  bool
+	outBuf []byte
+	outPos int
+	eof    bool
 }
 
 func NewEncryptReader(reader io.Reader, key []byte) (io.Reader, error) {
@@ -31,34 +34,58 @@ func NewEncryptReader(reader io.Reader, key []byte) (io.Reader, error) {
 func (r *encryptReader) Read(p []byte) (n int, err error) {
 	if r.first {
 		r.first = false
-		n := copy(p, r.nonce)
-		if n < len(r.nonce) {
+		if len(p) < len(r.nonce) {
 			return 0, io.ErrShortBuffer
+		}
+		return copy(p, r.nonce), nil
+	}
+
+	if r.outPos < len(r.outBuf) {
+		n = copy(p, r.outBuf[r.outPos:])
+		r.outPos += n
+		if r.outPos >= len(r.outBuf) {
+			r.outBuf = nil
+			r.outPos = 0
+		}
+		if r.eof && r.outPos >= len(r.outBuf) {
+			return n, io.EOF
 		}
 		return n, nil
 	}
 
-	maxSize := len(p) - r.gcm.Overhead()
-	if maxSize < 0 {
-		return 0, io.ErrShortBuffer
-	}
-	if maxSize > chunkSize {
-		maxSize = chunkSize
+	if r.eof {
+		return 0, io.EOF
 	}
 
-	plaintext := make([]byte, maxSize)
-	n, err = r.source.Read(plaintext)
-	if errors.Is(err, io.EOF) || n == 0 {
-		return n, io.EOF
-	}
-	if err != nil {
-		return n, fmt.Errorf("failed to read from source: %w", err)
+	plaintext := make([]byte, chunkSize)
+	totalRead := 0
+	for totalRead < chunkSize {
+		readN, readErr := r.source.Read(plaintext[totalRead:])
+		totalRead += readN
+		if errors.Is(readErr, io.EOF) {
+			r.eof = true
+			break
+		}
+		if readErr != nil {
+			return 0, fmt.Errorf("failed to read from source: %w", readErr)
+		}
 	}
 
-	ciphertext := r.gcm.Seal(nil, r.nonce, plaintext[:n], nil)
+	if totalRead == 0 {
+		return 0, io.EOF
+	}
+
+	ciphertext := r.gcm.Seal(nil, r.nonce, plaintext[:totalRead], nil)
 	incrementNonce(r.nonce)
 
-	copy(p, ciphertext)
+	n = copy(p, ciphertext)
+	if n < len(ciphertext) {
+		r.outBuf = ciphertext
+		r.outPos = n
+	}
 
-	return len(ciphertext), nil
+	if r.eof && n >= len(ciphertext) {
+		return n, io.EOF
+	}
+	return n, nil
 }

@@ -13,7 +13,8 @@ import (
 type Client interface {
 	// Upload sends a file to the server using streaming.
 	// The fileInfo contains metadata, and reader provides the file content.
-	Upload(ctx context.Context, fileInfo *FileInfo, reader io.Reader) error
+	// Returns the file ID and version number after successful upload.
+	Upload(ctx context.Context, fileInfo *FileInfo, reader io.Reader) (id string, version int64, err error)
 	// List retrieves all files for the authenticated user from the server.
 	List(ctx context.Context) ([]File, error)
 	// Download retrieves a file by ID from the server using streaming.
@@ -21,7 +22,8 @@ type Client interface {
 	Download(ctx context.Context, id string) (io.ReadCloser, *FileMeta, error)
 	// Update sends an updated file to the server using streaming.
 	// The fileInfo contains metadata including file ID, and reader provides the new file content.
-	Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) error
+	// Returns the new version number after successful update.
+	Update(ctx context.Context, fileInfo *UpdateFileInfo, reader io.Reader) (version int64, err error)
 	// Delete sends a request to delete a file by ID from the server.
 	Delete(ctx context.Context, id string) error
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary"
-	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/binary/interfaces"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,11 +82,11 @@ func TestRepository_Get(t *testing.T) {
 
 			if tt.wantErr {
 				assertError(t, err, true, tt.expectedErr, tt.errMsg)
-				assert.Equal(t, interfaces.RepositoryFile{}, result)
+				assert.Nil(t, result)
 			} else {
 				expectedFile := s.newTestFile()
 				assertError(t, err, false, nil, "")
-				assertFileEqual(t, result, expectedFile)
+				assertFileEqual(t, *result, expectedFile)
 			}
 		})
 	}
@@ -183,7 +182,7 @@ func TestRepository_Update(t *testing.T) {
 			}
 
 			newFile := s.newTestRepositoryFile()
-			err := s.repo.Update(s.ctx, userID, fileID, newFile)
+			_, err := s.repo.Update(s.ctx, userID, fileID, newFile)
 
 			assertError(t, err, tt.wantErr, tt.expectedErr, tt.errMsg)
 		})

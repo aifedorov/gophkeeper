@@ -6,22 +6,26 @@ import (
 )
 
 // FileMeta contains metadata about a downloaded file.
-// It includes the file name, size, and optional notes.
+// It includes the file name, size, version and optional notes.
 type FileMeta struct {
-	name  string
-	size  int64
-	notes string
+	name    string
+	size    int64
+	notes   string
+	version int64
 }
 
 // NewFileMeta creates a new FileMeta with the provided data.
-// It validates that name is not empty and size is greater than zero.
+// It validates that name is not empty, size and version are greater than zero.
 // Returns an error if validation fails.
-func NewFileMeta(name string, size int64, notes string) (*FileMeta, error) {
+func NewFileMeta(name string, size int64, notes string, version int64) (*FileMeta, error) {
 	if name == "" {
 		return nil, fmt.Errorf("file name is required")
 	}
 	if size == 0 {
 		return nil, fmt.Errorf("file size can't be zero")
+	}
+	if version < 1 {
+		return nil, fmt.Errorf("version must be greater than zero")
 	}
 
 	return &FileMeta{
@@ -44,4 +48,9 @@ func (f *FileMeta) Size() int64 {
 // Notes returns the file's notes/metadata.
 func (f *FileMeta) Notes() string {
 	return f.notes
+}
+
+// Version returns the file's version.
+func (f *FileMeta) Version() int64 {
+	return f.version
 }

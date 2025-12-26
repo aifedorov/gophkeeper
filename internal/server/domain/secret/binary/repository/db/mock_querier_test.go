@@ -43,11 +43,12 @@ func (m *MockQuerier) EXPECT() *MockQuerierMockRecorder {
 }
 
 // CreateFile mocks base method.
-func (m *MockQuerier) CreateFile(ctx context.Context, arg CreateFileParams) error {
+func (m *MockQuerier) CreateFile(ctx context.Context, arg CreateFileParams) (File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateFile", ctx, arg)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateFile indicates an expected call of CreateFile.
@@ -117,11 +118,12 @@ func (mr *MockQuerierMockRecorder) ListFiles(ctx, userID any) *gomock.Call {
 }
 
 // UpdateFile mocks base method.
-func (m *MockQuerier) UpdateFile(ctx context.Context, arg UpdateFileParams) error {
+func (m *MockQuerier) UpdateFile(ctx context.Context, arg UpdateFileParams) (File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateFile", ctx, arg)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateFile indicates an expected call of UpdateFile.

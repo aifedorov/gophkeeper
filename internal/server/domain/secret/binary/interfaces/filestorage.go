@@ -18,6 +18,10 @@ type FileStorage interface {
 	// Download retrieves a physical file for the specified directory and filename.
 	// Returns a ReadCloser that should be closed by the caller after use.
 	Download(ctx context.Context, dirname, filename string) (reader io.ReadCloser, err error)
-	// Update updates a physical file for the specified directory and filename.
-	Update(ctx context.Context, dirname, filename string, reader io.Reader) (filepath string, err error)
+
+	BeginUpdate(ctx context.Context, dirname, filename string, reader io.Reader) (tmppath, targetpath string, err error)
+
+	CommitUpdate(ctx context.Context, dirname, filename string) error
+
+	AbortUpdate(ctx context.Context, tmppath string) error
 }

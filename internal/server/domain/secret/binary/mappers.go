@@ -13,11 +13,16 @@ import (
 // MetadataToFile converts file metadata to a domain File entity.
 // It generates a new UUID for the file if ID is empty, otherwise uses the provided ID.
 // Sets the current time as the upload timestamp.
+// For new files (version 0), sets version to 1.
 // Returns an error if the metadata is invalid (e.g., empty name or zero size).
 func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) {
 	id := metadata.ID
 	if id == "" {
 		id = uuid.NewString()
+	}
+	version := metadata.Version
+	if version == 0 {
+		version = 1 // Default version for new files
 	}
 	file, err := interfaces.NewFile(
 		id,
@@ -25,6 +30,7 @@ func MetadataToFile(metadata interfaces.FileMetadata) (*interfaces.File, error) 
 		metadata.Size,
 		"",
 		metadata.Notes,
+		version,
 		time.Now(),
 	)
 	if err != nil {
@@ -60,14 +66,19 @@ func FileToRepository(crypto interfaces.CryptoService, key []byte, file *interfa
 		EncryptedPath:  encryptedPath,
 		EncryptedSize:  encryptedSize,
 		EncryptedNotes: encryptedNotes,
+		Version:        file.GetVersion(),
 		UpdatedAt:      file.GetUploadedAt(),
 	}, nil
 }
 
-// FileToDomain converts a repository file representation to a domain File entity.
+// RepositoryToDomain converts a repository file representation to a domain File entity.
 // It decrypts all encrypted fields (path, size, notes) using the provided encryption key.
 // Returns an error if decryption fails for any field or if size conversion fails.
-func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.RepositoryFile) (*interfaces.File, error) {
+func RepositoryToDomain(crypto interfaces.CryptoService, key []byte, file *interfaces.RepositoryFile) (*interfaces.File, error) {
+	if file == nil {
+		return nil, fmt.Errorf("file is nil")
+	}
+
 	notes, err := crypto.Decrypt(file.EncryptedNotes, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt notes: %w", err)
@@ -91,6 +102,7 @@ func FileToDomain(crypto interfaces.CryptoService, key []byte, file interfaces.R
 		int64(size),
 		path,
 		notes,
+		file.Version,
 		file.UpdatedAt,
 	)
 }
@@ -103,8 +115,9 @@ func FileToMetadata(file *interfaces.File) (interfaces.FileMetadata, error) {
 	}
 
 	return interfaces.FileMetadata{
-		Name:  file.GetName(),
-		Size:  file.GetSize(),
-		Notes: file.GetNotes(),
+		Name:    file.GetName(),
+		Size:    file.GetSize(),
+		Notes:   file.GetNotes(),
+		Version: file.GetVersion(),
 	}, nil
 }

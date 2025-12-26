@@ -3,7 +3,6 @@ package cache
 import (
 	"fmt"
 	"os"
-	"sync"
 )
 
 const (
@@ -12,7 +11,6 @@ const (
 )
 
 type Storage struct {
-	mu sync.RWMutex
 }
 
 func NewStorage() *Storage {
@@ -20,9 +18,6 @@ func NewStorage() *Storage {
 }
 
 func (s *Storage) SetCredentialVersion(id string, version int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -38,9 +33,6 @@ func (s *Storage) SetCredentialVersion(id string, version int64) error {
 }
 
 func (s *Storage) GetCredentialVersion(id string) (int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return 0, fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -54,9 +46,6 @@ func (s *Storage) GetCredentialVersion(id string) (int64, error) {
 }
 
 func (s *Storage) DeleteCredentialVersion(id string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -72,9 +61,6 @@ func (s *Storage) DeleteCredentialVersion(id string) error {
 }
 
 func (s *Storage) SetCardVersion(id string, version int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -90,9 +76,6 @@ func (s *Storage) SetCardVersion(id string, version int64) error {
 }
 
 func (s *Storage) GetCardVersion(id string) (int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return 0, fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -105,10 +88,22 @@ func (s *Storage) GetCardVersion(id string) (int64, error) {
 	return val, nil
 }
 
-func (s *Storage) SetFileVersion(id string, version int64) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Storage) DeleteCardVersion(id string) error {
+	secret, err := s.load()
+	if err != nil {
+		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
+	}
 
+	secret.DeleteCard(id)
+
+	err = s.save(secret)
+	if err != nil {
+		return fmt.Errorf("storage: failed to save secret to cache: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) SetFileVersion(id string, version int64) error {
 	secret, err := s.load()
 	if err != nil {
 		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -124,9 +119,6 @@ func (s *Storage) SetFileVersion(id string, version int64) error {
 }
 
 func (s *Storage) GetFileVersion(id string) (int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	secret, err := s.load()
 	if err != nil {
 		return 0, fmt.Errorf("storage: failed to load secret from cache: %w", err)
@@ -139,10 +131,22 @@ func (s *Storage) GetFileVersion(id string) (int64, error) {
 	return val, nil
 }
 
-func (s *Storage) ClearAll() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Storage) DeleteFileVersion(id string) error {
+	secret, err := s.load()
+	if err != nil {
+		return fmt.Errorf("storage: failed to load secret from cache: %w", err)
+	}
 
+	secret.DeleteFileVersion(id)
+
+	err = s.save(secret)
+	if err != nil {
+		return fmt.Errorf("storage: failed to save secret to cache: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) ClearAll() error {
 	err := os.Remove(filename)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("storage: failed to remove cache file: %w", err)

@@ -78,8 +78,10 @@ func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest
 	}
 
 	fileID := res.GetID()
+	version := res.GetVersion()
 	return stream.SendAndClose(&pb.UploadResponse{
-		FileId: &fileID,
+		FileId:  &fileID,
+		Version: &version,
 	})
 }
 
@@ -102,19 +104,21 @@ func (s *BinaryServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRes
 
 	s.logger.Debug("grpc: received list of files from repository", zap.Int("count", len(files)))
 
-	resFiles := make([]*pb.MetadataResponse, len(files))
+	resFiles := make([]*pb.ListResponse_Metadata, len(files))
 	for i, f := range files {
 		id := f.GetID()
 		name := f.GetName()
 		size := f.GetSize()
 		notes := f.GetNotes()
+		version := f.GetVersion()
 		uploadedAt := f.GetUploadedAt()
 
-		resFiles[i] = &pb.MetadataResponse{
+		resFiles[i] = &pb.ListResponse_Metadata{
 			Id:         &id,
 			Name:       &name,
 			Size:       &size,
 			Notes:      &notes,
+			Version:    &version,
 			UploadedAt: timestamppb.New(uploadedAt),
 		}
 	}
@@ -151,8 +155,10 @@ func (s *BinaryServer) Download(req *pb.DownloadRequest, stream grpc.ServerStrea
 	err = stream.Send(&pb.DownloadResponse{
 		Data: &pb.DownloadResponse_File{
 			File: &pb.DownloadResponse_Metadata{
-				Name: &meta.Name,
-				Size: &meta.Size,
+				Name:    &meta.Name,
+				Size:    &meta.Size,
+				Notes:   &meta.Notes,
+				Version: &meta.Version,
 			},
 		},
 	})
@@ -240,14 +246,28 @@ func (s *BinaryServer) Update(stream grpc.ClientStreamingServer[pb.UpdateRequest
 		Notes: metadata.GetNotes(),
 	}
 
-	_, err = s.binarySrv.Update(ctx, userID, encryptionKey, fileMetadata, streamReader)
+	res, err := s.binarySrv.Update(ctx, userID, encryptionKey, fileMetadata, streamReader)
+	if errors.Is(err, binary.ErrNameExists) {
+		s.logger.Debug("grpc: file with this name already exists")
+		return status.Error(codes.AlreadyExists, "file with this name already exists")
+	}
+	if errors.Is(err, binary.ErrNotFound) {
+		s.logger.Debug("grpc: file not found")
+		return status.Error(codes.NotFound, "file not found")
+	}
+	if errors.Is(err, binary.ErrVersionConflict) {
+		s.logger.Debug("grpc: file version conflict")
+		return status.Error(codes.Aborted, "file was modified by another client, please refetch and retry")
+	}
 	if err != nil {
-		s.logger.Error("grpc: failed to upload file", zap.Error(err))
+		s.logger.Error("grpc: failed to update file", zap.Error(err))
 		return status.Errorf(codes.Internal, "internal binary error: %s", err.Error())
 	}
 
 	success := true
+	version := res.GetVersion()
 	return stream.SendAndClose(&pb.UpdateResponse{
 		Success: &success,
+		Version: &version,
 	})
 }

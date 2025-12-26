@@ -19,7 +19,7 @@ func NewCardClient(conn *grpc.ClientConn) card.Client {
 	}
 }
 
-func (c *cardClient) Create(ctx context.Context, card card.Card) error {
+func (c *cardClient) Create(ctx context.Context, card card.Card) (id string, version int64, err error) {
 	request := pb.CreateRequest{
 		Name:           &card.Name,
 		Number:         &card.Number,
@@ -28,14 +28,17 @@ func (c *cardClient) Create(ctx context.Context, card card.Card) error {
 		Cvv:            &card.Cvv,
 		Notes:          &card.Notes,
 	}
-	_, err := c.client.Create(ctx, &request)
+	res, err := c.client.Create(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to create card: %w", err)
+		return "", 0, handleGRPCError(err)
 	}
-	return nil
+
+	// Note: Server doesn't return version yet, defaulting to 1
+	// This will be updated when server proto is updated
+	return res.GetId(), 1, nil
 }
 
-func (c *cardClient) Update(ctx context.Context, id string, card card.Card) error {
+func (c *cardClient) Update(ctx context.Context, id string, card card.Card) (version int64, err error) {
 	request := pb.UpdateRequest{
 		Id:             &id,
 		Name:           &card.Name,
@@ -45,20 +48,31 @@ func (c *cardClient) Update(ctx context.Context, id string, card card.Card) erro
 		Cvv:            &card.Cvv,
 		Notes:          &card.Notes,
 	}
-	_, err := c.client.Update(ctx, &request)
+	response, err := c.client.Update(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to update card: %w", err)
+		return 0, handleGRPCError(err)
 	}
-	return nil
+
+	// Note: Server doesn't return version yet, incrementing cached version
+	// This will be updated when server proto is updated
+	if !response.GetSuccess() {
+		return 0, fmt.Errorf("client: update operation failed")
+	}
+	// Return incremented version for now (will be replaced with server response when proto is updated)
+	return card.Version + 1, nil
 }
 
 func (c *cardClient) Delete(ctx context.Context, id string) error {
 	request := pb.DeleteRequest{
 		Id: &id,
 	}
-	_, err := c.client.Delete(ctx, &request)
+
+	resp, err := c.client.Delete(ctx, &request)
 	if err != nil {
-		return fmt.Errorf("client: failed to delete card: %w", err)
+		return handleGRPCError(err)
+	}
+	if !resp.GetSuccess() {
+		return fmt.Errorf("client: delete operation failed")
 	}
 	return nil
 }
@@ -67,7 +81,7 @@ func (c *cardClient) List(ctx context.Context) ([]card.Card, error) {
 	request := pb.ListRequest{}
 	response, err := c.client.List(ctx, &request)
 	if err != nil {
-		return []card.Card{}, fmt.Errorf("client: failed to list cards: %w", err)
+		return []card.Card{}, handleGRPCError(err)
 	}
 	cards := make([]card.Card, len(response.Cards))
 	for i, c := range response.Cards {
@@ -79,6 +93,7 @@ func (c *cardClient) List(ctx context.Context) ([]card.Card, error) {
 			CardHolderName: c.GetCardHolderName(),
 			Cvv:            c.GetCvv(),
 			Notes:          c.GetNotes(),
+			Version:        1, // Default version until server returns it
 		}
 	}
 	return cards, nil

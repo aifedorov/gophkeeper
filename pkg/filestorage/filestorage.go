@@ -2,11 +2,11 @@ package filestorage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -16,28 +16,9 @@ const (
 	dirMode  = 0700
 )
 
-//go:generate mockgen -destination=mock_storage.go -package=filestorage github.com/aifedorov/gophkeeper/pkg/filestorage Storage
-
-// Storage defines the interface for file storage operations.
-type Storage interface {
-	// Upload creates a new file in the specified directory from a reader.
-	Upload(ctx context.Context, dirname, filename string, reader io.Reader) (path string, err error)
-	// Delete removes a file from the specified directory.
-	Delete(ctx context.Context, dirname, filename string) error
-	// Download opens a file for reading from the specified directory.
-	Download(ctx context.Context, dirname, filename string) (reader io.ReadCloser, err error)
-	// Update replaces the content of an existing file with data from a reader.
-	Update(ctx context.Context, dirname, filename string, reader io.Reader) (path string, err error)
-	// ReadContent reads the entire file content and returns it as a string.
-	// If maxSize is greater than 0 and the file exceeds this size, returns an error.
-	ReadContent(ctx context.Context, path string, maxSize int64) (string, error)
-	// OpenFile opens a file for reading and returns the file handle.
-	// The caller is responsible for closing the file.
-	OpenFile(ctx context.Context, path string) (*os.File, error)
-}
-
 type FileStorage struct {
-	logger *zap.Logger
+	logger   *zap.Logger
+	tmpPaths sync.Map // map[string]string: key = dirname+filename, value = tmppath
 }
 
 func NewFileStorage(logger *zap.Logger) *FileStorage {
@@ -46,52 +27,17 @@ func NewFileStorage(logger *zap.Logger) *FileStorage {
 	}
 }
 
-func (f *FileStorage) Upload(_ context.Context, dirname, filename string, reader io.Reader) (path string, err error) {
-	f.logger.Debug("filestorage: uploading file",
-		zap.String("dirname", dirname),
-		zap.String("filename", filename),
-	)
-
-	dir := f.getDir(dirname)
-	path = filepath.Join(dir, filename)
-
-	if err := os.MkdirAll(dir, dirMode); err != nil {
-		f.logger.Error("filestorage: failed to create directory", zap.Error(err))
-		return "", fmt.Errorf("filestorage: failed to create directory: %w", err)
-	}
-
-	tmpFile, err := os.CreateTemp(dir, "upload-*.tmp")
-	defer func() {
-		if err != nil && tmpFile != nil {
-			_ = tmpFile.Close()
-			_ = os.Remove(tmpFile.Name())
-		}
-	}()
+func (f *FileStorage) Upload(ctx context.Context, dirname, filename string, reader io.Reader) (path string, err error) {
+	tmpFilename, err := f.createTmpFile(ctx, dirname, reader)
 	if err != nil {
-		f.logger.Error("filestorage: failed to create temp file", zap.Error(err))
 		return "", fmt.Errorf("filestorage: failed to create temp file: %w", err)
 	}
 
-	f.logger.Debug("filestorage: created temp file", zap.String("path", tmpFile.Name()))
-
-	_, err = io.Copy(tmpFile, reader)
-	if err != nil {
-		f.logger.Error("filestorage: failed to upload file", zap.Error(err))
-		_ = os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("filestorage: failed to upload file: %w", err)
-	}
-
-	f.logger.Debug("filestorage: file copied successfully", zap.String("path", tmpFile.Name()))
-
-	err = tmpFile.Close()
-	if err != nil {
-		f.logger.Error("filestorage: failed to close temp file", zap.Error(err))
-		return "", fmt.Errorf("filestorage: failed to close temp file: %w", err)
-	}
-
-	err = os.Rename(tmpFile.Name(), path)
+	path = f.getFullPath(dirname, filename)
+	err = f.renameTmpFile(tmpFilename, dirname, filename)
 	if err != nil {
 		f.logger.Error("filestorage: failed to rename temp file", zap.Error(err))
+		_ = f.removeTmpFile(tmpFilename)
 		return "", fmt.Errorf("filestorage: failed to rename temp file: %w", err)
 	}
 
@@ -116,54 +62,56 @@ func (f *FileStorage) Download(_ context.Context, dirname, filename string) (rea
 	)
 
 	path := f.getFullPath(dirname, filename)
-
-	// #nosec G304
-	file, err := os.Open(path)
-	if errors.Is(err, os.ErrNotExist) {
-		f.logger.Debug("filestorage: file not found", zap.String("path", path))
-		return nil, fmt.Errorf("filestorage: file not found: %w", err)
-	}
+	file, err := f.openForRead(path)
 	if err != nil {
 		f.logger.Error("filestorage: failed to open file", zap.Error(err))
 		return nil, fmt.Errorf("filestorage: failed to open file: %w", err)
 	}
+
 	return file, nil
 }
 
-func (f *FileStorage) Update(_ context.Context, dirname, filename string, reader io.Reader) (path string, err error) {
-	f.logger.Debug("filestorage: updating file",
+func (f *FileStorage) BeginUpdate(ctx context.Context, dirname, filename string, reader io.Reader) (tmppath, targetpath string, err error) {
+	f.logger.Debug("filestorage: starting file update",
 		zap.String("dirname", dirname),
 		zap.String("filename", filename),
 	)
 
-	path = f.getFullPath(dirname, filename)
-
-	// #nosec G304
-	file, err := os.Create(path)
-	defer func() {
-		if err != nil && file != nil {
-			_ = file.Close()
-		}
-	}()
+	tmppath, err = f.createTmpFile(ctx, dirname, reader)
 	if err != nil {
-		f.logger.Error("filestorage: failed to create file", zap.Error(err))
-		return "", fmt.Errorf("filestorage: failed to create file: %w", err)
+		return "", "", fmt.Errorf("filestorage: failed to create temp file: %w", err)
 	}
 
-	_, err = io.Copy(file, reader)
-	if err != nil {
-		f.logger.Error("filestorage: failed to update file", zap.Error(err))
-		return "", fmt.Errorf("filestorage: failed to update file: %w", err)
+	key := filepath.Join(dirname, filename)
+	f.tmpPaths.Store(key, tmppath)
+
+	return tmppath, f.getFullPath(dirname, filename), nil
+}
+
+// CommitUpdate satisfies the binary interface signature.
+// It retrieves the temp path from BeginUpdate and commits the update.
+func (f *FileStorage) CommitUpdate(ctx context.Context, dirname, filename string) error {
+	key := filepath.Join(dirname, filename)
+	value, ok := f.tmpPaths.LoadAndDelete(key)
+	if !ok {
+		return fmt.Errorf("filestorage: no temp file found for %s/%s (BeginUpdate must be called first)", dirname, filename)
+	}
+	tmppath, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("filestorage: invalid temp path type: %T", value)
 	}
 
-	err = file.Close()
+	err := f.renameTmpFile(tmppath, dirname, filename)
 	if err != nil {
-		f.logger.Error("filestorage: failed to close file", zap.Error(err))
-		return "", fmt.Errorf("filestorage: failed to close file: %w", err)
+		f.logger.Error("filestorage: failed to rename temp file", zap.Error(err))
+		return fmt.Errorf("filestorage: failed to rename temp file: %w", err)
 	}
 
-	f.logger.Debug("filestorage: file updated successfully", zap.String("path", path))
-	return path, nil
+	return nil
+}
+
+func (f *FileStorage) AbortUpdate(_ context.Context, tmppath string) error {
+	return f.removeTmpFile(tmppath)
 }
 
 // ReadContent reads the entire file content and returns it as a string.
@@ -174,15 +122,12 @@ func (f *FileStorage) ReadContent(ctx context.Context, path string, maxSize int6
 		zap.Int64("maxSize", maxSize),
 	)
 
-	// #nosec G304
-	file, err := os.Open(path)
+	file, err := f.OpenFile(ctx, path)
 	if err != nil {
 		f.logger.Error("filestorage: failed to open file", zap.Error(err))
 		return "", fmt.Errorf("filestorage: failed to open file: %w", err)
 	}
-	defer func() {
-		_ = file.Close()
-	}()
+	defer func() { _ = file.Close() }()
 
 	if maxSize > 0 {
 		fileInfo, err := file.Stat()
@@ -217,26 +162,5 @@ func (f *FileStorage) OpenFile(ctx context.Context, path string) (*os.File, erro
 	f.logger.Debug("filestorage: opening file",
 		zap.String("path", path),
 	)
-
-	// #nosec G304
-	file, err := os.Open(path)
-	if errors.Is(err, os.ErrNotExist) {
-		f.logger.Debug("filestorage: file not found", zap.String("path", path))
-		return nil, fmt.Errorf("filestorage: file not found: %w", err)
-	}
-	if err != nil {
-		f.logger.Error("filestorage: failed to open file", zap.Error(err))
-		return nil, fmt.Errorf("filestorage: failed to open file: %w", err)
-	}
-
-	f.logger.Debug("filestorage: file opened successfully", zap.String("path", path))
-	return file, nil
-}
-
-func (f *FileStorage) getDir(dirname string) string {
-	return filepath.Join(rootPath, dirname)
-}
-
-func (f *FileStorage) getFullPath(dirname, filename string) string {
-	return filepath.Join(rootPath, dirname, filename)
+	return f.openForRead(path)
 }

@@ -290,7 +290,7 @@ func TestFileToDomain(t *testing.T) {
 			tt.setupMock(mockCrypto)
 
 			key := []byte("test-key-32-bytes-long-for-aes!!")
-			result, err := FileToDomain(mockCrypto, key, tt.repoFile)
+			result, err := RepositoryToDomain(mockCrypto, key, &tt.repoFile)
 
 			if tt.wantErr {
 				require.Error(t, err)

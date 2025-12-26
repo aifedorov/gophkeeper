@@ -99,6 +99,13 @@ func (s *testSetup) expectGetError(err error) {
 }
 
 func (s *testSetup) expectUpdateSuccess(existingFile File, newFile interfaces.RepositoryFile) {
+	updatedFile := existingFile
+	updatedFile.Name = newFile.Name
+	updatedFile.EncryptedPath = newFile.EncryptedPath
+	updatedFile.EncryptedSize = newFile.EncryptedSize
+	updatedFile.EncryptedNotes = newFile.EncryptedNotes
+	updatedFile.Version = existingFile.Version + 1
+
 	s.mockPool.EXPECT().Begin(s.ctx).Return(s.mockTx, nil).Times(1)
 	s.mockQuerier.EXPECT().WithTx(s.mockTx).Return(s.mockTxQuerier).Times(1)
 	s.mockTxQuerier.EXPECT().
@@ -114,7 +121,7 @@ func (s *testSetup) expectUpdateSuccess(existingFile File, newFile interfaces.Re
 			EncryptedSize:  newFile.EncryptedSize,
 			EncryptedNotes: newFile.EncryptedNotes,
 		}).
-		Return(nil).
+		Return(updatedFile, nil).
 		Times(1)
 	s.mockTx.EXPECT().Commit(s.ctx).Return(nil).Times(1)
 	s.mockTx.EXPECT().Rollback(s.ctx).Return(nil).Times(1)
@@ -143,7 +150,7 @@ func (s *testSetup) expectUpdateFileError(existingFile File, err error) {
 		Times(1)
 	s.mockTxQuerier.EXPECT().
 		UpdateFile(s.ctx, gomock.Any()).
-		Return(err).
+		Return(File{}, err).
 		Times(1)
 	s.mockTx.EXPECT().Rollback(s.ctx).Return(nil).Times(1)
 }
@@ -157,7 +164,7 @@ func (s *testSetup) expectUpdateCommitError(existingFile File) {
 		Times(1)
 	s.mockTxQuerier.EXPECT().
 		UpdateFile(s.ctx, gomock.Any()).
-		Return(nil).
+		Return(existingFile, nil).
 		Times(1)
 	s.mockTx.EXPECT().Commit(s.ctx).Return(errors.New("commit error")).Times(1)
 	s.mockTx.EXPECT().Rollback(s.ctx).Return(nil).Times(1)

@@ -73,8 +73,8 @@ type testSetup struct {
 func newTestSetup(t *testing.T) *testSetup {
 	ctrl := gomock.NewController(t)
 
-	testFile, _ := NewFile(testFileID, testFileName, testFileSize, testNotes, time.Now())
-	testFileMeta, _ := NewFileMeta(testFileName, testFileSize, testNotes)
+	testFile, _ := NewFile(testFileID, testFileName, testFileSize, testNotes, 1, time.Now())
+	testFileMeta, _ := NewFileMeta(testFileName, testFileSize, testNotes, 1)
 	testSession := shared.NewSession(testToken, testKey, testUserID, testLogin)
 
 	return &testSetup{
@@ -90,8 +90,14 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 }
 
+type mockCacheStorage struct{}
+
+func (m *mockCacheStorage) SetFileVersion(id string, version int64) error { return nil }
+func (m *mockCacheStorage) GetFileVersion(id string) (int64, error)       { return 1, nil }
+func (m *mockCacheStorage) DeleteFileVersion(id string) error             { return nil }
+
 func (s *testSetup) initService() {
-	s.service = NewService(s.mockClient, s.mockStorage, s.mockSessionProvider)
+	s.service = NewService(s.mockClient, s.mockStorage, &mockCacheStorage{}, s.mockSessionProvider)
 }
 
 func (s *testSetup) cleanup() {
@@ -106,7 +112,7 @@ func (s *testSetup) expectUploadSuccess(filePath string, tmpFile string) {
 		Times(1)
 	s.mockClient.EXPECT().
 		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(nil).
+		Return("test-id", int64(1), nil).
 		Times(1)
 }
 
@@ -126,7 +132,7 @@ func (s *testSetup) expectUploadClientError(filePath string, tmpFile string, err
 		Times(1)
 	s.mockClient.EXPECT().
 		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(err).
+		Return("", int64(0), err).
 		Times(1)
 }
 

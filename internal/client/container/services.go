@@ -45,10 +45,10 @@ func NewServices(cfg *config.Config) (*Services, error) {
 	credService := credential.NewService(credClient, cacheStore)
 
 	binaryClient := client.NewBinaryClient(conn.Conn())
-	binaryService := binary.NewService(binaryClient, fileStore, tokenProvider)
+	binaryService := binary.NewService(binaryClient, fileStore, cacheStore, tokenProvider)
 
 	cardClient := client.NewCardClient(conn.Conn())
-	cardService := card.NewService(cardClient)
+	cardService := card.NewService(cardClient, cacheStore)
 
 	textService := text.NewService(binaryService, fileStore)
 

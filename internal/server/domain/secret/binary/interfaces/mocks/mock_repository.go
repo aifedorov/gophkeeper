@@ -42,11 +42,12 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockRepository) Create(ctx context.Context, userID string, file interfaces.RepositoryFile) error {
+func (m *MockRepository) Create(ctx context.Context, userID string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, userID, file)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*interfaces.RepositoryFile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
@@ -70,10 +71,10 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, userID, id any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockRepository) Get(ctx context.Context, userID, id string) (interfaces.RepositoryFile, error) {
+func (m *MockRepository) Get(ctx context.Context, userID, id string) (*interfaces.RepositoryFile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, userID, id)
-	ret0, _ := ret[0].(interfaces.RepositoryFile)
+	ret0, _ := ret[0].(*interfaces.RepositoryFile)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -100,11 +101,12 @@ func (mr *MockRepositoryMockRecorder) List(ctx, userID any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockRepository) Update(ctx context.Context, userID, id string, file interfaces.RepositoryFile) error {
+func (m *MockRepository) Update(ctx context.Context, userID, id string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, userID, id, file)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*interfaces.RepositoryFile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.

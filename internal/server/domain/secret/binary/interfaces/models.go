@@ -12,13 +12,15 @@ type RepositoryFile struct {
 	EncryptedPath  []byte    // Encrypted file storage path
 	EncryptedSize  []byte    // Encrypted file size (as string)
 	EncryptedNotes []byte    // Encrypted file notes/metadata
+	Version        int64     // Version number
 	UpdatedAt      time.Time // Timestamp when the file was updated
 }
 
 // FileMetadata represents file metadata used for upload and download operations.
 type FileMetadata struct {
-	ID    string // Unique file identifier
-	Name  string // File name
-	Size  int64  // File size in bytes
-	Notes string // Optional notes/metadata
+	ID      string // Unique file identifier
+	Name    string // File name
+	Size    int64  // File size in bytes
+	Notes   string // Optional notes/metadata
+	Version int64
 }

@@ -47,7 +47,7 @@ func (c *CreateCommand) GetCommand() *cobra.Command {
 
 func (c *CreateCommand) run(cmd *cobra.Command, cardInput inputCard) error {
 	id := uuid.New().String()
-	newCard, err := card.NewCard(id, cardInput.name, cardInput.number, cardInput.expiredDate, cardInput.cardHolderName, cardInput.cvv, cardInput.notes)
+	newCard, err := card.NewCard(id, cardInput.name, cardInput.number, cardInput.expiredDate, cardInput.cardHolderName, cardInput.cvv, cardInput.notes, 0)
 	if err != nil || newCard == nil {
 		return fmt.Errorf("cli: failed to create card: %w", err)
 	}

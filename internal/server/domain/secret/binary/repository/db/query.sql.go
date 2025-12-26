@@ -12,9 +12,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const createFile = `-- name: CreateFile :exec
+const createFile = `-- name: CreateFile :one
 INSERT INTO files (id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at, version
 `
 
 type CreateFileParams struct {
@@ -27,8 +28,8 @@ type CreateFileParams struct {
 	UpdatedAt      time.Time
 }
 
-func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) error {
-	_, err := q.db.Exec(ctx, createFile,
+func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, error) {
+	row := q.db.QueryRow(ctx, createFile,
 		arg.ID,
 		arg.UserID,
 		arg.Name,
@@ -37,7 +38,20 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) error {
 		arg.EncryptedNotes,
 		arg.UpdatedAt,
 	)
-	return err
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.EncryptedPath,
+		&i.EncryptedSize,
+		&i.EncryptedNotes,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.Version,
+	)
+	return i, err
 }
 
 const deleteFile = `-- name: DeleteFile :execrows
@@ -45,6 +59,7 @@ DELETE
 FROM files
 WHERE id = $1
   AND user_id = $2
+  AND deleted_at IS NULL
 `
 
 type DeleteFileParams struct {
@@ -61,10 +76,11 @@ func (q *Queries) DeleteFile(ctx context.Context, arg DeleteFileParams) (int64, 
 }
 
 const getFile = `-- name: GetFile :one
-SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at, version
 FROM files
 WHERE id = $1 AND
-      user_id = $2
+    user_id = $2 AND
+    deleted_at IS NULL
 `
 
 type GetFileParams struct {
@@ -85,12 +101,13 @@ func (q *Queries) GetFile(ctx context.Context, arg GetFileParams) (File, error) 
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.Version,
 	)
 	return i, err
 }
 
 const getFileForUpdate = `-- name: GetFileForUpdate :one
-SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at, version
 FROM files
 WHERE id = $1
   AND user_id = $2
@@ -115,14 +132,15 @@ func (q *Queries) GetFileForUpdate(ctx context.Context, arg GetFileForUpdatePara
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.Version,
 	)
 	return i, err
 }
 
 const listFiles = `-- name: ListFiles :many
-SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at, version
 FROM files
-WHERE user_id = $1
+WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY updated_at DESC
 `
 
@@ -145,6 +163,7 @@ func (q *Queries) ListFiles(ctx context.Context, userID uuid.UUID) ([]File, erro
 			&i.DeletedAt,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -156,17 +175,19 @@ func (q *Queries) ListFiles(ctx context.Context, userID uuid.UUID) ([]File, erro
 	return items, nil
 }
 
-const updateFile = `-- name: UpdateFile :exec
+const updateFile = `-- name: UpdateFile :one
 UPDATE files
 SET
     name = $3,
     encrypted_path = $4,
     encrypted_size = $5,
     encrypted_notes = $6,
+    version = version + 1,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND
-      user_id = $2 AND
-      deleted_at IS NULL
+    user_id = $2 AND
+    deleted_at IS NULL
+RETURNING id, user_id, name, encrypted_path, encrypted_size, encrypted_notes, deleted_at, updated_at, created_at, version
 `
 
 type UpdateFileParams struct {
@@ -178,8 +199,8 @@ type UpdateFileParams struct {
 	EncryptedNotes []byte
 }
 
-func (q *Queries) UpdateFile(ctx context.Context, arg UpdateFileParams) error {
-	_, err := q.db.Exec(ctx, updateFile,
+func (q *Queries) UpdateFile(ctx context.Context, arg UpdateFileParams) (File, error) {
+	row := q.db.QueryRow(ctx, updateFile,
 		arg.ID,
 		arg.UserID,
 		arg.Name,
@@ -187,5 +208,18 @@ func (q *Queries) UpdateFile(ctx context.Context, arg UpdateFileParams) error {
 		arg.EncryptedSize,
 		arg.EncryptedNotes,
 	)
-	return err
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.EncryptedPath,
+		&i.EncryptedSize,
+		&i.EncryptedNotes,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.Version,
+	)
+	return i, err
 }

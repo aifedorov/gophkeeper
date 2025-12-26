@@ -23,10 +23,10 @@ func NewBinaryClient(conn *grpc.ClientConn) binary.Client {
 	}
 }
 
-func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileInfo, reader io.Reader) error {
+func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileInfo, reader io.Reader) (id string, version int64, err error) {
 	clientStream, err := c.client.Upload(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create upload stream: %w", err)
+		return "", 0, fmt.Errorf("failed to create upload stream: %w", err)
 	}
 
 	name := fileInfo.Name()
@@ -43,17 +43,18 @@ func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileInfo, re
 	}
 	err = clientStream.Send(&req)
 	if err != nil {
-		return fmt.Errorf("failed to send file metadata: %w", err)
+		return "", 0, fmt.Errorf("failed to send file metadata: %w", err)
 	}
 
 	buffer := make([]byte, bufferSize)
+	var uploaded int64
 	for {
 		n, err := reader.Read(buffer)
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("failed to read file: %w", err)
+			return "", 0, fmt.Errorf("failed to read file: %w", err)
 		}
 
 		err = clientStream.Send(
@@ -63,31 +64,52 @@ func (c *binaryClient) Upload(ctx context.Context, fileInfo *binary.FileInfo, re
 				},
 			})
 		if err != nil {
-			return fmt.Errorf("failed to send chunk: %w", err)
+			if errors.Is(err, io.EOF) {
+				_, recvErr := clientStream.CloseAndRecv()
+				if recvErr != nil {
+					return "", 0, handleGRPCError(recvErr)
+				}
+			}
+			return "", 0, fmt.Errorf("failed to send chunk: %w", err)
+		}
+
+		uploaded += int64(n)
+		if size > 0 {
+			fmt.Printf("\rUploaded: %d / %d bytes (%.1f%%)", uploaded, size, float64(uploaded)/float64(size)*100)
 		}
 	}
-
-	_, err = clientStream.CloseAndRecv()
-	if err != nil {
-		return fmt.Errorf("failed to complete upload: %w", err)
+	if size > 0 {
+		fmt.Println()
 	}
 
-	return nil
+	resp, err := clientStream.CloseAndRecv()
+	if err != nil {
+		return "", 0, handleGRPCError(err)
+	}
+
+	return resp.GetFileId(), resp.GetVersion(), nil
 }
 
 func (c *binaryClient) List(ctx context.Context) ([]binary.File, error) {
 	response, err := c.client.List(ctx, &pb.ListRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list files: %w", err)
+		return nil, handleGRPCError(err)
 	}
 
 	files := make([]binary.File, len(response.GetFiles()))
 	for i, file := range response.GetFiles() {
-		domainFile, err := toDomain(file)
-		if err != nil || domainFile == nil {
+		dFile, err := binary.NewFile(
+			file.GetId(),
+			file.GetName(),
+			file.GetSize(),
+			file.GetNotes(),
+			file.GetVersion(),
+			file.GetUploadedAt().AsTime(),
+		)
+		if err != nil || dFile == nil {
 			return nil, fmt.Errorf("failed to convert file metadata: %w", err)
 		}
-		files[i] = *domainFile
+		files[i] = *dFile
 	}
 	return files, nil
 }
@@ -98,54 +120,63 @@ func (c *binaryClient) Download(ctx context.Context, id string) (io.ReadCloser, 
 	}
 	stream, err := c.client.Download(ctx, &req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to download file: %w", err)
+		return nil, nil, handleGRPCError(err)
 	}
 
 	firstMsg, err := stream.Recv()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to receive file metadata: %w", err)
+		return nil, nil, handleGRPCError(err)
 	}
 	meta := firstMsg.GetFile()
-	fileMeta, err := binary.NewFileMeta(meta.GetName(), meta.GetSize(), meta.GetNotes())
+	fileMeta, err := binary.NewFileMeta(
+		meta.GetName(),
+		meta.GetSize(),
+		meta.GetNotes(),
+		meta.GetVersion(),
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create file metadata: %w", err)
 	}
+
 	return newGRPCStreamReader(stream), fileMeta, nil
 }
 
-func (c *binaryClient) Update(ctx context.Context, fileInfo *binary.UpdateFileInfo, reader io.Reader) error {
+func (c *binaryClient) Update(ctx context.Context, fileInfo *binary.UpdateFileInfo, reader io.Reader) (version int64, err error) {
 	clientStream, err := c.client.Update(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create update stream: %w", err)
+		return 0, fmt.Errorf("failed to create update stream: %w", err)
 	}
 
 	id := fileInfo.ID()
 	name := fileInfo.Name()
 	size := fileInfo.Size()
 	notes := fileInfo.Notes()
+	ver := fileInfo.Version()
 	req := pb.UpdateRequest{
 		Data: &pb.UpdateRequest_File{
 			File: &pb.UpdateRequest_Metadata{
-				FileId: &id,
-				Name:   &name,
-				Size:   &size,
-				Notes:  &notes,
+				FileId:  &id,
+				Name:    &name,
+				Size:    &size,
+				Notes:   &notes,
+				Version: &ver,
 			},
 		},
 	}
 	err = clientStream.Send(&req)
 	if err != nil {
-		return fmt.Errorf("failed to send file metadata: %w", err)
+		return 0, fmt.Errorf("failed to send file metadata: %w", err)
 	}
 
 	buffer := make([]byte, bufferSize)
+	var uploaded int64
 	for {
 		n, err := reader.Read(buffer)
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("failed to read file: %w", err)
+			return 0, fmt.Errorf("failed to read file: %w", err)
 		}
 
 		err = clientStream.Send(
@@ -155,16 +186,30 @@ func (c *binaryClient) Update(ctx context.Context, fileInfo *binary.UpdateFileIn
 				},
 			})
 		if err != nil {
-			return fmt.Errorf("failed to send chunk: %w", err)
+			if errors.Is(err, io.EOF) {
+				_, recvErr := clientStream.CloseAndRecv()
+				if recvErr != nil {
+					return 0, handleGRPCError(recvErr)
+				}
+			}
+			return 0, fmt.Errorf("failed to send chunk: %w", err)
+		}
+
+		uploaded += int64(n)
+		if size > 0 {
+			fmt.Printf("\rUploaded: %d / %d bytes (%.1f%%)", uploaded, size, float64(uploaded)/float64(size)*100)
 		}
 	}
-
-	_, err = clientStream.CloseAndRecv()
-	if err != nil {
-		return fmt.Errorf("failed to complete update: %w", err)
+	if size > 0 {
+		fmt.Println()
 	}
 
-	return nil
+	resp, err := clientStream.CloseAndRecv()
+	if err != nil {
+		return 0, handleGRPCError(err)
+	}
+
+	return resp.GetVersion(), nil
 }
 
 func (c *binaryClient) Delete(ctx context.Context, id string) error {
@@ -173,7 +218,7 @@ func (c *binaryClient) Delete(ctx context.Context, id string) error {
 	}
 	_, err := c.client.Delete(ctx, &req)
 	if err != nil {
-		return fmt.Errorf("failed to delete file: %w", err)
+		return handleGRPCError(err)
 	}
 	return nil
 }

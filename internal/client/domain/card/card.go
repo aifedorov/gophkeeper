@@ -11,11 +11,12 @@ type Card struct {
 	CardHolderName string // Cardholder name
 	Cvv            string // CVV code
 	Notes          string // Optional notes/metadata
+	Version        int64  // Version number
 }
 
 // NewCard creates a new Card entity with the provided data.
 // Returns an error if validation fails (currently always returns nil as validation is done in Validate method).
-func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string) (*Card, error) {
+func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string, version int64) (*Card, error) {
 	return &Card{
 		ID:             id,
 		Name:           name,
@@ -24,6 +25,7 @@ func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string) (
 		CardHolderName: cardHolderName,
 		Cvv:            cvv,
 		Notes:          notes,
+		Version:        version,
 	}, nil
 }
 

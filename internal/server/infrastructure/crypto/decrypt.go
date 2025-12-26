@@ -11,6 +11,9 @@ type decryptReader struct {
 	gcm    cipher.AEAD
 	nonce  []byte
 	first  bool
+	outBuf []byte
+	outPos int
+	eof    bool
 }
 
 func NewDecryptReader(reader io.Reader, key []byte) (io.Reader, error) {
@@ -40,35 +43,58 @@ func (r *decryptReader) Read(p []byte) (n int, err error) {
 		return r.Read(p)
 	}
 
-	maxPlaintextSize := len(p) - r.gcm.Overhead()
-	if maxPlaintextSize < 0 {
-		return 0, io.ErrShortBuffer
-	}
-	if maxPlaintextSize > chunkSize {
-		maxPlaintextSize = chunkSize
+	if r.outPos < len(r.outBuf) {
+		n = copy(p, r.outBuf[r.outPos:])
+		r.outPos += n
+		if r.outPos >= len(r.outBuf) {
+			r.outBuf = nil
+			r.outPos = 0
+		}
+		if r.eof && r.outPos >= len(r.outBuf) {
+			return n, io.EOF
+		}
+		return n, nil
 	}
 
-	ciphertextSize := maxPlaintextSize + r.gcm.Overhead()
-	ciphertext := make([]byte, ciphertextSize)
-
-	n, err = r.source.Read(ciphertext)
-	if err == io.EOF && n == 0 {
+	if r.eof {
 		return 0, io.EOF
 	}
-	if err != nil && err != io.EOF {
-		return 0, fmt.Errorf("failed to read from source: %w", err)
+
+	ciphertextSize := chunkSize + r.gcm.Overhead()
+	ciphertext := make([]byte, ciphertextSize)
+
+	totalRead := 0
+	for totalRead < ciphertextSize {
+		readN, readErr := r.source.Read(ciphertext[totalRead:])
+		totalRead += readN
+		if readErr == io.EOF {
+			r.eof = true
+			break
+		}
+		if readErr != nil {
+			return 0, fmt.Errorf("failed to read from source: %w", readErr)
+		}
 	}
 
-	plaintext, decErr := r.gcm.Open(nil, r.nonce, ciphertext[:n], nil)
+	if totalRead == 0 {
+		return 0, io.EOF
+	}
+
+	plaintext, decErr := r.gcm.Open(nil, r.nonce, ciphertext[:totalRead], nil)
 	if decErr != nil {
 		return 0, fmt.Errorf("failed to decrypt: %w", decErr)
 	}
 
 	incrementNonce(r.nonce)
 
-	copied := copy(p, plaintext)
-	if err == io.EOF {
-		return copied, io.EOF
+	n = copy(p, plaintext)
+	if n < len(plaintext) {
+		r.outBuf = plaintext
+		r.outPos = n
 	}
-	return copied, nil
+
+	if r.eof && n >= len(plaintext) {
+		return n, io.EOF
+	}
+	return n, nil
 }

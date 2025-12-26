@@ -48,7 +48,24 @@ func TestService_Upload(t *testing.T) {
 
 				s.mockRepo.EXPECT().
 					Create(gomock.Any(), s.userID, gomock.Any()).
-					Return(nil).
+					DoAndReturn(func(ctx context.Context, userID string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
+						file.Version = 1
+						return &file, nil
+					}).
+					Times(1)
+
+				// Decryption for RepositoryToDomain after Create
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedNotes, s.encryptionKey).
+					Return(testNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedSize, s.encryptionKey).
+					Return("1024", nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedPath, s.encryptionKey).
+					Return(testFilePath, nil).
 					Times(1)
 			},
 			wantErr: false,
@@ -84,6 +101,11 @@ func TestService_Upload(t *testing.T) {
 					Encrypt(testFilePath, s.encryptionKey).
 					Return(nil, errors.New("encryption error")).
 					Times(1)
+
+				s.mockFileStore.EXPECT().
+					Delete(gomock.Any(), s.userID, gomock.Any()).
+					Return(nil).
+					Times(1)
 			},
 			wantErr: true,
 			errMsg:  "failed to convert file",
@@ -111,7 +133,7 @@ func TestService_Upload(t *testing.T) {
 
 				s.mockRepo.EXPECT().
 					Create(gomock.Any(), s.userID, gomock.Any()).
-					Return(errors.New("db error")).
+					Return(nil, errors.New("db error")).
 					Times(1)
 
 				s.mockFileStore.EXPECT().
@@ -346,7 +368,7 @@ func TestService_Download(t *testing.T) {
 
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(repoFile, nil).
+					Return(&repoFile, nil).
 					Times(1)
 
 				s.mockCrypto.EXPECT().
@@ -383,7 +405,7 @@ func TestService_Download(t *testing.T) {
 			setupMock: func(s *testSetup) {
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(interfaces.RepositoryFile{}, ErrNotFound).
+					Return(nil, ErrNotFound).
 					Times(1)
 			},
 			wantErr:   true,
@@ -394,7 +416,7 @@ func TestService_Download(t *testing.T) {
 			setupMock: func(s *testSetup) {
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(interfaces.RepositoryFile{}, errors.New("db error")).
+					Return(nil, errors.New("db error")).
 					Times(1)
 			},
 			wantErr: true,
@@ -407,7 +429,7 @@ func TestService_Download(t *testing.T) {
 
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(repoFile, nil).
+					Return(&repoFile, nil).
 					Times(1)
 
 				s.mockCrypto.EXPECT().
@@ -425,7 +447,7 @@ func TestService_Download(t *testing.T) {
 
 				s.mockRepo.EXPECT().
 					Get(gomock.Any(), s.userID, s.fileID).
-					Return(repoFile, nil).
+					Return(&repoFile, nil).
 					Times(1)
 
 				s.mockCrypto.EXPECT().

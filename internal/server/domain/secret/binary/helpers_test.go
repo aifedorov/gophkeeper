@@ -91,7 +91,7 @@ func (s *testSetup) cleanup() {
 }
 
 func newTestFile(id, name string, size int64, path, notes string) *interfaces.File {
-	file, _ := interfaces.NewFile(id, name, size, path, notes, time.Now())
+	file, _ := interfaces.NewFile(id, name, size, path, notes, 1, time.Now())
 	return file
 }
 
@@ -102,6 +102,7 @@ func newTestRepositoryFile(id, name string, encryptedPath, encryptedSize, encryp
 		EncryptedPath:  encryptedPath,
 		EncryptedSize:  encryptedSize,
 		EncryptedNotes: encryptedNotes,
+		Version:        1,
 		UpdatedAt:      time.Now(),
 	}
 }

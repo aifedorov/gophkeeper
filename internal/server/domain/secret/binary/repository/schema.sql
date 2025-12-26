@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS files
     encrypted_notes BYTEA,
     deleted_at        TIMESTAMP,
     updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version    BIGINT    NOT NULL DEFAULT 1
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS files_unique_name
