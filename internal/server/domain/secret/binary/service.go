@@ -322,11 +322,15 @@ func (s *service) Update(ctx context.Context, userID, encryptionKey string, meta
 // If physical file deletion fails, it logs an error but doesn't return an error
 // since the database record is already deleted.
 // Returns ErrNotFound if the file doesn't exist or doesn't belong to the user.
+// The lock for this file is removed from memory after successful deletion.
 func (s *service) Delete(ctx context.Context, userID, id string) error {
 	s.logger.Debug("binary: deleting file", zap.String("user_id", userID), zap.String("id", id))
 
 	mu := s.acquireLock(id)
-	defer s.releaseLock(mu)
+	defer func() {
+		s.releaseLock(mu)
+		s.removeLock(id)
+	}()
 
 	err := s.repo.Delete(ctx, userID, id)
 	if errors.Is(err, ErrNotFound) {

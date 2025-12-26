@@ -61,3 +61,10 @@ func (s *service) releaseLock(mu *sync.RWMutex) {
 func (s *service) releaseReadLock(mu *sync.RWMutex) {
 	mu.RUnlock()
 }
+
+// removeLock removes a lock from the map after a file is deleted.
+// This prevents memory leaks by cleaning up locks for deleted files.
+// Safe to call even if the lock doesn't exist.
+func (s *service) removeLock(fileID string) {
+	s.locks.Delete(fileID)
+}
