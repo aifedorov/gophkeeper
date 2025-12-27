@@ -33,9 +33,7 @@ func (c *cardClient) Create(ctx context.Context, card card.Card) (id string, ver
 		return "", 0, handleGRPCError(err)
 	}
 
-	// Note: Server doesn't return version yet, defaulting to 1
-	// This will be updated when server proto is updated
-	return res.GetId(), 1, nil
+	return res.GetId(), res.GetVersion(), nil
 }
 
 func (c *cardClient) Update(ctx context.Context, id string, card card.Card) (version int64, err error) {
@@ -47,19 +45,14 @@ func (c *cardClient) Update(ctx context.Context, id string, card card.Card) (ver
 		CardHolderName: &card.CardHolderName,
 		Cvv:            &card.Cvv,
 		Notes:          &card.Notes,
+		Version:        &card.Version,
 	}
 	response, err := c.client.Update(ctx, &request)
 	if err != nil {
 		return 0, handleGRPCError(err)
 	}
 
-	// Note: Server doesn't return version yet, incrementing cached version
-	// This will be updated when server proto is updated
-	if !response.GetSuccess() {
-		return 0, fmt.Errorf("client: update operation failed")
-	}
-	// Return incremented version for now (will be replaced with server response when proto is updated)
-	return card.Version + 1, nil
+	return response.GetVersion(), nil
 }
 
 func (c *cardClient) Delete(ctx context.Context, id string) error {
@@ -93,7 +86,7 @@ func (c *cardClient) List(ctx context.Context) ([]card.Card, error) {
 			CardHolderName: c.GetCardHolderName(),
 			Cvv:            c.GetCvv(),
 			Notes:          c.GetNotes(),
-			Version:        1, // Default version until server returns it
+			Version:        c.GetVersion(),
 		}
 	}
 	return cards, nil

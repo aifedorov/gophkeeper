@@ -48,6 +48,7 @@ func (s *CardServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cre
 		req.GetCardHolderName(),
 		req.GetCvv(),
 		req.GetNotes(),
+		1,
 	)
 	if err != nil || newCard == nil {
 		s.logger.Error("grpc: failed to create card entity", zap.Error(err))
@@ -65,10 +66,12 @@ func (s *CardServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cre
 	}
 
 	id := res.GetID()
-	s.logger.Debug("grpc: card created successfully", zap.String("id", id))
+	version := res.GetVersion()
+	s.logger.Debug("grpc: card created successfully", zap.String("id", id), zap.Int64("version", version))
 
 	resp := pb.CreateResponse{
-		Id: &id,
+		Id:      &id,
+		Version: &version,
 	}
 
 	return &resp, nil
@@ -98,6 +101,7 @@ func (s *CardServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRespo
 		cardHolderName := c.GetCardHolderName()
 		cvv := c.GetCvv()
 		notes := c.GetNotes()
+		version := c.GetVersion()
 
 		cardList[i] = &pb.ListResponse_ListItem{
 			Id:             &id,
@@ -107,6 +111,7 @@ func (s *CardServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRespo
 			CardHolderName: &cardHolderName,
 			Cvv:            &cvv,
 			Notes:          &notes,
+			Version:        &version,
 		}
 	}
 
@@ -132,6 +137,7 @@ func (s *CardServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.Upd
 		req.GetCardHolderName(),
 		req.GetCvv(),
 		req.GetNotes(),
+		req.GetVersion(),
 	)
 	if err != nil || updatedCard == nil {
 		s.logger.Error("grpc: failed to create card entity", zap.Error(err))
@@ -147,17 +153,23 @@ func (s *CardServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.Upd
 		s.logger.Debug("grpc: card not found for update", zap.String("id", updatedCard.GetID()))
 		return nil, status.Error(codes.NotFound, "card not found")
 	}
+	if errors.Is(err, card.ErrVersionConflict) {
+		s.logger.Debug("grpc: version conflict", zap.String("id", updatedCard.GetID()))
+		return nil, status.Error(codes.Aborted, "version conflict")
+	}
 	if err != nil {
 		s.logger.Error("grpc: failed to update card", zap.Error(err))
 		return nil, status.Error(codes.Internal, "internal card error")
 	}
 
 	id := res.GetID()
-	s.logger.Debug("grpc: card updated successfully", zap.String("id", id))
+	version := res.GetVersion()
+	s.logger.Debug("grpc: card updated successfully", zap.String("id", id), zap.Int64("version", version))
 
 	success := true
 	resp := pb.UpdateResponse{
 		Success: &success,
+		Version: &version,
 	}
 	return &resp, nil
 }

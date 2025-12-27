@@ -1,5 +1,7 @@
 package card
 
+import "fmt"
+
 // Card represents a payment card entity in the card domain.
 // It contains card information (number, expiration date, CVV, etc.) along with metadata,
 // all of which are encrypted before storage.
@@ -12,12 +14,13 @@ type Card struct {
 	cardHolderName string
 	cvv            string
 	notes          string
+	version        int64
 }
 
 // NewCard creates a new Card entity with the provided data.
 // It validates that all required fields (id, name, number, expiredDate, cardHolderName, cvv) are not empty.
 // Returns an error if validation fails.
-func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string) (*Card, error) {
+func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string, version int64) (*Card, error) {
 	if id == "" {
 		return nil, ErrIDRequired
 	}
@@ -36,6 +39,9 @@ func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string) (
 	if cvv == "" {
 		return nil, ErrCvvRequired
 	}
+	if version < 1 {
+		return nil, fmt.Errorf("invalid card version: %d", version)
+	}
 
 	return &Card{
 		id:             id,
@@ -45,6 +51,7 @@ func NewCard(id, name, number, expiredDate, cardHolderName, cvv, notes string) (
 		cardHolderName: cardHolderName,
 		cvv:            cvv,
 		notes:          notes,
+		version:        version,
 	}, nil
 }
 
@@ -86,4 +93,9 @@ func (c *Card) GetCvv() string {
 // GetNotes returns the decrypted metadata/notes for this card.
 func (c *Card) GetNotes() string {
 	return c.notes
+}
+
+// GetVersion returns the card's version number for optimistic locking.
+func (c *Card) GetVersion() int64 {
+	return c.version
 }

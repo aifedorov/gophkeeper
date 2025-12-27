@@ -15,6 +15,7 @@ type RepositoryCard struct {
 	EncryptedCardHolderName []byte
 	EncryptedCvv            []byte
 	EncryptedNotes          []byte
+	Version                 int64
 }
 
 type Repository interface {

@@ -1,3 +1,4 @@
+// Package repository provides database operations for card management.
 package repository
 
 import (
@@ -7,17 +8,23 @@ import (
 	cardDomain "github.com/aifedorov/gophkeeper/internal/server/domain/secret/card"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/card/interfaces"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
+// repository implements the interfaces.Repository for card persistence.
 type repository struct {
+	pool    TxBeginner
 	queries Querier
 	logger  *zap.Logger
 }
 
-func NewRepository(db DBTX, logger *zap.Logger) interfaces.Repository {
+// NewRepository creates a new card repository with database connection and logger.
+// The pool is used for transaction management while db is used for query execution.
+func NewRepository(pool *pgxpool.Pool, db DBTX, logger *zap.Logger) interfaces.Repository {
 	return &repository{
-		queries: New(db),
+		pool:    pool,
+		queries: newQuerier(db),
 		logger:  logger,
 	}
 }
@@ -105,9 +112,43 @@ func (r *repository) UpdateCard(ctx context.Context, userID string, card interfa
 		return nil, fmt.Errorf("repo: failed to parse card id: %w", err)
 	}
 
-	dbCard, err := r.queries.UpdateCard(ctx, UpdateCardParams{
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		r.logger.Error("repo: failed to begin transaction", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to begin transaction: %w", err)
+	}
+	defer func() {
+		r.logger.Debug("repo: rollback transaction for update")
+		_ = tx.Rollback(ctx)
+	}()
+
+	txQuery := r.queries.WithTx(tx)
+	cardRepo, err := txQuery.GetCardForUpdate(ctx, GetCardForUpdateParams{
+		ID:     id,
+		UserID: userUUID,
+	})
+	if notFoundError(err) {
+		r.logger.Debug("repo: card not found for update", zap.String("id", card.ID))
+		return nil, cardDomain.ErrNotFound
+	}
+	if err != nil {
+		r.logger.Error("repo: failed to get card for update", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to get card for update: %w", err)
+	}
+
+	if cardRepo.Version != card.Version {
+		r.logger.Debug("repo: version conflict",
+			zap.String("id", card.ID),
+			zap.Int64("db_version", cardRepo.Version),
+			zap.Int64("client_version", card.Version),
+		)
+		return nil, cardDomain.ErrVersionConflict
+	}
+
+	dbCard, err := txQuery.UpdateCard(ctx, UpdateCardParams{
 		ID:                    id,
 		UserID:                userUUID,
+		Version:               card.Version,
 		Name:                  card.Name,
 		EncryptedNumber:       card.EncryptedNumber,
 		EncryptedExpiredDate:  card.EncryptedExpiredDate,
@@ -116,8 +157,12 @@ func (r *repository) UpdateCard(ctx context.Context, userID string, card interfa
 		EncryptedNotes:        card.EncryptedNotes,
 	})
 	if notFoundError(err) {
-		r.logger.Debug("repo: card not found for update", zap.String("id", card.ID))
-		return nil, cardDomain.ErrNotFound
+		r.logger.Debug("repo: version conflict", zap.String("id", card.ID))
+		return nil, cardDomain.ErrVersionConflict
+	}
+	if conflictError(err) {
+		r.logger.Debug("repo: card name already exists", zap.String("name", card.Name))
+		return nil, cardDomain.ErrNameExists
 	}
 	if err != nil {
 		r.logger.Error("repo: failed to update card", zap.Error(err))
@@ -125,6 +170,14 @@ func (r *repository) UpdateCard(ctx context.Context, userID string, card interfa
 	}
 	result := toInterfacesCard(dbCard)
 	r.logger.Debug("repo: card updated successfully", zap.String("id", result.ID))
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		r.logger.Error("repo: failed to commit transaction", zap.Error(err))
+		return nil, fmt.Errorf("repo: failed to commit transaction: %w", err)
+	}
+
+	r.logger.Debug("repo: transaction committed successfully")
 	return &result, nil
 }
 
@@ -171,5 +224,6 @@ func toInterfacesCard(card Card) interfaces.RepositoryCard {
 		EncryptedCardHolderName: card.ExpiredCardHolderName,
 		EncryptedCvv:            card.EncryptedCvv,
 		EncryptedNotes:          card.EncryptedNotes,
+		Version:                 card.Version,
 	}
 }

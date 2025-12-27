@@ -27,18 +27,27 @@ FROM cards
 WHERE user_id = $1
   AND deleted_at IS NULL;
 
+-- name: GetCardForUpdate :one
+SELECT *
+FROM cards
+WHERE id = $1
+  AND user_id = $2
+  FOR UPDATE;
+
 -- name: UpdateCard :one
 UPDATE cards
 SET
-    name = $3,
-    encrypted_number = $4,
-    encrypted_expired_date = $5,
-    expired_card_holder_name = $6,
-    encrypted_cvv = $7,
-    encrypted_notes = $8,
+    name = $4,
+    encrypted_number = $5,
+    encrypted_expired_date = $6,
+    expired_card_holder_name = $7,
+    encrypted_cvv = $8,
+    encrypted_notes = $9,
+    version = version + 1,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND user_id = $2
+  AND version = $3
   AND deleted_at IS NULL
 RETURNING *;
 

@@ -108,6 +108,7 @@ func (x *CreateRequest) GetNotes() string {
 type CreateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            *string                `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Version       *int64                 `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -149,6 +150,13 @@ func (x *CreateResponse) GetId() string {
 	return ""
 }
 
+func (x *CreateResponse) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 type UpdateRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             *string                `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
@@ -158,6 +166,7 @@ type UpdateRequest struct {
 	CardHolderName *string                `protobuf:"bytes,5,opt,name=card_holder_name,json=cardHolderName" json:"card_holder_name,omitempty"`
 	Cvv            *string                `protobuf:"bytes,6,opt,name=cvv" json:"cvv,omitempty"`
 	Notes          *string                `protobuf:"bytes,7,opt,name=notes" json:"notes,omitempty"`
+	Version        *int64                 `protobuf:"varint,8,opt,name=version" json:"version,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -241,9 +250,17 @@ func (x *UpdateRequest) GetNotes() string {
 	return ""
 }
 
+func (x *UpdateRequest) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 type UpdateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       *bool                  `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Version       *int64                 `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -283,6 +300,13 @@ func (x *UpdateResponse) GetSuccess() bool {
 		return *x.Success
 	}
 	return false
+}
+
+func (x *UpdateResponse) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
 }
 
 type DeleteRequest struct {
@@ -462,6 +486,7 @@ type ListResponse_ListItem struct {
 	CardHolderName *string                `protobuf:"bytes,5,opt,name=card_holder_name,json=cardHolderName" json:"card_holder_name,omitempty"`
 	Cvv            *string                `protobuf:"bytes,6,opt,name=cvv" json:"cvv,omitempty"`
 	Notes          *string                `protobuf:"bytes,7,opt,name=notes" json:"notes,omitempty"`
+	Version        *int64                 `protobuf:"varint,8,opt,name=version" json:"version,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -545,6 +570,13 @@ func (x *ListResponse_ListItem) GetNotes() string {
 	return ""
 }
 
+func (x *ListResponse_ListItem) GetVersion() int64 {
+	if x != nil && x.Version != nil {
+		return *x.Version
+	}
+	return 0
+}
+
 var File_card_v1_card_proto protoreflect.FileDescriptor
 
 const file_card_v1_card_proto_rawDesc = "" +
@@ -556,9 +588,10 @@ const file_card_v1_card_proto_rawDesc = "" +
 	"\fexpired_date\x18\x03 \x01(\tR\vexpiredDate\x12(\n" +
 	"\x10card_holder_name\x18\x04 \x01(\tR\x0ecardHolderName\x12\x10\n" +
 	"\x03cvv\x18\x05 \x01(\tR\x03cvv\x12\x14\n" +
-	"\x05notes\x18\x06 \x01(\tR\x05notes\" \n" +
+	"\x05notes\x18\x06 \x01(\tR\x05notes\":\n" +
 	"\x0eCreateResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xc0\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\"\xda\x01\n" +
 	"\rUpdateRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -566,16 +599,18 @@ const file_card_v1_card_proto_rawDesc = "" +
 	"\fexpired_date\x18\x04 \x01(\tR\vexpiredDate\x12(\n" +
 	"\x10card_holder_name\x18\x05 \x01(\tR\x0ecardHolderName\x12\x10\n" +
 	"\x03cvv\x18\x06 \x01(\tR\x03cvv\x12\x14\n" +
-	"\x05notes\x18\a \x01(\tR\x05notes\"*\n" +
+	"\x05notes\x18\a \x01(\tR\x05notes\x12\x18\n" +
+	"\aversion\x18\b \x01(\x03R\aversion\"D\n" +
 	"\x0eUpdateResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x1f\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\"\x1f\n" +
 	"\rDeleteRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
 	"\x0eDeleteResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"\r\n" +
-	"\vListRequest\"\x82\x02\n" +
+	"\vListRequest\"\x9c\x02\n" +
 	"\fListResponse\x124\n" +
-	"\x05cards\x18\x01 \x03(\v2\x1e.card.v1.ListResponse.ListItemR\x05cards\x1a\xbb\x01\n" +
+	"\x05cards\x18\x01 \x03(\v2\x1e.card.v1.ListResponse.ListItemR\x05cards\x1a\xd5\x01\n" +
 	"\bListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -583,7 +618,8 @@ const file_card_v1_card_proto_rawDesc = "" +
 	"\fexpired_date\x18\x04 \x01(\tR\vexpiredDate\x12(\n" +
 	"\x10card_holder_name\x18\x05 \x01(\tR\x0ecardHolderName\x12\x10\n" +
 	"\x03cvv\x18\x06 \x01(\tR\x03cvv\x12\x14\n" +
-	"\x05notes\x18\a \x01(\tR\x05notes2\xf3\x01\n" +
+	"\x05notes\x18\a \x01(\tR\x05notes\x12\x18\n" +
+	"\aversion\x18\b \x01(\x03R\aversion2\xf3\x01\n" +
 	"\vCardService\x129\n" +
 	"\x06Create\x12\x16.card.v1.CreateRequest\x1a\x17.card.v1.CreateResponse\x123\n" +
 	"\x04List\x12\x14.card.v1.ListRequest\x1a\x15.card.v1.ListResponse\x129\n" +

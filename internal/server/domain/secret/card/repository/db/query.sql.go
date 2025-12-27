@@ -32,7 +32,7 @@ VALUES (
         $7,
         $8
        )
-RETURNING id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at
+RETURNING id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at, version
 `
 
 type CreateCardParams struct {
@@ -70,6 +70,7 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, e
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -95,8 +96,41 @@ func (q *Queries) DeleteCard(ctx context.Context, arg DeleteCardParams) (int64, 
 	return result.RowsAffected(), nil
 }
 
+const getCardForUpdate = `-- name: GetCardForUpdate :one
+SELECT id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at, version
+FROM cards
+WHERE id = $1
+  AND user_id = $2
+    FOR UPDATE
+`
+
+type GetCardForUpdateParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) GetCardForUpdate(ctx context.Context, arg GetCardForUpdateParams) (Card, error) {
+	row := q.db.QueryRow(ctx, getCardForUpdate, arg.ID, arg.UserID)
+	var i Card
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.EncryptedNumber,
+		&i.EncryptedExpiredDate,
+		&i.ExpiredCardHolderName,
+		&i.EncryptedCvv,
+		&i.EncryptedNotes,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.Version,
+	)
+	return i, err
+}
+
 const listCards = `-- name: ListCards :many
-SELECT id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at
+SELECT id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at, version
 FROM cards
 WHERE user_id = $1
   AND deleted_at IS NULL
@@ -123,6 +157,7 @@ func (q *Queries) ListCards(ctx context.Context, userID uuid.UUID) ([]Card, erro
 			&i.DeletedAt,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -137,22 +172,25 @@ func (q *Queries) ListCards(ctx context.Context, userID uuid.UUID) ([]Card, erro
 const updateCard = `-- name: UpdateCard :one
 UPDATE cards
 SET
-    name = $3,
-    encrypted_number = $4,
-    encrypted_expired_date = $5,
-    expired_card_holder_name = $6,
-    encrypted_cvv = $7,
-    encrypted_notes = $8,
+    name = $4,
+    encrypted_number = $5,
+    encrypted_expired_date = $6,
+    expired_card_holder_name = $7,
+    encrypted_cvv = $8,
+    encrypted_notes = $9,
+    version = version + 1,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
   AND user_id = $2
+  AND version = $3
   AND deleted_at IS NULL
-RETURNING id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at
+RETURNING id, user_id, name, encrypted_number, encrypted_expired_date, expired_card_holder_name, encrypted_cvv, encrypted_notes, deleted_at, updated_at, created_at, version
 `
 
 type UpdateCardParams struct {
 	ID                    uuid.UUID
 	UserID                uuid.UUID
+	Version               int64
 	Name                  string
 	EncryptedNumber       []byte
 	EncryptedExpiredDate  []byte
@@ -165,6 +203,7 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 	row := q.db.QueryRow(ctx, updateCard,
 		arg.ID,
 		arg.UserID,
+		arg.Version,
 		arg.Name,
 		arg.EncryptedNumber,
 		arg.EncryptedExpiredDate,
@@ -185,6 +224,7 @@ func (q *Queries) UpdateCard(ctx context.Context, arg UpdateCardParams) (Card, e
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.Version,
 	)
 	return i, err
 }

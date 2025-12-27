@@ -11,4 +11,5 @@ var (
 	ErrCardHolderNameRequired = errors.New("card holder name can't be empty")
 	ErrCvvRequired            = errors.New("cvv can't be empty")
 	ErrIDRequired             = errors.New("id can't be empty")
+	ErrVersionConflict        = errors.New("version conflict")
 )

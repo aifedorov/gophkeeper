@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const dotEnvFile = ".env.binary"
+const dotEnvFile = ".env.server"
 
 type Config struct {
 	// Log level: debug, info, warn, error, fatal.

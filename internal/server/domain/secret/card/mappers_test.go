@@ -37,6 +37,7 @@ func TestToDomainCard(t *testing.T) {
 				EncryptedCardHolderName: []byte("encrypted-card-holder-name"),
 				EncryptedCvv:            []byte("encrypted-cvv"),
 				EncryptedNotes:          []byte("encrypted-notes"),
+				Version:                 1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -260,6 +261,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -303,6 +305,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -323,6 +326,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -347,6 +351,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -375,6 +380,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -407,6 +413,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "test-notes",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().
@@ -443,6 +450,7 @@ func TestToRepositoryCard(t *testing.T) {
 				cardHolderName: "test-card-holder-name",
 				cvv:            "test-cvv",
 				notes:          "",
+				version:        1,
 			},
 			setupMock: func(m *cardMocks.MockCryptoService) {
 				m.EXPECT().

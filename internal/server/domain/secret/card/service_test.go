@@ -35,6 +35,7 @@ func TestService_Create(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -105,6 +106,7 @@ func TestService_Create(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -171,6 +173,7 @@ func TestService_List(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 1,
 				}
 				card2 := interfaces.RepositoryCard{
 					ID:                      uuid.New().String(),
@@ -181,6 +184,7 @@ func TestService_List(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -225,6 +229,7 @@ func TestService_List(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 1,
 				}
 
 				s.mockRepo.EXPECT().
@@ -291,6 +296,7 @@ func TestService_Update(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 2,
 				}
 
 				s.mockRepo.EXPECT().
@@ -361,6 +367,7 @@ func TestService_Update(t *testing.T) {
 					EncryptedCardHolderName: s.encryptedCardHolderName,
 					EncryptedCvv:            s.encryptedCvv,
 					EncryptedNotes:          s.encryptedNotes,
+					Version:                 2,
 				}
 
 				s.mockRepo.EXPECT().

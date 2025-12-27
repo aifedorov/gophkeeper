@@ -23,4 +23,5 @@ type Card struct {
 	DeletedAt             pgtype.Timestamp
 	UpdatedAt             time.Time
 	CreatedAt             time.Time
+	Version               int64
 }

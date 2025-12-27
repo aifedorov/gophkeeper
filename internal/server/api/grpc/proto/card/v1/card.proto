@@ -25,6 +25,7 @@ message CreateRequest {
 
 message CreateResponse {
   string id = 1;
+  int64 version = 2;
 }
 
 message UpdateRequest {
@@ -35,10 +36,12 @@ message UpdateRequest {
   string card_holder_name = 5;
   string cvv = 6;
   string notes = 7;
+  int64 version = 8;
 }
 
 message UpdateResponse {
   bool success = 1;
+  int64 version = 2;
 }
 
 message DeleteRequest {
@@ -60,6 +63,7 @@ message ListResponse {
     string card_holder_name = 5;
     string cvv = 6;
     string notes = 7;
+    int64 version = 8;
   }
 
   repeated ListItem cards = 1;

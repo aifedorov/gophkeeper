@@ -57,7 +57,7 @@ func (a *App) Run() error {
 	credRepo := credrepository.NewRepository(db.DBPool(), db.DBPool(), a.logger)
 	credSrv := credential.NewService(credRepo, cryptoSrv, a.logger)
 
-	cardRepo := cardrepository.NewRepository(db.DBPool(), a.logger)
+	cardRepo := cardrepository.NewRepository(db.DBPool(), db.DBPool(), a.logger)
 	cardSrv := card.NewService(cardRepo, cryptoSrv, a.logger)
 
 	binaryFileStore := filestorage.NewFileStorage(a.logger)

@@ -119,7 +119,7 @@ func (s *testSetup) expectDecryptCard() {
 }
 
 func newTestCard() *Card {
-	card, _ := NewCard(testID, testName, testNumber, testExpiredDate, testCardHolderName, testCvv, testNotes)
+	card, _ := NewCard(testID, testName, testNumber, testExpiredDate, testCardHolderName, testCvv, testNotes, 1)
 	return card
 }
 

@@ -158,13 +158,17 @@ func (s *service) Update(ctx context.Context, userID, encryptionKey string, card
 		s.logger.Debug("card: not found for update", zap.String("id", card.GetID()))
 		return nil, ErrNotFound
 	}
-	if err != nil {
+	if errors.Is(err, ErrNameExists) {
+		s.logger.Debug("card: name already exists", zap.String("name", card.GetName()))
+		return nil, ErrNameExists
+	}
+	if errors.Is(err, ErrVersionConflict) {
+		s.logger.Debug("card: version conflict", zap.String("id", card.GetID()))
+		return nil, ErrVersionConflict
+	}
+	if err != nil || result == nil {
 		s.logger.Error("card: failed to update in repository", zap.Error(err))
 		return nil, fmt.Errorf("failed to update card: %w", err)
-	}
-	if result == nil {
-		s.logger.Error("card: repository returned nil")
-		return nil, fmt.Errorf("failed to update card: card is nil")
 	}
 
 	domainCard, err := toDomainCard(s.crypto, key, *result)

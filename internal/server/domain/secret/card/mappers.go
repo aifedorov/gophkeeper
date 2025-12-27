@@ -27,6 +27,9 @@ func toDomainCard(crypto interfaces.CryptoService, key []byte, card interfaces.R
 	if err != nil {
 		return Card{}, fmt.Errorf("failed to decrypt notes: %w", err)
 	}
+	if card.Version < 1 {
+		return Card{}, fmt.Errorf("invalid card version: %d", card.Version)
+	}
 
 	return Card{
 		id:             card.ID,
@@ -37,6 +40,7 @@ func toDomainCard(crypto interfaces.CryptoService, key []byte, card interfaces.R
 		cardHolderName: cardHolderName,
 		cvv:            cvv,
 		notes:          notes,
+		version:        card.Version,
 	}, nil
 }
 
@@ -75,5 +79,6 @@ func toRepositoryCard(crypto interfaces.CryptoService, key []byte, card Card) (i
 		EncryptedCardHolderName: encryptCardHolderName,
 		EncryptedCvv:            encryptCvv,
 		EncryptedNotes:          encryptNotes,
+		Version:                 card.GetVersion(),
 	}, nil
 }
