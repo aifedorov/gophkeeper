@@ -240,10 +240,11 @@ func (s *BinaryServer) Update(stream grpc.ClientStreamingServer[pb.UpdateRequest
 
 	streamReader := newUpdateStreamReader(stream)
 	fileMetadata := interfaces.FileMetadata{
-		ID:    metadata.GetFileId(),
-		Name:  metadata.GetName(),
-		Size:  metadata.GetSize(),
-		Notes: metadata.GetNotes(),
+		ID:      metadata.GetFileId(),
+		Name:    metadata.GetName(),
+		Size:    metadata.GetSize(),
+		Notes:   metadata.GetNotes(),
+		Version: metadata.GetVersion(),
 	}
 
 	res, err := s.binarySrv.Update(ctx, userID, encryptionKey, fileMetadata, streamReader)
