@@ -6,87 +6,151 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aifedorov/gen/binary/v1";
 
+// BinaryService provides operations for managing binary files.
+// Files are streamed in chunks and encrypted before storage.
+// All operations require authentication via JWT token in metadata.
 service BinaryService {
+  // Upload streams a new file to the server.
+  // First message must contain metadata, subsequent messages contain file chunks.
   rpc Upload(stream UploadRequest) returns (UploadResponse);
+
+  // List retrieves metadata for all files owned by the authenticated user.
   rpc List(ListRequest) returns (ListResponse);
+
+  // Download streams a file from the server.
+  // First response contains metadata, subsequent responses contain file chunks.
   rpc Download(DownloadRequest) returns (stream DownloadResponse);
+
+  // Update replaces an existing file using optimistic locking.
+  // Returns FailedPrecondition on version mismatch.
   rpc Update(stream UpdateRequest) returns (UpdateResponse);
+
+  // Delete removes a file by ID.
+  // Returns NotFound if file doesn't exist.
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
 
+// UploadRequest streams file data to the server.
 message UploadRequest {
+  // Metadata contains file information sent in the first message.
   message Metadata {
+    // name is the original filename.
     string name = 1;
+    // size is the total file size in bytes.
     int64 size = 2;
+    // notes contains optional additional information.
     string notes = 3;
   }
 
+  // data contains either metadata (first message) or chunk (subsequent).
   oneof data {
+    // file contains metadata and must be sent first.
     Metadata file = 1;
+    // chunk contains a portion of the file content.
     bytes chunk = 2;
   }
 }
 
+// UploadResponse contains the result of file upload.
 message UploadResponse {
+  // file_id is the unique identifier of the uploaded file.
   string file_id = 1;
+  // version is the initial version for optimistic locking.
   int64 version = 2;
 }
 
+// ListRequest retrieves all files. No parameters needed.
 message ListRequest {}
 
+// ListResponse contains metadata for all user's files.
 message ListResponse {
+  // Metadata represents a single file's information.
   message Metadata {
+    // id is the unique identifier.
     string id = 1;
+    // name is the original filename.
     string name = 2;
+    // size is the file size in bytes.
     int64 size = 3;
+    // notes contains additional information.
     string notes = 4;
+    // version is the current version for optimistic locking.
     int64 version = 5;
+    // uploaded_at is the file upload timestamp.
     google.protobuf.Timestamp uploaded_at = 6;
   }
 
+  // files is the list of all user's file metadata.
   repeated Metadata files = 1;
 }
 
+// DownloadRequest identifies the file to download.
 message DownloadRequest {
+  // file_id is the unique identifier of the file.
   string file_id = 1;
 }
 
+// DownloadResponse streams file data from the server.
 message DownloadResponse {
+  // Metadata contains file information sent in the first response.
   message Metadata {
+    // name is the original filename.
     string name = 1;
+    // size is the total file size in bytes.
     int64 size = 2;
+    // notes contains additional information.
     string notes = 3;
+    // version is the current version for optimistic locking.
     int64 version = 4;
   }
 
+  // data contains either metadata (first response) or chunk (subsequent).
   oneof data {
+    // file contains metadata and is sent first.
     Metadata file = 1;
+    // chunk contains a portion of the file content.
     bytes chunk = 2;
   }
 }
 
+// UpdateRequest streams updated file data to the server.
 message UpdateRequest {
+  // Metadata contains file information sent in the first message.
   message Metadata {
+    // file_id is the unique identifier of the file to update.
     string file_id = 1;
+    // name is the new filename.
     string name = 2;
+    // size is the new file size in bytes.
     int64 size = 3;
+    // notes contains optional additional information.
     string notes = 4;
+    // version is the expected version for optimistic locking.
     int64 version = 5;
   }
 
+  // data contains either metadata (first message) or chunk (subsequent).
   oneof data {
+    // file contains metadata and must be sent first.
     Metadata file = 1;
+    // chunk contains a portion of the file content.
     bytes chunk = 2;
   }
 }
 
+// UpdateResponse contains the result of file update.
 message UpdateResponse {
+  // success indicates whether the update was successful.
   bool success = 1;
+  // version is the new version number after update.
   int64 version = 2;
 }
 
+// DeleteRequest identifies the file to delete.
 message DeleteRequest {
+  // file_id is the unique identifier of the file to delete.
   string file_id = 1;
 }
 
+// DeleteResponse is empty as deletion success is indicated by no error.
 message DeleteResponse {}

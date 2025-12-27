@@ -128,6 +128,8 @@ func (s *CredentialServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 	}, nil
 }
 
+// Update modifies an existing credential using optimistic locking.
+// Returns NotFound if credential doesn't exist, Aborted on version conflict.
 func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
 	s.logger.Debug("grpc: update credential request received")
 
@@ -180,6 +182,7 @@ func (s *CredentialServer) Update(ctx context.Context, req *pb.UpdateRequest) (*
 	return &resp, nil
 }
 
+// Delete removes a credential by ID. Returns NotFound if credential doesn't exist.
 func (s *CredentialServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	s.logger.Debug("grpc: delete credential request received")
 

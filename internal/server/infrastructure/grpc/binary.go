@@ -17,8 +17,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// bufferSize is the chunk size for streaming file data (1MB).
 const bufferSize = 1024 * 1024
 
+// BinaryServer implements the BinaryService gRPC service.
+// It handles file upload, download, and management with encryption.
 type BinaryServer struct {
 	pb.UnimplementedBinaryServiceServer
 	cfg       *config.Config
@@ -27,6 +30,7 @@ type BinaryServer struct {
 	binarySrv binary.Service
 }
 
+// NewBinaryServer creates a new BinaryServer with the provided dependencies.
 func NewBinaryServer(cfg *config.Config, logger *zap.Logger, authSrv auth.Service, binarySrv binary.Service) *BinaryServer {
 	return &BinaryServer{
 		cfg:       cfg,
@@ -36,6 +40,8 @@ func NewBinaryServer(cfg *config.Config, logger *zap.Logger, authSrv auth.Servic
 	}
 }
 
+// Upload receives a file stream and stores it encrypted.
+// First message must contain metadata, subsequent messages contain chunks.
 func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest, pb.UploadResponse]) error {
 	s.logger.Debug("grpc: upload binary request received")
 	ctx := stream.Context()
@@ -85,6 +91,7 @@ func (s *BinaryServer) Upload(stream grpc.ClientStreamingServer[pb.UploadRequest
 	})
 }
 
+// List retrieves metadata for all files owned by the authenticated user.
 func (s *BinaryServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListResponse, error) {
 	s.logger.Debug("grpc: list binary request received")
 
@@ -129,6 +136,8 @@ func (s *BinaryServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRes
 	return res, nil
 }
 
+// Download streams a file to the client.
+// First response contains metadata, subsequent responses contain chunks.
 func (s *BinaryServer) Download(req *pb.DownloadRequest, stream grpc.ServerStreamingServer[pb.DownloadResponse]) error {
 	s.logger.Debug("grpc: download binary request received")
 	ctx := stream.Context()
@@ -189,6 +198,7 @@ func (s *BinaryServer) Download(req *pb.DownloadRequest, stream grpc.ServerStrea
 	return nil
 }
 
+// Delete removes a file by ID. Returns NotFound if file doesn't exist.
 func (s *BinaryServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	s.logger.Debug("grpc: delete binary request received")
 
@@ -212,6 +222,8 @@ func (s *BinaryServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.D
 	return &pb.DeleteResponse{}, nil
 }
 
+// Update replaces an existing file using optimistic locking.
+// Returns NotFound if file doesn't exist, Aborted on version conflict.
 func (s *BinaryServer) Update(stream grpc.ClientStreamingServer[pb.UpdateRequest, pb.UpdateResponse]) error {
 	s.logger.Debug("grpc: update binary request received")
 

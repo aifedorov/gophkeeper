@@ -1,3 +1,4 @@
+// Package jwt provides JWT token creation and validation services.
 package jwt
 
 import (
@@ -38,8 +39,10 @@ type service struct {
 	logger    *zap.Logger
 }
 
+// Claims contains JWT payload with user identification.
 type Claims struct {
 	jwt.RegisteredClaims
+	// UserID is the authenticated user's identifier.
 	UserID string
 }
 

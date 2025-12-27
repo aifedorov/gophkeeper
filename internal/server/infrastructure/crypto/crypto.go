@@ -1,3 +1,4 @@
+// Package crypto provides cryptographic services for encryption and hashing.
 package crypto
 
 import (
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Cryptographic parameters.
 const (
 	argonTime     = 1
 	argonMemory   = 64 * 1024 // 64 MB
@@ -19,16 +21,19 @@ const (
 	chunkSize     = 64 * 1024
 )
 
+// Service provides cryptographic operations for encryption and password hashing.
 type Service struct {
 	logger *zap.Logger
 }
 
+// NewService creates a new crypto Service with the provided logger.
 func NewService(logger *zap.Logger) *Service {
 	return &Service{
 		logger: logger,
 	}
 }
 
+// GenerateSalt generates a random salt for password hashing.
 func (s *Service) GenerateSalt() ([]byte, error) {
 	s.logger.Debug("crypto: generating salt")
 	salt := make([]byte, saltLen)
@@ -41,6 +46,7 @@ func (s *Service) GenerateSalt() ([]byte, error) {
 	return salt, nil
 }
 
+// DeriveEncryptionKey derives an AES-256 key from password and salt using Argon2.
 func (s *Service) DeriveEncryptionKey(password, salt string) []byte {
 	s.logger.Debug("crypto: deriving encryption key using Argon2")
 	key := argon2.IDKey(
@@ -55,6 +61,7 @@ func (s *Service) DeriveEncryptionKey(password, salt string) []byte {
 	return key
 }
 
+// HashPassword hashes a password using bcrypt.
 func (s *Service) HashPassword(password string) (string, error) {
 	s.logger.Debug("crypto: hashing password with bcrypt")
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -66,6 +73,7 @@ func (s *Service) HashPassword(password string) (string, error) {
 	return string(hash), nil
 }
 
+// CompareHashAndPassword compares a password with its bcrypt hash.
 func (s *Service) CompareHashAndPassword(hashedPassword, password string) error {
 	s.logger.Debug("crypto: comparing password hash")
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
@@ -77,6 +85,7 @@ func (s *Service) CompareHashAndPassword(hashedPassword, password string) error 
 	return nil
 }
 
+// Encrypt encrypts plaintext using AES-256-GCM with the provided key.
 func (s *Service) Encrypt(plaintext string, key []byte) ([]byte, error) {
 	s.logger.Debug("crypto: encrypting data", zap.Int("plaintext_len", len(plaintext)))
 
@@ -96,6 +105,7 @@ func (s *Service) Encrypt(plaintext string, key []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// Decrypt decrypts ciphertext using AES-256-GCM with the provided key.
 func (s *Service) Decrypt(ciphertext []byte, key []byte) (string, error) {
 	s.logger.Debug("crypto: decrypting data", zap.Int("ciphertext_len", len(ciphertext)))
 

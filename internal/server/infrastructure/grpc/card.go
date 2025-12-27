@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// CardServer implements the CardService gRPC service.
+// It handles CRUD operations for payment cards with encryption support.
 type CardServer struct {
 	pb.UnimplementedCardServiceServer
 	cfg     *config.Config
@@ -22,6 +24,7 @@ type CardServer struct {
 	cardSrv card.Service
 }
 
+// NewCardServer creates a new CardServer with the provided dependencies.
 func NewCardServer(cfg *config.Config, logger *zap.Logger, authSev auth.Service, cardSrv card.Service) *CardServer {
 	return &CardServer{
 		cfg:     cfg,
@@ -31,6 +34,8 @@ func NewCardServer(cfg *config.Config, logger *zap.Logger, authSev auth.Service,
 	}
 }
 
+// Create stores a new payment card for the authenticated user.
+// Returns Unauthenticated if token is invalid, AlreadyExists if name is taken.
 func (s *CardServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
 	s.logger.Debug("grpc: create card request received", zap.String("name", req.GetName()))
 
@@ -77,6 +82,7 @@ func (s *CardServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.Cre
 	return &resp, nil
 }
 
+// List retrieves all cards for the authenticated user.
 func (s *CardServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListResponse, error) {
 	s.logger.Debug("grpc: list card request received")
 
@@ -120,6 +126,8 @@ func (s *CardServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListRespo
 	}, nil
 }
 
+// Update modifies an existing card using optimistic locking.
+// Returns NotFound if card doesn't exist, Aborted on version conflict.
 func (s *CardServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
 	s.logger.Debug("grpc: update card request received")
 
@@ -174,6 +182,7 @@ func (s *CardServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.Upd
 	return &resp, nil
 }
 
+// Delete removes a card by ID. Returns NotFound if card doesn't exist.
 func (s *CardServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	s.logger.Debug("grpc: delete card request received")
 

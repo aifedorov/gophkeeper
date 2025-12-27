@@ -1,3 +1,4 @@
+// Package filestorage provides file system operations for binary storage.
 package filestorage
 
 import (
@@ -16,17 +17,21 @@ const (
 	dirMode  = 0700
 )
 
+// FileStorage handles file operations for storing and retrieving binary data.
 type FileStorage struct {
 	logger   *zap.Logger
 	tmpPaths sync.Map // map[string]string: key = dirname+filename, value = tmppath
 }
 
+// NewFileStorage creates a new FileStorage with the provided logger.
 func NewFileStorage(logger *zap.Logger) *FileStorage {
 	return &FileStorage{
 		logger: logger,
 	}
 }
 
+// Upload stores a file from reader to the filesystem.
+// Returns the full path where the file was stored.
 func (f *FileStorage) Upload(ctx context.Context, dirname, filename string, reader io.Reader) (path string, err error) {
 	tmpFilename, err := f.createTmpFile(ctx, dirname, reader)
 	if err != nil {
@@ -45,6 +50,7 @@ func (f *FileStorage) Upload(ctx context.Context, dirname, filename string, read
 	return path, nil
 }
 
+// Delete removes a file from the filesystem.
 func (f *FileStorage) Delete(_ context.Context, dirname, filename string) error {
 	f.logger.Debug("filestorage: deleting file",
 		zap.String("dirname", dirname),
@@ -55,6 +61,7 @@ func (f *FileStorage) Delete(_ context.Context, dirname, filename string) error 
 	return os.Remove(path)
 }
 
+// Download returns a reader for the file content. Caller must close the reader.
 func (f *FileStorage) Download(_ context.Context, dirname, filename string) (reader io.ReadCloser, err error) {
 	f.logger.Debug("filestorage: getting file",
 		zap.String("dirname", dirname),
@@ -71,6 +78,8 @@ func (f *FileStorage) Download(_ context.Context, dirname, filename string) (rea
 	return file, nil
 }
 
+// BeginUpdate starts a file update operation using a temporary file.
+// Call CommitUpdate to finalize or AbortUpdate to cancel.
 func (f *FileStorage) BeginUpdate(ctx context.Context, dirname, filename string, reader io.Reader) (tmppath, targetpath string, err error) {
 	f.logger.Debug("filestorage: starting file update",
 		zap.String("dirname", dirname),

@@ -1,11 +1,17 @@
+// Package validator provides validation functions for user input.
 package validator
 
 import "fmt"
 
+// Validation constraints for login and password fields.
 const (
-	LoginMinLength    = 3
-	LoginMaxLength    = 25
+	// LoginMinLength is the minimum required length for login.
+	LoginMinLength = 3
+	// LoginMaxLength is the maximum allowed length for login.
+	LoginMaxLength = 25
+	// PasswordMinLength is the minimum required length for password.
 	PasswordMinLength = 6
+	// PasswordMaxLength is the maximum allowed length for password.
 	PasswordMaxLength = 16
 )
 
@@ -39,6 +45,7 @@ func ValidatePassword(password string) error {
 	return nil
 }
 
+// ValidateSalt validates a salt string. Salt must not be empty.
 func ValidateSalt(salt string) error {
 	if len(salt) == 0 {
 		return fmt.Errorf("validator: salt can't be empty")
