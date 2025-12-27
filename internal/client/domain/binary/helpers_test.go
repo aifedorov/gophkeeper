@@ -61,6 +61,7 @@ type testSetup struct {
 	mockClient          *MockClient
 	mockStorage         *filestorage.MockStorage
 	mockSessionProvider *mockSessionProvider
+	mockCache           *mockCacheStorage
 	service             Service
 	ctx                 context.Context
 	testSession         shared.Session
@@ -90,14 +91,30 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 }
 
-type mockCacheStorage struct{}
+type mockCacheStorage struct {
+	getVersionErr  error
+	setVersionErr  error
+	deleteErr      error
+	currentVersion int64
+}
 
-func (m *mockCacheStorage) SetFileVersion(id string, version int64) error { return nil }
-func (m *mockCacheStorage) GetFileVersion(id string) (int64, error)       { return 1, nil }
-func (m *mockCacheStorage) DeleteFileVersion(id string) error             { return nil }
+func (m *mockCacheStorage) SetFileVersion(id string, version int64) error {
+	m.currentVersion = version
+	return m.setVersionErr
+}
+
+func (m *mockCacheStorage) GetFileVersion(id string) (int64, error) {
+	if m.getVersionErr != nil {
+		return 0, m.getVersionErr
+	}
+	return m.currentVersion, nil
+}
+
+func (m *mockCacheStorage) DeleteFileVersion(id string) error { return m.deleteErr }
 
 func (s *testSetup) initService() {
-	s.service = NewService(s.mockClient, s.mockStorage, &mockCacheStorage{}, s.mockSessionProvider)
+	s.mockCache = &mockCacheStorage{currentVersion: 1}
+	s.service = NewService(s.mockClient, s.mockStorage, s.mockCache, s.mockSessionProvider)
 }
 
 func (s *testSetup) cleanup() {
@@ -212,6 +229,38 @@ func (s *testSetup) expectDeleteError(fileID string, err error) {
 	s.mockClient.EXPECT().
 		Delete(gomock.Any(), fileID).
 		Return(err).
+		Times(1)
+}
+
+// #nosec G304
+func (s *testSetup) expectUpdateSuccess(filePath string, tmpFile string) {
+	s.mockStorage.EXPECT().
+		OpenFile(gomock.Any(), filePath).
+		Return(os.Open(tmpFile)).
+		Times(1)
+	s.mockClient.EXPECT().
+		Update(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(int64(2), nil).
+		Times(1)
+}
+
+// #nosec G304
+func (s *testSetup) expectUpdateFileNotFound(filePath string, err error) {
+	s.mockStorage.EXPECT().
+		OpenFile(gomock.Any(), filePath).
+		Return(nil, err).
+		Times(1)
+}
+
+// #nosec G304
+func (s *testSetup) expectUpdateClientError(filePath string, tmpFile string, err error) {
+	s.mockStorage.EXPECT().
+		OpenFile(gomock.Any(), filePath).
+		Return(os.Open(tmpFile)).
+		Times(1)
+	s.mockClient.EXPECT().
+		Update(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(int64(0), err).
 		Times(1)
 }
 

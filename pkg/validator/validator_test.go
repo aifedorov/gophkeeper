@@ -120,3 +120,38 @@ func TestValidatePassword(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSalt(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		salt    string
+		wantErr bool
+	}{
+		{
+			name:    "valid salt",
+			salt:    "somesalt",
+			wantErr: false,
+		},
+		{
+			name:    "empty salt",
+			salt:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidateSalt(tt.salt)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

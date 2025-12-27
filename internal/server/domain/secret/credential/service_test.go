@@ -119,6 +119,22 @@ func TestService_Create(t *testing.T) {
 		},
 	}
 
+	t.Run("invalid encryption key", func(t *testing.T) {
+		t.Parallel()
+
+		setup := newTestSetup(t)
+		defer setup.cleanup()
+		setup.initService()
+
+		ctx := context.Background()
+		cred := newTestCredential()
+
+		_, err := setup.service.Create(ctx, setup.userID, "invalid-base64!!!", *cred)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to decode encryption key")
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -236,6 +252,22 @@ func TestService_List(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
+	// Test invalid encryption key separately (doesn't use setupMock)
+	t.Run("invalid encryption key", func(t *testing.T) {
+		t.Parallel()
+
+		setup := newTestSetup(t)
+		defer setup.cleanup()
+		setup.initService()
+
+		ctx := context.Background()
+
+		_, err := setup.service.List(ctx, setup.userID, "invalid-base64!!!")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to decode encryption key")
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -369,7 +401,50 @@ func TestService_Update(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "version conflict",
+			setupMock: func(s *testSetup) {
+				s.expectEncryptCredential()
+
+				s.mockRepo.EXPECT().
+					UpdateCredential(gomock.Any(), s.userID, gomock.Any()).
+					Return(nil, ErrVersionConflict).
+					Times(1)
+			},
+			wantErrIs: ErrVersionConflict,
+		},
+		{
+			name: "name already exists",
+			setupMock: func(s *testSetup) {
+				s.expectEncryptCredential()
+
+				s.mockRepo.EXPECT().
+					UpdateCredential(gomock.Any(), s.userID, gomock.Any()).
+					Return(nil, ErrNameExists).
+					Times(1)
+			},
+			wantErrIs: ErrNameExists,
+		},
 	}
+
+	// Test invalid encryption key separately (doesn't use setupMock)
+	t.Run("invalid encryption key", func(t *testing.T) {
+		t.Parallel()
+
+		setup := newTestSetup(t)
+		defer setup.cleanup()
+		setup.initService()
+
+		ctx := context.Background()
+		cred := newTestCredential()
+		cred.id = setup.credentialID
+		cred.userID = setup.userID
+
+		_, err := setup.service.Update(ctx, setup.userID, "invalid-base64!!!", *cred)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to decode encryption key")
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

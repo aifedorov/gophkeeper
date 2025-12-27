@@ -509,6 +509,364 @@ func TestService_Download(t *testing.T) {
 	}
 }
 
+func TestService_Update(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		setupMock func(*testSetup)
+		wantErr   bool
+		wantErrIs error
+		errMsg    string
+	}{
+		{
+			name: "successful update",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+				s.fileMetadata.Version = 1
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, userID, id string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
+						file.Version = 2
+						return &file, nil
+					}).
+					Times(1)
+
+				// Decryption for RepositoryToDomain
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedNotes, s.encryptionKey).
+					Return(testNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedSize, s.encryptionKey).
+					Return("1024", nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedPath, s.encryptionKey).
+					Return(testFilePath, nil).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					CommitUpdate(gomock.Any(), s.userID, s.fileID).
+					Return(nil).
+					Times(1)
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid encryption key",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+			},
+			wantErr: true,
+			errMsg:  "failed to wrap reader for encryption",
+		},
+		{
+			name: "begin update failure",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("", "", errors.New("storage error")).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "").
+					Return(nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to update file",
+		},
+		{
+			name: "file to repository conversion failure",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(nil, errors.New("encryption error")).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to convert file",
+		},
+		{
+			name: "file not found",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return(nil, ErrNotFound).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr:   true,
+			wantErrIs: ErrNotFound,
+		},
+		{
+			name: "version conflict",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return(nil, ErrVersionConflict).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr:   true,
+			wantErrIs: ErrVersionConflict,
+		},
+		{
+			name: "repository error",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return(nil, errors.New("db error")).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to update file",
+		},
+		{
+			name: "repository to domain conversion failure",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, userID, id string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
+						file.Version = 2
+						return &file, nil
+					}).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedNotes, s.encryptionKey).
+					Return("", errors.New("decryption error")).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to convert repository file to domain",
+		},
+		{
+			name: "commit update failure",
+			setupMock: func(s *testSetup) {
+				s.fileMetadata.ID = s.fileID
+
+				s.mockFileStore.EXPECT().
+					BeginUpdate(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					Return("/tmp/tmpfile", testFilePath, nil).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Encrypt(testFilePath, s.encryptionKey).
+					Return(s.encryptedPath, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(testNotes, s.encryptionKey).
+					Return(s.encryptedNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Encrypt(gomock.Any(), s.encryptionKey).
+					Return(s.encryptedSize, nil).
+					AnyTimes()
+
+				s.mockRepo.EXPECT().
+					Update(gomock.Any(), s.userID, s.fileID, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, userID, id string, file interfaces.RepositoryFile) (*interfaces.RepositoryFile, error) {
+						file.Version = 2
+						return &file, nil
+					}).
+					Times(1)
+
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedNotes, s.encryptionKey).
+					Return(testNotes, nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedSize, s.encryptionKey).
+					Return("1024", nil).
+					Times(1)
+				s.mockCrypto.EXPECT().
+					Decrypt(s.encryptedPath, s.encryptionKey).
+					Return(testFilePath, nil).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					CommitUpdate(gomock.Any(), s.userID, s.fileID).
+					Return(errors.New("commit error")).
+					Times(1)
+
+				s.mockFileStore.EXPECT().
+					AbortUpdate(gomock.Any(), "/tmp/tmpfile").
+					Return(nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to commit file update",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			setup := newTestSetup(t)
+			defer setup.cleanup()
+
+			if tt.name == "invalid encryption key" {
+				setup.encryptionKeyStr = "invalid-base64!!!"
+			}
+
+			tt.setupMock(setup)
+			setup.initService()
+
+			ctx := context.Background()
+			result, err := setup.service.Update(ctx, setup.userID, setup.encryptionKeyStr, setup.fileMetadata, setup.fileReader)
+
+			if tt.wantErrIs != nil {
+				assert.ErrorIs(t, err, tt.wantErrIs)
+				assert.Nil(t, result)
+			} else if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				assertFileFields(t, result, testFileName, testFileSize, testNotes)
+			}
+		})
+	}
+}
+
 func TestService_Delete(t *testing.T) {
 	t.Parallel()
 

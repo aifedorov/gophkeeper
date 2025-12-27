@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestService_Upload(t *testing.T) {
@@ -212,6 +213,117 @@ func TestService_Download(t *testing.T) {
 			if !tt.wantErr {
 				assert.Equal(t, tt.wantPath, filepath)
 			}
+		})
+	}
+}
+
+func TestService_Update(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		fileID   string
+		filePath string
+		notes    string
+		setup    func(*testSetup, string) string
+		wantErr  bool
+		errMsg   string
+	}{
+		{
+			name:     "successful update",
+			fileID:   testFileID,
+			filePath: testFileName,
+			notes:    "updated notes",
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.expectUpdateSuccess(filePath, tmpFile)
+				return tmpFile
+			},
+			wantErr: false,
+		},
+		{
+			name:     "file not found",
+			fileID:   testFileID,
+			filePath: "/nonexistent/file.txt",
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				s.expectUpdateFileNotFound(filePath, errors.New("filestorage: file not found"))
+				return ""
+			},
+			wantErr: true,
+			errMsg:  "file not found",
+		},
+		{
+			name:     "cache get version error",
+			fileID:   testFileID,
+			filePath: testFileName,
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.mockStorage.EXPECT().
+					OpenFile(gomock.Any(), filePath).
+					Return(os.Open(tmpFile)).
+					Times(1)
+				s.mockCache.getVersionErr = errors.New("version not found")
+				return tmpFile
+			},
+			wantErr: true,
+			errMsg:  "failed to get version from cache",
+		},
+		{
+			name:     "client update error",
+			fileID:   testFileID,
+			filePath: testFileName,
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.expectUpdateClientError(filePath, tmpFile, errors.New("update failed"))
+				return tmpFile
+			},
+			wantErr: true,
+			errMsg:  "failed to update file",
+		},
+		{
+			name:     "cache set version error",
+			fileID:   testFileID,
+			filePath: testFileName,
+			notes:    testNotes,
+			setup: func(s *testSetup, filePath string) string {
+				tmpFile := createTempFile(t, testFileContent)
+				s.mockStorage.EXPECT().
+					OpenFile(gomock.Any(), filePath).
+					Return(os.Open(tmpFile)).
+					Times(1)
+				s.mockClient.EXPECT().
+					Update(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(2), nil).
+					Times(1)
+				s.mockCache.setVersionErr = errors.New("cache write failed")
+				return tmpFile
+			},
+			wantErr: true,
+			errMsg:  "failed to save file version to cache",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			s := newTestSetup(t)
+			defer s.cleanup()
+			s.initService()
+
+			tmpFile := tt.setup(s, tt.filePath)
+			if tmpFile != "" {
+				defer func() {
+					_ = os.Remove(tmpFile)
+				}()
+			}
+
+			err := s.service.Update(s.ctx, tt.fileID, tt.filePath, tt.notes)
+
+			assertError(t, err, tt.wantErr, tt.errMsg)
 		})
 	}
 }

@@ -127,6 +127,29 @@ func TestRegister(t *testing.T) {
 			},
 			wantErr: errors.New("invalid password"),
 		},
+		{
+			name:     "salt generation error",
+			login:    testLogin,
+			passHash: testPass,
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
+				c.EXPECT().GenerateSalt().Return(nil, errors.New("entropy failure")).Times(1)
+			},
+			wantErr: errors.New("failed to generate salt"),
+		},
+		{
+			name:     "password hash error",
+			login:    testLogin,
+			passHash: testPass,
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, _ uuid.UUID) {
+				testSalt := []byte("test-salt-32-bytes-long-string!!")
+				encryptionKey := argon2.IDKey([]byte(testPass), testSalt, 1, 64*1024, 4, 32)
+
+				c.EXPECT().GenerateSalt().Return(testSalt, nil).Times(1)
+				c.EXPECT().DeriveEncryptionKey(testPass, string(testSalt)).Return(encryptionKey).Times(1)
+				c.EXPECT().HashPassword(testPass).Return("", errors.New("hash failure")).Times(1)
+			},
+			wantErr: errors.New("failed to hash password"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -242,6 +265,30 @@ func TestLogin(t *testing.T) {
 				// No mock expectation - validation fails before repository call
 			},
 			wantErr: errors.New("invalid password"),
+		},
+		{
+			name:     "invalid credentials - password mismatch",
+			login:    testLogin,
+			passHash: "wrongpassword",
+			setupMock: func(m *mocks.MockRepository, c *mocks.MockCryptoService, expectedID uuid.UUID) {
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(testPass), bcrypt.DefaultCost)
+				testSalt := "testsalt"
+				encryptionKey := argon2.IDKey([]byte("wrongpassword"), []byte(testSalt), 1, 64*1024, 4, 32)
+
+				expectedUser := interfaces.RepositoryUser{
+					ID:           expectedID.String(),
+					Login:        testLogin,
+					PasswordHash: string(hashedPassword),
+					Salt:         testSalt,
+				}
+				m.EXPECT().
+					GetUser(gomock.Any(), testLogin).
+					Times(1).
+					Return(expectedUser, nil)
+				c.EXPECT().DeriveEncryptionKey("wrongpassword", testSalt).Return(encryptionKey).Times(1)
+				c.EXPECT().CompareHashAndPassword(string(hashedPassword), "wrongpassword").Return(errors.New("password mismatch")).Times(1)
+			},
+			wantErr: errors.New("failed to compare hash and password"),
 		},
 	}
 

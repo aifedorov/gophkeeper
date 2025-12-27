@@ -5,6 +5,8 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=mock_interfaces_test.go -package=card
+
 // Client defines the interface for gRPC client operations for card management.
 // This interface abstracts the gRPC communication layer.
 type Client interface {

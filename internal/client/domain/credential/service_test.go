@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewService(t *testing.T) {
@@ -115,6 +116,28 @@ func TestService_Create(t *testing.T) {
 			wantErr: true,
 			errMsg:  "failed to create credential",
 		},
+		{
+			name: "cache error on set version",
+			cred: Credential{
+				ID:       "cache-error-id",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
+			},
+			setup: func(s *testSetup, cred Credential) {
+				s.mockClient.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					Return("cache-error-id", int64(1), nil).
+					Times(1)
+				s.mockCache.EXPECT().
+					SetCredentialVersion("cache-error-id", int64(1)).
+					Return(errors.New("cache error")).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to save credential to cache",
+		},
 	}
 
 	for _, tt := range tests {
@@ -180,6 +203,38 @@ func TestService_List(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "failed to get list of credentials",
+		},
+		{
+			name: "server returns invalid version 0",
+			setup: func(s *testSetup) {
+				creds := []Credential{
+					{ID: "id-1", Name: "cred-1", Login: "user1", Password: "pass1", Notes: "", Version: 0},
+				}
+				s.mockClient.EXPECT().
+					List(gomock.Any()).
+					Return(creds, nil).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "server returned invalid version 0",
+		},
+		{
+			name: "cache error on set version",
+			setup: func(s *testSetup) {
+				creds := []Credential{
+					{ID: "id-1", Name: "cred-1", Login: "user1", Password: "pass1", Notes: "", Version: 1},
+				}
+				s.mockClient.EXPECT().
+					List(gomock.Any()).
+					Return(creds, nil).
+					Times(1)
+				s.mockCache.EXPECT().
+					SetCredentialVersion("id-1", int64(1)).
+					Return(errors.New("cache error")).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to save credential to cache",
 		},
 	}
 
@@ -323,6 +378,52 @@ func TestService_Update(t *testing.T) {
 			wantErr: true,
 			errMsg:  "failed to update",
 		},
+		{
+			name: "cache error - get version fails",
+			id:   "test-id-104",
+			cred: Credential{
+				ID:       "test-id-104",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
+			},
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.mockCache.EXPECT().
+					GetCredentialVersion(id).
+					Return(int64(0), errors.New("cache miss")).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to get version from cache",
+		},
+		{
+			name: "cache error - set version fails after update",
+			id:   "test-id-105",
+			cred: Credential{
+				ID:       "test-id-105",
+				Name:     testName,
+				Login:    testLogin,
+				Password: testPassword,
+				Notes:    testNotes,
+			},
+			setup: func(s *testSetup, id string, cred Credential) {
+				s.mockCache.EXPECT().
+					GetCredentialVersion(id).
+					Return(int64(1), nil).
+					Times(1)
+				s.mockClient.EXPECT().
+					Update(gomock.Any(), id, gomock.Any()).
+					Return(int64(2), nil).
+					Times(1)
+				s.mockCache.EXPECT().
+					SetCredentialVersion(gomock.Any(), int64(2)).
+					Return(errors.New("cache error")).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to save credential to cache",
+		},
 	}
 
 	for _, tt := range tests {
@@ -384,6 +485,22 @@ func TestService_Delete(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "failed to delete credential",
+		},
+		{
+			name: "cache error - delete version fails",
+			id:   "test-id-999",
+			setup: func(s *testSetup, id string) {
+				s.mockClient.EXPECT().
+					Delete(gomock.Any(), id).
+					Return(nil).
+					Times(1)
+				s.mockCache.EXPECT().
+					DeleteCredentialVersion(id).
+					Return(errors.New("cache error")).
+					Times(1)
+			},
+			wantErr: true,
+			errMsg:  "failed to delete credential from cache",
 		},
 	}
 

@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	pgx "github.com/jackc/pgx/v5"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,6 +72,21 @@ func (mr *MockQuerierMockRecorder) DeleteCard(ctx, arg any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCard", reflect.TypeOf((*MockQuerier)(nil).DeleteCard), ctx, arg)
 }
 
+// GetCardForUpdate mocks base method.
+func (m *MockQuerier) GetCardForUpdate(ctx context.Context, arg GetCardForUpdateParams) (Card, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCardForUpdate", ctx, arg)
+	ret0, _ := ret[0].(Card)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCardForUpdate indicates an expected call of GetCardForUpdate.
+func (mr *MockQuerierMockRecorder) GetCardForUpdate(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCardForUpdate", reflect.TypeOf((*MockQuerier)(nil).GetCardForUpdate), ctx, arg)
+}
+
 // ListCards mocks base method.
 func (m *MockQuerier) ListCards(ctx context.Context, userID uuid.UUID) ([]Card, error) {
 	m.ctrl.T.Helper()
@@ -99,4 +115,18 @@ func (m *MockQuerier) UpdateCard(ctx context.Context, arg UpdateCardParams) (Car
 func (mr *MockQuerierMockRecorder) UpdateCard(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCard", reflect.TypeOf((*MockQuerier)(nil).UpdateCard), ctx, arg)
+}
+
+// WithTx mocks base method.
+func (m *MockQuerier) WithTx(tx pgx.Tx) Querier {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(Querier)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockQuerierMockRecorder) WithTx(tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockQuerier)(nil).WithTx), tx)
 }
