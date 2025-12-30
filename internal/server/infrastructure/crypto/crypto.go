@@ -13,8 +13,8 @@ import (
 // Cryptographic parameters.
 const (
 	argonTime     = 1
-	argonMemory   = 64 * 1024 // 64 MB
-	argonThreads  = 4
+	argonMemory   = 47104
+	argonThreads  = 1
 	argonKeyLen   = 32 // AES-256
 	saltLen       = 32
 	aes256KeySize = 32

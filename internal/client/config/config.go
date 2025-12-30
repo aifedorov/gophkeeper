@@ -12,6 +12,8 @@ type Config struct {
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 	// gRPC binary address.
 	ServerAddr string `env:"SERVER_ADDRESS,required,notEmpty"`
+	// File storage root path.
+	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"storage/files/"`
 }
 
 func LoadConfig() (*Config, error) {

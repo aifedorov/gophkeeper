@@ -26,8 +26,6 @@ type testSetup struct {
 	service       Service
 	ctx           context.Context
 	wantFiles     []binary.File
-	wantContent   string
-	wantFilePath  string
 }
 
 func newTestSetup(t *testing.T) *testSetup {

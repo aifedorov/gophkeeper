@@ -12,21 +12,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	rootPath = "storage/files/"
-	dirMode  = 0700
-)
+const dirMode = 0700
 
 // FileStorage handles file operations for storing and retrieving binary data.
 type FileStorage struct {
+	rootPath string
 	logger   *zap.Logger
 	tmpPaths sync.Map // map[string]string: key = dirname+filename, value = tmppath
 }
 
-// NewFileStorage creates a new FileStorage with the provided logger.
-func NewFileStorage(logger *zap.Logger) *FileStorage {
+// NewFileStorage creates a new FileStorage with the provided logger and root path.
+func NewFileStorage(rootPath string, logger *zap.Logger) *FileStorage {
 	return &FileStorage{
-		logger: logger,
+		rootPath: rootPath,
+		logger:   logger,
 	}
 }
 

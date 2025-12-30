@@ -11,6 +11,7 @@ import (
 	credvpb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/credential/v1"
 	"github.com/aifedorov/gophkeeper/internal/server/config"
 	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/certs"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/grpc/interseptors"
 	"github.com/aifedorov/gophkeeper/internal/server/infrastructure/jwt"
 	"go.uber.org/zap"
@@ -27,15 +28,16 @@ type GRPCServer interface {
 }
 
 type grpcServer struct {
-	cfg          *config.Config
-	logger       *zap.Logger
-	grpc         *grpc.Server
-	authServer   *AuthServer
-	credServer   *CredentialServer
-	cardServer   *CardServer
-	binaryServer *BinaryServer
-	jwtSrv       jwt.Service
-	authSrv      auth.Service
+	cfg           *config.Config
+	logger        *zap.Logger
+	grpc          *grpc.Server
+	authServer    *AuthServer
+	credServer    *CredentialServer
+	cardServer    *CardServer
+	binaryServer  *BinaryServer
+	jwtSrv        jwt.Service
+	authSrv       auth.Service
+	certsProvider *certs.Provider
 }
 
 // NewGRRPCServer creates a new instance of GRPCServer with the provided dependencies.
@@ -50,17 +52,19 @@ func NewGRRPCServer(
 	binaryServer *BinaryServer,
 	jwtSrv jwt.Service,
 	authSrv auth.Service,
+	certsProvider *certs.Provider,
 ) GRPCServer {
 	return &grpcServer{
-		cfg:          cfg,
-		logger:       logger,
-		grpc:         grpc,
-		authServer:   authServer,
-		credServer:   credServer,
-		cardServer:   cardServer,
-		binaryServer: binaryServer,
-		jwtSrv:       jwtSrv,
-		authSrv:      authSrv,
+		cfg:           cfg,
+		logger:        logger,
+		grpc:          grpc,
+		authServer:    authServer,
+		credServer:    credServer,
+		cardServer:    cardServer,
+		binaryServer:  binaryServer,
+		jwtSrv:        jwtSrv,
+		authSrv:       authSrv,
+		certsProvider: certsProvider,
 	}
 }
 
@@ -71,8 +75,8 @@ func (s *grpcServer) Run(ctx context.Context) error {
 	s.logger.Info("starting grpc server", zap.String("addr", s.cfg.GRPCAddr))
 
 	creds, err := credentials.NewServerTLSFromFile(
-		"certs/server-cert.pem",
-		"certs/server-key.pem",
+		s.certsProvider.CertPath(),
+		s.certsProvider.KeyPath(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create credentials for grpc server: %w", err)

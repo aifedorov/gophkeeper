@@ -31,7 +31,7 @@ type Services struct {
 func NewServices(cfg *config.Config) (*Services, error) {
 	sessionStore := session.NewStorage()
 	cacheStore := cache.NewStorage()
-	fileStore := filestorage.NewFileStorage(zap.NewNop())
+	fileStore := filestorage.NewFileStorage(cfg.FileStoragePath, zap.NewNop())
 	tokenProvider := auth.NewSessionProvider(sessionStore)
 	conn, err := grpcClient.NewGRPCConnection(cfg.ServerAddr, tokenProvider)
 	if err != nil {

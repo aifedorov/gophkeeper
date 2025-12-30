@@ -12,11 +12,11 @@ import (
 )
 
 func (f *FileStorage) getDir(dirname string) string {
-	return filepath.Join(rootPath, dirname)
+	return filepath.Join(f.rootPath, dirname)
 }
 
 func (f *FileStorage) getFullPath(dirname, filename string) string {
-	return filepath.Join(rootPath, dirname, filename)
+	return filepath.Join(f.rootPath, dirname, filename)
 }
 
 func (f *FileStorage) createTmpFile(_ context.Context, dirname string, reader io.Reader) (filename string, err error) {

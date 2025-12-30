@@ -81,7 +81,7 @@ func TestValidatePassword(t *testing.T) {
 		},
 		{
 			name:     "valid maximum length",
-			password: "1234567890123456", // 16 chars
+			password: "123456789012345678901234567890", // 30 chars
 			wantErr:  false,
 		},
 		{
@@ -96,7 +96,7 @@ func TestValidatePassword(t *testing.T) {
 		},
 		{
 			name:     "password too long",
-			password: "12345678901234567", // 17 chars
+			password: "1234567890123456789012345678901", // 31 chars
 			wantErr:  true,
 		},
 		{

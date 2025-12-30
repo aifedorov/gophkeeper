@@ -16,10 +16,12 @@ func TestNewFileStorage(t *testing.T) {
 	t.Parallel()
 
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	rootPath := "storage/files/"
+	fs := NewFileStorage(rootPath, logger)
 
 	require.NotNil(t, fs)
 	assert.Equal(t, logger, fs.logger)
+	assert.Equal(t, rootPath, fs.rootPath)
 }
 
 func TestFileStorage_Upload(t *testing.T) {
@@ -31,7 +33,7 @@ func TestFileStorage_Upload(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	tests := []struct {
 		name     string
@@ -42,14 +44,14 @@ func TestFileStorage_Upload(t *testing.T) {
 	}{
 		{
 			name:     "successful upload",
-			dirname:  filepath.Join(tempDir, "user1"),
+			dirname:  "user1",
 			filename: "test.txt",
 			content:  "hello world",
 			wantErr:  false,
 		},
 		{
 			name:     "upload to new directory",
-			dirname:  filepath.Join(tempDir, "user2/subdir"),
+			dirname:  "user2/subdir",
 			filename: "file.txt",
 			content:  "test content",
 			wantErr:  false,
@@ -86,8 +88,13 @@ func TestFileStorage_Upload(t *testing.T) {
 func TestFileStorage_Delete(t *testing.T) {
 	t.Parallel()
 
+	// Create a temp directory for testing
+	tempDir, err := os.MkdirTemp("", "filestorage_delete_test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	t.Run("successful delete", func(t *testing.T) {
 		ctx := context.Background()
@@ -106,9 +113,6 @@ func TestFileStorage_Delete(t *testing.T) {
 		// Verify file is deleted
 		_, err = os.Stat(path)
 		assert.True(t, os.IsNotExist(err))
-
-		// Cleanup directory
-		os.RemoveAll(filepath.Join("storage/files", dirname))
 	})
 
 	t.Run("delete non-existent file", func(t *testing.T) {
@@ -122,8 +126,13 @@ func TestFileStorage_Delete(t *testing.T) {
 func TestFileStorage_Download(t *testing.T) {
 	t.Parallel()
 
+	// Create a temp directory for testing
+	tempDir, err := os.MkdirTemp("", "filestorage_download_test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	t.Run("successful download", func(t *testing.T) {
 		ctx := context.Background()
@@ -135,7 +144,6 @@ func TestFileStorage_Download(t *testing.T) {
 		reader := strings.NewReader(testContent)
 		_, err := fs.Upload(ctx, dirname, filename, reader)
 		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join("storage/files", dirname))
 
 		// Now download it
 		downloadReader, err := fs.Download(ctx, dirname, filename)
@@ -167,11 +175,11 @@ func TestFileStorage_BeginUpdate_CommitUpdate_AbortUpdate(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	t.Run("begin and commit update", func(t *testing.T) {
 		ctx := context.Background()
-		dirname := filepath.Join(tempDir, "user1")
+		dirname := "user1"
 		filename := "update_test.txt"
 		content := "updated content"
 
@@ -196,7 +204,7 @@ func TestFileStorage_BeginUpdate_CommitUpdate_AbortUpdate(t *testing.T) {
 
 	t.Run("begin and abort update", func(t *testing.T) {
 		ctx := context.Background()
-		dirname := filepath.Join(tempDir, "user2")
+		dirname := "user2"
 		filename := "abort_test.txt"
 		content := "content to abort"
 
@@ -216,7 +224,7 @@ func TestFileStorage_BeginUpdate_CommitUpdate_AbortUpdate(t *testing.T) {
 	t.Run("commit without begin", func(t *testing.T) {
 		ctx := context.Background()
 
-		err := fs.CommitUpdate(ctx, tempDir, "no_begin.txt")
+		err := fs.CommitUpdate(ctx, "nonexistent", "no_begin.txt")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no temp file found")
 	})
@@ -231,7 +239,7 @@ func TestFileStorage_ReadContent(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	t.Run("successful read", func(t *testing.T) {
 		// Create a test file
@@ -289,7 +297,7 @@ func TestFileStorage_OpenFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logger := zap.NewNop()
-	fs := NewFileStorage(logger)
+	fs := NewFileStorage(tempDir, logger)
 
 	t.Run("successful open", func(t *testing.T) {
 		testFile := filepath.Join(tempDir, "openfile_test.txt")
