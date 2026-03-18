@@ -14,6 +14,7 @@
 # Code coverage profiles and other test artifacts
 *.out
 coverage.*
+!scripts/coverage.sh
 *.coverprofile
 profile.cov
 
@@ -25,8 +26,18 @@ go.work
 go.work.sum
 
 # env file
-.env
+.env.client
+.env.server
 
 # Editor/IDE
-# .idea/
+.idea/
 # .vscode/
+
+# Build artifacts
+dist/
+tmp/
+build-errors.log
+gophkeeper-*
+
+# Air (hot reload)
+air_tmp/

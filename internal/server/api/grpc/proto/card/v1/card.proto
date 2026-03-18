@@ -1,0 +1,117 @@
+edition = "2023";
+
+package card.v1;
+
+option go_package = "github.com/aifedorov/gen/card/v1";
+
+// CardService provides operations for managing payment cards.
+// All operations require authentication via JWT token in metadata.
+service CardService {
+  // Create stores a new payment card for the authenticated user.
+  // Returns InvalidArgument if required fields are missing.
+  rpc Create(CreateRequest) returns (CreateResponse);
+
+  // List retrieves all cards for the authenticated user.
+  rpc List(ListRequest) returns (ListResponse);
+
+  // Update modifies an existing card using optimistic locking.
+  // Returns NotFound if card doesn't exist, FailedPrecondition on version mismatch.
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+
+  // Delete removes a card by ID.
+  // Returns NotFound if card doesn't exist.
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+// CreateRequest contains the data for creating a new card.
+message CreateRequest {
+  // name is a user-defined label for the card.
+  string name = 1;
+  // number is the card number (will be encrypted).
+  string number = 2;
+  // expired_date is the card expiration date in MM/YY format.
+  string expired_date = 3;
+  // card_holder_name is the name printed on the card.
+  string card_holder_name = 4;
+  // cvv is the card verification value (will be encrypted).
+  string cvv = 5;
+  // notes contains optional additional information.
+  string notes = 6;
+}
+
+// CreateResponse contains the result of card creation.
+message CreateResponse {
+  // id is the unique identifier of the created card.
+  string id = 1;
+  // version is the initial version number for optimistic locking.
+  int64 version = 2;
+}
+
+// UpdateRequest contains the data for updating a card.
+message UpdateRequest {
+  // id is the unique identifier of the card to update.
+  string id = 1;
+  // name is a user-defined label for the card.
+  string name = 2;
+  // number is the card number (will be encrypted).
+  string number = 3;
+  // expired_date is the card expiration date in MM/YY format.
+  string expired_date = 4;
+  // card_holder_name is the name printed on the card.
+  string card_holder_name = 5;
+  // cvv is the card verification value (will be encrypted).
+  string cvv = 6;
+  // notes contains optional additional information.
+  string notes = 7;
+  // version is the expected version for optimistic locking.
+  int64 version = 8;
+}
+
+// UpdateResponse contains the result of card update.
+message UpdateResponse {
+  // success indicates whether the update was successful.
+  bool success = 1;
+  // version is the new version number after update.
+  int64 version = 2;
+}
+
+// DeleteRequest contains the card identifier for deletion.
+message DeleteRequest {
+  // id is the unique identifier of the card to delete.
+  string id = 1;
+}
+
+// DeleteResponse contains the result of card deletion.
+message DeleteResponse {
+  // success indicates whether the deletion was successful.
+  bool success = 1;
+}
+
+// ListRequest retrieves all cards. No parameters needed.
+message ListRequest {}
+
+// ListResponse contains all cards for the authenticated user.
+message ListResponse {
+  // ListItem represents a single card in the list.
+  message ListItem {
+    // id is the unique identifier of the card.
+    string id = 1;
+    // name is the user-defined label.
+    string name = 2;
+    // number is the decrypted card number.
+    string number = 3;
+    // expired_date is the expiration date in MM/YY format.
+    string expired_date = 4;
+    // card_holder_name is the name on the card.
+    string card_holder_name = 5;
+    // cvv is the decrypted verification value.
+    string cvv = 6;
+    // notes contains additional information.
+    string notes = 7;
+    // version is the current version for optimistic locking.
+    int64 version = 8;
+  }
+
+  // cards is the list of all user's cards.
+  repeated ListItem cards = 1;
+}

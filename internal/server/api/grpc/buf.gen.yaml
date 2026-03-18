@@ -1,0 +1,23 @@
+# Buf code generation configuration for GophKeeper gRPC API
+version: v2
+
+# Managed mode automatically manages Go package imports
+managed:
+  enabled: true
+
+# Plugins define the code generators to use
+plugins:
+  # Generate Go protobuf code
+  - remote: buf.build/protocolbuffers/go
+    out: gen
+    opt: paths=source_relative
+  
+  # Generate Go gRPC service code
+  - remote: buf.build/grpc/go
+    out: gen
+    opt:
+      - paths=source_relative
+
+# Input proto files location
+inputs:
+  - directory: proto

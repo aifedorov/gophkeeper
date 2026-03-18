@@ -1,0 +1,213 @@
+package server
+
+import (
+	"context"
+	"errors"
+
+	pb "github.com/aifedorov/gophkeeper/internal/server/api/grpc/gen/card/v1"
+	"github.com/aifedorov/gophkeeper/internal/server/config"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/auth"
+	"github.com/aifedorov/gophkeeper/internal/server/domain/secret/card"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+// CardServer implements the CardService gRPC service.
+// It handles CRUD operations for payment cards with encryption support.
+type CardServer struct {
+	pb.UnimplementedCardServiceServer
+	cfg     *config.Config
+	logger  *zap.Logger
+	authSev auth.Service
+	cardSrv card.Service
+}
+
+// NewCardServer creates a new CardServer with the provided dependencies.
+func NewCardServer(cfg *config.Config, logger *zap.Logger, authSev auth.Service, cardSrv card.Service) *CardServer {
+	return &CardServer{
+		cfg:     cfg,
+		logger:  logger,
+		authSev: authSev,
+		cardSrv: cardSrv,
+	}
+}
+
+// Create stores a new payment card for the authenticated user.
+// Returns Unauthenticated if token is invalid, AlreadyExists if name is taken.
+func (s *CardServer) Create(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
+	s.logger.Debug("grpc: create card request received", zap.String("name", req.GetName()))
+
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	newCard, err := card.NewCard(
+		uuid.NewString(),
+		req.GetName(),
+		req.GetNumber(),
+		req.GetExpiredDate(),
+		req.GetCardHolderName(),
+		req.GetCvv(),
+		req.GetNotes(),
+		1,
+	)
+	if err != nil || newCard == nil {
+		s.logger.Error("grpc: failed to create card entity", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	res, err := s.cardSrv.Create(ctx, userID, encryptionKey, *newCard)
+	if errors.Is(err, card.ErrNameExists) {
+		s.logger.Debug("grpc: card name already exists", zap.String("name", newCard.GetName()))
+		return nil, status.Error(codes.AlreadyExists, "card name already exists")
+	}
+	if err != nil {
+		s.logger.Error("grpc: failed to create card", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal card error")
+	}
+
+	id := res.GetID()
+	version := res.GetVersion()
+	s.logger.Debug("grpc: card created successfully", zap.String("id", id), zap.Int64("version", version))
+
+	resp := pb.CreateResponse{
+		Id:      &id,
+		Version: &version,
+	}
+
+	return &resp, nil
+}
+
+// List retrieves all cards for the authenticated user.
+func (s *CardServer) List(ctx context.Context, _ *pb.ListRequest) (*pb.ListResponse, error) {
+	s.logger.Debug("grpc: list card request received")
+
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	cards, err := s.cardSrv.List(ctx, userID, encryptionKey)
+	if err != nil {
+		s.logger.Error("grpc: failed to get list of cards", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal card error")
+	}
+
+	cardList := make([]*pb.ListResponse_ListItem, len(cards))
+	for i, c := range cards {
+		id := c.GetID()
+		name := c.GetName()
+		number := c.GetNumber()
+		expiredDate := c.GetExpiredDate()
+		cardHolderName := c.GetCardHolderName()
+		cvv := c.GetCvv()
+		notes := c.GetNotes()
+		version := c.GetVersion()
+
+		cardList[i] = &pb.ListResponse_ListItem{
+			Id:             &id,
+			Name:           &name,
+			Number:         &number,
+			ExpiredDate:    &expiredDate,
+			CardHolderName: &cardHolderName,
+			Cvv:            &cvv,
+			Notes:          &notes,
+			Version:        &version,
+		}
+	}
+
+	return &pb.ListResponse{
+		Cards: cardList,
+	}, nil
+}
+
+// Update modifies an existing card using optimistic locking.
+// Returns NotFound if card doesn't exist, Aborted on version conflict.
+func (s *CardServer) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
+	s.logger.Debug("grpc: update card request received")
+
+	userID, encryptionKey, err := s.authSev.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	updatedCard, err := card.NewCard(
+		req.GetId(),
+		req.GetName(),
+		req.GetNumber(),
+		req.GetExpiredDate(),
+		req.GetCardHolderName(),
+		req.GetCvv(),
+		req.GetNotes(),
+		req.GetVersion(),
+	)
+	if err != nil || updatedCard == nil {
+		s.logger.Error("grpc: failed to create card entity", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	res, err := s.cardSrv.Update(ctx, userID, encryptionKey, *updatedCard)
+	if errors.Is(err, card.ErrNameExists) {
+		s.logger.Debug("grpc: card name already exists", zap.String("name", updatedCard.GetName()))
+		return nil, status.Error(codes.AlreadyExists, "card name already exists")
+	}
+	if errors.Is(err, card.ErrNotFound) {
+		s.logger.Debug("grpc: card not found for update", zap.String("id", updatedCard.GetID()))
+		return nil, status.Error(codes.NotFound, "card not found")
+	}
+	if errors.Is(err, card.ErrVersionConflict) {
+		s.logger.Debug("grpc: version conflict", zap.String("id", updatedCard.GetID()))
+		return nil, status.Error(codes.Aborted, "version conflict")
+	}
+	if err != nil {
+		s.logger.Error("grpc: failed to update card", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal card error")
+	}
+
+	id := res.GetID()
+	version := res.GetVersion()
+	s.logger.Debug("grpc: card updated successfully", zap.String("id", id), zap.Int64("version", version))
+
+	success := true
+	resp := pb.UpdateResponse{
+		Success: &success,
+		Version: &version,
+	}
+	return &resp, nil
+}
+
+// Delete removes a card by ID. Returns NotFound if card doesn't exist.
+func (s *CardServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	s.logger.Debug("grpc: delete card request received")
+
+	userID, _, err := s.authSev.GetUserDataFromContext(ctx)
+	if err != nil {
+		s.logger.Error("grpc: failed to get user ID or encryption key from token", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid token")
+	}
+
+	s.logger.Debug("grpc: user_id extracted from token", zap.String("user_id", userID))
+
+	err = s.cardSrv.Delete(ctx, userID, req.GetId())
+	if errors.Is(err, card.ErrNotFound) {
+		s.logger.Debug("grpc: card not found for update", zap.String("id", req.GetId()))
+		return nil, status.Error(codes.NotFound, "card not found")
+	}
+	if err != nil {
+		s.logger.Error("grpc: failed to update card", zap.Error(err))
+		return nil, status.Error(codes.Internal, "internal card error")
+	}
+
+	s.logger.Debug("grpc: card deleted successfully", zap.String("id", req.GetId()))
+
+	success := true
+	return &pb.DeleteResponse{
+		Success: &success,
+	}, nil
+}

@@ -1,0 +1,3 @@
+ALTER TABLE cards
+    ADD COLUMN version BIGINT NOT NULL DEFAULT 1;
+
